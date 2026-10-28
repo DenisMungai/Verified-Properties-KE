@@ -4,14 +4,15 @@ import { cn } from "@/lib/cn";
 
 export type BadgeTone = "neutral" | "success" | "warning" | "danger" | "info" | "verified";
 
+/** Design: Status badges (soft tinted pills, no border). */
 const tones: Record<BadgeTone, string> = {
-  neutral: "border-line bg-surface-muted text-slate-700",
-  success: "border-mint-100 bg-mint-50 text-success",
-  // The warning token (#A96508) is only ~4.3:1 on this tint; 12px badge text needs 4.5:1.
-  warning: "border-[#F2DDB8] bg-[#FDF6EA] text-[#8A5206]",
-  danger: "border-[#F5CFCB] bg-[#FDF1F0] text-danger",
-  info: "border-[#C9DAF8] bg-[#F0F5FE] text-info",
-  verified: "border-mint-100 bg-mint-100 text-emerald-700",
+  neutral: "bg-surface-muted text-slate-700",
+  success: "bg-mint-50 text-success",
+  // The warning token is ~3.6:1 on white; badge text uses the darker warning-text shade.
+  warning: "bg-warning-tint text-warning-text",
+  danger: "bg-danger-tint text-danger",
+  info: "bg-[#EAF1FD] text-info",
+  verified: "bg-mint-50 text-emerald-700",
 };
 
 export interface BadgeProps {
@@ -26,7 +27,7 @@ export function Badge({ tone = "neutral", icon, className, children }: BadgeProp
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-caption font-medium",
+        "inline-flex items-center gap-1 rounded-pill px-3 py-1 text-caption font-semibold",
         tones[tone],
         className,
       )}

@@ -23,29 +23,22 @@ export const metadata: Metadata = { title: "Style guide" };
 
 /** Full class names so Tailwind's scanner keeps them. */
 const COLOURS: Array<{ name: string; hex: string; swatch: string; note?: string }> = [
-  { name: "navy-950", hex: "#0B1F3A", swatch: "bg-navy-950", note: "Brand, headings, footer" },
-  { name: "navy-900", hex: "#102746", swatch: "bg-navy-900" },
-  { name: "navy-800", hex: "#163B63", swatch: "bg-navy-800", note: "Links" },
-  { name: "navy-700", hex: "#24517A", swatch: "bg-navy-700", note: "Navy hover" },
-  { name: "emerald-700", hex: "#087443", swatch: "bg-emerald-700", note: "Primary hover" },
-  { name: "emerald-600", hex: "#14833B", swatch: "bg-emerald-600", note: "Primary action" },
-  { name: "emerald-500", hex: "#1C9950", swatch: "bg-emerald-500", note: "Highlights" },
-  { name: "mint-50", hex: "#F1F8F3", swatch: "bg-mint-50" },
-  { name: "mint-100", hex: "#E4F2E8", swatch: "bg-mint-100", note: "Selected, verified" },
-  { name: "canvas", hex: "#F7F7F3", swatch: "bg-canvas", note: "Page background" },
+  { name: "emerald-600 · Forest", hex: "#14833B", swatch: "bg-emerald-600", note: "Primary action, brand" },
+  { name: "emerald-700 · Deep green", hex: "#087443", swatch: "bg-emerald-700", note: "Hover, auth panel" },
+  { name: "mint-50 · Soft green", hex: "#E8F4EC", swatch: "bg-mint-50", note: "Quiet button, active nav" },
+  { name: "mint-100", hex: "#DCEDE2", swatch: "bg-mint-100", note: "Soft green hover" },
+  { name: "canvas · Warm canvas", hex: "#F7F8F5", swatch: "bg-canvas", note: "Page background" },
   { name: "white", hex: "#FFFFFF", swatch: "bg-white", note: "Cards, inputs" },
-  { name: "ink", hex: "#171B22", swatch: "bg-ink", note: "Body text" },
-  { name: "slate-700", hex: "#475569", swatch: "bg-slate-700", note: "Secondary text" },
-  { name: "slate-600", hex: "#687280", swatch: "bg-slate-600", note: "Muted text" },
-  { name: "slate-500", hex: "#87919E", swatch: "bg-slate-500", note: "Placeholders, icons only" },
-  { name: "line", hex: "#DCE4E2", swatch: "bg-line", note: "Borders" },
-  { name: "line-strong", hex: "#C7D2D0", swatch: "bg-line-strong" },
-  { name: "surface-muted", hex: "#EEF2F0", swatch: "bg-surface-muted", note: "Skeletons, disabled" },
-  { name: "success", hex: "#087443", swatch: "bg-success" },
-  { name: "warning", hex: "#A96508", swatch: "bg-warning" },
-  { name: "danger", hex: "#B42318", swatch: "bg-danger", note: "Errors only" },
+  { name: "ink · Charcoal", hex: "#17231D", swatch: "bg-ink", note: "Text and headings" },
+  { name: "slate-700", hex: "#4A564F", swatch: "bg-slate-700", note: "Secondary text" },
+  { name: "slate-600 · Muted", hex: "#647168", swatch: "bg-slate-600", note: "Supporting text" },
+  { name: "line · Border", hex: "#E1E7E2", swatch: "bg-line", note: "Cards, dividers" },
+  { name: "line-strong", hex: "#8C968F", swatch: "bg-line-strong", note: "Form-control borders (3:1)" },
+  { name: "surface-muted", hex: "#EEF2EF", swatch: "bg-surface-muted", note: "Skeletons, disabled" },
+  { name: "warning", hex: "#B7791F", swatch: "bg-warning", note: "Icons and tints only" },
+  { name: "warning-text", hex: "#8A5206", swatch: "bg-warning-text", note: "Warning text" },
+  { name: "danger · Error", hex: "#B42318", swatch: "bg-danger", note: "Errors only" },
   { name: "info", hex: "#175CD3", swatch: "bg-info" },
-  { name: "sand-500", hex: "#D7B982", swatch: "bg-sand-500", note: "Accent, never text" },
 ];
 
 const TYPE_SCALE: Array<{ name: string; className: string; spec: string }> = [
@@ -99,10 +92,10 @@ export default function StyleguidePage() {
   return (
     <PageContainer className="py-10">
       <header className="flex flex-col gap-2 pb-6">
-        <p className="text-label uppercase text-emerald-700">Design System v1.0</p>
+        <p className="text-label uppercase text-emerald-700">VerifiedPropertiesKE design system</p>
         <h1 className="text-h1-sm md:text-h1">Style guide</h1>
         <p className="max-w-prose text-body text-slate-600">
-          Tokens and base components. Tab through the page to check focus states.
+          Tokens and base components. CSS root is 90%: body text is 14.4px at a 16px browser default, controls stay 44px. Tab through the page to check focus states.
         </p>
       </header>
 
@@ -131,7 +124,7 @@ export default function StyleguidePage() {
               <span className="w-32 shrink-0 text-caption text-slate-600">
                 {style.name} · {style.spec}
               </span>
-              <span className={`${style.className} min-w-0 break-words text-navy-950`}>
+              <span className={`${style.className} min-w-0 break-words text-ink`}>
                 Nyumba nzuri in Kilimani
               </span>
             </li>
@@ -165,7 +158,8 @@ export default function StyleguidePage() {
       <Section title="Buttons">
         <Row label="Variants">
           <Button>Search properties</Button>
-          <Button variant="secondary">Save search</Button>
+          <Button variant="secondary">View details</Button>
+          <Button variant="quiet">Save property</Button>
           <Button variant="ghost">Cancel</Button>
           <Button variant="danger">Delete draft</Button>
         </Row>
@@ -225,8 +219,8 @@ export default function StyleguidePage() {
         <Row label="Badges">
           <VerifiedBadge />
           <Badge tone="success">Published</Badge>
-          <Badge tone="warning">Pending review</Badge>
-          <Badge tone="danger">Rejected</Badge>
+          <Badge tone="warning">In review</Badge>
+          <Badge tone="danger">Needs action</Badge>
           <Badge tone="info">For rent</Badge>
           <Badge>Paused</Badge>
         </Row>

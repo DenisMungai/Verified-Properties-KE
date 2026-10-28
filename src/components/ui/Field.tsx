@@ -31,7 +31,7 @@ export function Field({ id, label, hint, error, required, className, children }:
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={id} className="text-body-sm font-medium text-navy-950">
+      <label htmlFor={id} className="text-body-sm font-medium text-ink">
         {label}
         {required && (
           <span className="text-danger" aria-hidden="true">
@@ -65,6 +65,6 @@ export function Field({ id, label, hint, error, required, className, children }:
 /** Shared control styling for Input, Select and Textarea. */
 export const controlClasses =
   "w-full rounded-md border border-line-strong bg-white px-4 text-body text-ink transition-colors " +
-  "hover:border-navy-700 focus-visible:border-emerald-600 " +
+  "hover:border-ink focus-visible:border-emerald-600 " +
   "disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-muted disabled:text-slate-600 " +
   "aria-[invalid=true]:border-danger";

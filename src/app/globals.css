@@ -2,46 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System v1.0 §2.2. Tailwind utilities map to the same values (tailwind.config.ts). */
+/*
+ * VerifiedPropertiesKE design tokens (design/…/VerifiedPropertiesKE — Design System).
+ * Tailwind utilities map to the same values (tailwind.config.ts).
+ */
 :root {
   color-scheme: light;
-  --ph-navy-950: #0b1f3a;
-  --ph-navy-900: #102746;
-  --ph-navy-800: #163b63;
-  --ph-navy-700: #24517a;
-  --ph-emerald-700: #087443;
-  --ph-emerald-600: #14833b;
-  --ph-emerald-500: #1c9950;
-  --ph-mint-50: #f1f8f3;
-  --ph-mint-100: #e4f2e8;
-  --ph-canvas: #f7f7f3;
-  --ph-white: #ffffff;
-  --ph-ink-950: #171b22;
-  --ph-slate-700: #475569;
-  --ph-slate-600: #687280;
-  --ph-slate-500: #87919e;
-  --ph-line: #dce4e2;
-  --ph-line-strong: #c7d2d0;
-  --ph-surface-muted: #eef2f0;
-  --ph-success: #087443;
-  --ph-warning: #a96508;
-  --ph-danger: #b42318;
-  --ph-info: #175cd3;
-  --ph-sand-500: #d7b982;
+  --vp-forest: #14833b;
+  --vp-deep-green: #087443;
+  --vp-soft-green: #e8f4ec;
+  --vp-soft-green-strong: #dcede2;
+  --vp-canvas: #f7f8f5;
+  --vp-white: #ffffff;
+  --vp-charcoal: #17231d;
+  --vp-muted: #647168;
+  --vp-border: #e1e7e2;
+  --vp-control-border: #8c968f;
+  --vp-warning: #b7791f;
+  --vp-warning-text: #8a5206;
+  --vp-error: #b42318;
 
-  --ph-font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --ph-shadow-card: 0 8px 24px rgb(11 31 58 / 6%);
-  --ph-shadow-popover: 0 16px 40px rgb(11 31 58 / 14%);
-  --ph-shadow-focus: 0 0 0 3px rgb(20 131 59 / 22%);
+  --vp-font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --vp-shadow-card: 0 8px 24px rgb(23 35 29 / 6%);
+  --vp-shadow-popover: 0 16px 40px rgb(23 35 29 / 14%);
+  --vp-shadow-focus: 0 0 0 3px rgb(20 131 59 / 22%);
 
-  --ph-container: 80rem;
-  --ph-header-height: 4.5rem;
-  --ph-control-height: 2.75rem;
-  --ph-control-height-lg: 3rem;
+  --vp-container: 80rem;
+  --vp-header-height: 72px;
+  --vp-control-height: 44px;
+  --vp-control-height-lg: 48px;
 }
 
 @layer base {
   html {
+    /*
+     * Design: "CSS root: 90%" (14.4px body at a 16px browser default). A percentage keeps the
+     * user's own browser font-size setting in effect. Touch targets are px-based (≥44px).
+     */
+    font-size: 90%;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -53,18 +51,18 @@
   h2,
   h3,
   h4 {
-    @apply text-navy-950;
+    @apply text-ink;
   }
 
   /* Visible focus for keyboard users on every interactive element. */
   :focus-visible {
-    outline: 2px solid var(--ph-emerald-600);
+    outline: 2px solid var(--vp-forest);
     outline-offset: 2px;
-    box-shadow: var(--ph-shadow-focus);
+    box-shadow: var(--vp-shadow-focus);
   }
 
   ::placeholder {
-    color: var(--ph-slate-500);
+    color: var(--vp-muted);
     opacity: 1;
   }
 }

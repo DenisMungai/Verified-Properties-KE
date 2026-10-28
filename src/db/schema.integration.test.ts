@@ -8,7 +8,8 @@ import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it } from
  */
 const url = process.env.TEST_DATABASE_URL;
 
-describe.skipIf(!url)("core schema constraints", () => {
+// Remote databases (Neon) add network round trips to every statement, so allow more than 5s.
+describe.skipIf(!url)("core schema constraints", { timeout: 30_000 }, () => {
   const client = new Client({ connectionString: url });
 
   beforeAll(async () => {

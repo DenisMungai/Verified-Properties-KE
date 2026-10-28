@@ -1,0 +1,111 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+import { Heart, Phone, UserRound } from "lucide-react";
+import { PageHeading } from "@/components/account/PageHeading";
+import { FormAlert } from "@/components/forms/FormAlert";
+import { Badge, EmptyState, Skeleton, buttonClasses } from "@/components/ui";
+import { getDb } from "@/db";
+import { getListerProfile } from "@/db/queries/lister-profiles";
+import { firstName } from "@/lib/email/templates";
+import { greetingFor } from "@/lib/greeting";
+import { displayKenyanPhone } from "@/lib/kenya";
+import { LISTER_ROLES, LISTER_TYPE_LABELS, hasAnyRole } from "@/lib/roles";
+import { requireUser } from "@/lib/session";
+import type { SearchParams } from "@/lib/search-params";
+
+export const metadata: Metadata = { title: "Your account" };
+
+async function Overview({ searchParams }: { searchParams: SearchParams }) {
+  const [user, params] = await Promise.all([requireUser(), searchParams]);
+  const profile = await getListerProfile(getDb(), user.id);
+  const isLister = hasAnyRole(user.roles, LISTER_ROLES);
+
+  return (
+    <>
+      <PageHeading
+        title={`${greetingFor(new Date())}, ${firstName(user.name)}`}
+        description={
+          isLister ? "Your listing profile and account at a glance." : "Your saved homes and account at a glance."
+        }
+      />
+      {params.welcome === "lister" && (
+        <FormAlert
+          className="mb-6"
+          state={{ message: "Your listing profile is ready. Listing plans and property listings arrive next." }}
+        />
+      )}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {profile ? (
+          <section aria-labelledby="profile-heading" className="flex flex-col gap-4 rounded-xl border border-line bg-white p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 id="profile-heading" className="text-h4">
+                  {profile.displayName}
+                </h2>
+                <p className="text-body-sm text-slate-600">{LISTER_TYPE_LABELS[profile.listerType]}</p>
+              </div>
+              {/* The badge is derived from review + subscriptions (S2); nobody is verified yet. */}
+              <Badge>Not verified</Badge>
+            </div>
+            {profile.phone && (
+              <p className="flex items-center gap-2 text-body-sm text-ink">
+                <Phone aria-hidden="true" className="size-4 text-slate-600" />
+                <span className="tabular">{displayKenyanPhone(profile.phone)}</span>
+              </p>
+            )}
+            <Link href="/account/profile" className={buttonClasses({ variant: "secondary", className: "self-start" })}>
+              Edit listing profile
+            </Link>
+          </section>
+        ) : (
+          <section aria-labelledby="start-listing-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-white p-6">
+            <span aria-hidden="true" className="inline-flex size-10 items-center justify-center rounded-pill bg-mint-50 text-emerald-700">
+              <UserRound className="size-5" />
+            </span>
+            <h2 id="start-listing-heading" className="text-h4">
+              {isLister ? "Finish your listing profile" : "Want to list property?"}
+            </h2>
+            <p className="text-body-sm text-slate-600">
+              Tell buyers who you are and how to reach you. You can list as an agent, a private owner or a developer.
+            </p>
+            <Link href="/account/onboarding" className={buttonClasses({ variant: "quiet", className: "self-start" })}>
+              Set up a listing profile
+            </Link>
+          </section>
+        )}
+        <EmptyState
+          icon={<Heart />}
+          title="Saved homes will appear here"
+          description="Tap the heart on any listing to keep it on your shortlist."
+          action={
+            <Link href="/" className={buttonClasses({ variant: "secondary" })}>
+              Explore properties
+            </Link>
+          }
+        />
+      </div>
+    </>
+  );
+}
+
+function OverviewSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-busy="true">
+      <span className="sr-only">Loading your account</span>
+      <Skeleton className="h-10 w-80 max-w-full" />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Skeleton className="h-48" />
+        <Skeleton className="h-48" />
+      </div>
+    </div>
+  );
+}
+
+export default function AccountOverviewPage({ searchParams }: { searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<OverviewSkeleton />}>
+      <Overview searchParams={searchParams} />
+    </Suspense>
+  );
+}

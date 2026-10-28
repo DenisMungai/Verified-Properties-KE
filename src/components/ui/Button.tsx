@@ -2,22 +2,26 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 import { Spinner } from "./Spinner";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost" | "danger";
 export type ButtonSize = "md" | "lg";
 
 const base =
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-5 text-button transition-colors " +
-  "disabled:cursor-not-allowed disabled:opacity-100 aria-disabled:cursor-not-allowed";
+  "disabled:cursor-not-allowed aria-disabled:cursor-not-allowed";
 
+/** Design: Button - Primary / Secondary / Quiet. */
 const variants: Record<ButtonVariant, string> = {
   primary:
     "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-700 " +
     "disabled:bg-surface-muted disabled:text-slate-600",
   secondary:
-    "border border-line-strong bg-white text-navy-950 hover:border-navy-700 hover:bg-mint-50 active:bg-mint-100 " +
+    "border border-line-strong bg-white text-ink hover:border-ink hover:bg-canvas active:bg-mint-50 " +
     "disabled:border-line disabled:bg-surface-muted disabled:text-slate-600",
+  quiet:
+    "bg-mint-50 text-emerald-700 hover:bg-mint-100 active:bg-mint-100 " +
+    "disabled:bg-surface-muted disabled:text-slate-600",
   ghost:
-    "text-navy-800 hover:bg-mint-50 active:bg-mint-100 disabled:text-slate-600 disabled:hover:bg-transparent",
+    "text-emerald-700 hover:bg-mint-50 active:bg-mint-100 disabled:text-slate-600 disabled:hover:bg-transparent",
   danger:
     "bg-danger text-white hover:bg-[#912018] active:bg-[#7a1b14] " +
     "disabled:bg-surface-muted disabled:text-slate-600",

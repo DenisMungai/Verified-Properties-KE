@@ -40,10 +40,24 @@ In order of precedence:
 2. `docs/implementation-plan-v2.md` — *VerifiedPropertiesKE Implementation Plan v2.0* (scope,
    business rules, phases, exit criteria, launch checklist).
 3. The approved prompt file in `prompts/` for the slice being built.
-4. `../PropertyHub_Design_System_v1.md` — design tokens and component specs. Markdown tokens win
-   over the design boards in `../propertyhub/Design 1|2`.
-5. `../PropertyHub_Application_Logic_Integrations_v1.md` — supporting logic notes, where they do
+4. **`design/VerifiedPropertiesKE-Full-UI-Design-System/`** — the UI design: the design-system
+   sheet (colour tokens, Poppins, 90% CSS root, 8pt rhythm, 12px control radius, 1280px content),
+   components, public pages (desktop + 390px mobile) and lister/admin dashboards. It replaces the
+   older PropertyHub design markdown and boards for anything visual. Build the intended design,
+   not mock defects (overlapping text, low-contrast text), and keep plan wording rules (the badge
+   says "Profile verified").
+5. `../PropertyHub_Design_System_v1.md` — component behaviour notes only where the design folder is
+   silent (states, accessibility). Its colour values are superseded.
+6. `../PropertyHub_Application_Logic_Integrations_v1.md` — supporting logic notes, where they do
    not conflict with v2.0.
+
+Design rules that are easy to break:
+
+- `html { font-size: 90% }`: rem sizes render at 0.9×. Touch targets are px (`h-control` 44px,
+  `h-control-lg` 48px) and must stay ≥44px.
+- Colours come from `tailwind.config.ts` tokens: Forest `emerald-600`, Deep green `emerald-700`,
+  Soft green `mint-50`, Charcoal `ink`, Muted `slate-600`, Border `line`. Form-control borders use
+  `line-strong` (3:1). Warning text uses `warning-text`, never `warning`. No navy.
 
 Reference implementation (read-only): `../propertyhub-phase1-final/propertyhub` is a tested v1.1
 build. Consult it and adapt proven pieces, but do not bulk-copy it and never copy its `.env`.
@@ -205,18 +219,30 @@ After implementation, run from the project root and report the exact results:
 
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run lint` — ESLint
-- `npm test` — Vitest (integration tests need `TEST_DATABASE_URL` pointing at a Neon test branch)
+- `npm test` — Vitest unit tests (integration tests skip unless `TEST_DATABASE_URL` is exported)
+- `npm run test:integration` — `*.integration.test.ts` against the Neon test branch, env loaded
+  from `.env` / `.env.local`
 - `npm run build` — when routes, config or server modules changed
 
 Database:
 
 - `npm run db:generate` — create a migration from `src/db/schema.ts`
-- `npm run db:migrate` — apply migrations (uses `DATABASE_URL_UNPOOLED`)
-- `npm run db:seed` — seed SAMPLE-labelled dev data (never production)
+- `npm run db:migrate` — apply migrations (uses `DATABASE_URL_UNPOOLED`, the direct host)
+- `npm run admin:create -- email [--role billing_admin]` — operator-only; needs
+  `ADMIN_CREATE_CONFIRM=yes`
+- `npm run db:seed` — seed SAMPLE-labelled dev data (never production; arrives in S11)
 
 Development:
 
-- `npm run dev` — start the dev server; watch its terminal for payment and job logs
+- `npm run dev` — start the dev server; watch its terminal for dev emails (verification and reset
+  links), payment and job logs. Only one `next dev` can run per project folder.
+
+Env files: `.env` and `.env.local` are both loaded (`.env.local` wins). Both are gitignored.
+
+Auth rules: every sign-in, sign-up, reset and account change goes through a rate-limited Server
+Action calling `getAuth().api.*`. The `/api/auth` route exports GET only (email-link callbacks).
+Read the session only through `src/lib/session.ts` (`getCurrentUser`, `requireUser`,
+`requireRole`) inside `<Suspense>`.
 
 Do not claim a check passed without running it. Never run destructive tests or real payments
 against production outside the go-live check.

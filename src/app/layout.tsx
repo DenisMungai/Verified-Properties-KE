@@ -4,6 +4,8 @@ import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/600.css";
 import "@fontsource/poppins/700.css";
 import "./globals.css";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -12,20 +14,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B1F3A",
+  themeColor: "#087443",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en-KE">
-      <body>
+      <body className="flex min-h-dvh flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-button focus:text-navy-950 focus:shadow-popover"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-button focus:text-ink focus:shadow-popover"
         >
           Skip to content
         </a>
-        <main id="main">{children}</main>
+        <SiteHeader />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <SiteFooter />
       </body>
     </html>
   );
