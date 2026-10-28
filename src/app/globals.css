@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design System v1.0 §2.2. Tailwind utilities map to the same values (tailwind.config.ts). */
+:root {
+  color-scheme: light;
+  --ph-navy-950: #0b1f3a;
+  --ph-navy-900: #102746;
+  --ph-navy-800: #163b63;
+  --ph-navy-700: #24517a;
+  --ph-emerald-700: #087443;
+  --ph-emerald-600: #14833b;
+  --ph-emerald-500: #1c9950;
+  --ph-mint-50: #f1f8f3;
+  --ph-mint-100: #e4f2e8;
+  --ph-canvas: #f7f7f3;
+  --ph-white: #ffffff;
+  --ph-ink-950: #171b22;
+  --ph-slate-700: #475569;
+  --ph-slate-600: #687280;
+  --ph-slate-500: #87919e;
+  --ph-line: #dce4e2;
+  --ph-line-strong: #c7d2d0;
+  --ph-surface-muted: #eef2f0;
+  --ph-success: #087443;
+  --ph-warning: #a96508;
+  --ph-danger: #b42318;
+  --ph-info: #175cd3;
+  --ph-sand-500: #d7b982;
+
+  --ph-font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --ph-shadow-card: 0 8px 24px rgb(11 31 58 / 6%);
+  --ph-shadow-popover: 0 16px 40px rgb(11 31 58 / 14%);
+  --ph-shadow-focus: 0 0 0 3px rgb(20 131 59 / 22%);
+
+  --ph-container: 80rem;
+  --ph-header-height: 4.5rem;
+  --ph-control-height: 2.75rem;
+  --ph-control-height-lg: 3rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-body text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-navy-950;
+  }
+
+  /* Visible focus for keyboard users on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--ph-emerald-600);
+    outline-offset: 2px;
+    box-shadow: var(--ph-shadow-focus);
+  }
+
+  ::placeholder {
+    color: var(--ph-slate-500);
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Prices, areas and comparison figures. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
