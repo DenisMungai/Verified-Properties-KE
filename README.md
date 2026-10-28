@@ -45,7 +45,8 @@ ADMIN_CREATE_CONFIRM=yes npm run admin:create -- you@example.com --role billing_
 
 ### Database (Neon)
 
-1. Create a Neon project, then two branches: `dev` and `test`.
+1. Create a Neon project in `aws-eu-central-1` (Frankfurt), then two branches from `production`:
+   `dev` and `test`. The project in use is "Verified Properties KE" (`falling-sky-58396938`).
 2. In `.env.local` (or `.env`), from the `dev` branch:
    - `DATABASE_URL`: the **pooled** connection string (host contains `-pooler`), used by the app.
    - `DATABASE_URL_UNPOOLED`: the **direct** connection string (no `-pooler`), used by migrations.
@@ -53,9 +54,11 @@ ADMIN_CREATE_CONFIRM=yes npm run admin:create -- you@example.com --role billing_
 4. For integration tests: set `TEST_DATABASE_URL` to the `test` branch, migrate that branch (run
    `npm run db:migrate` with `DATABASE_URL_UNPOOLED` pointing at it), then
    `npm run test:integration`.
-5. **Region:** put the Neon project in the region closest to where the app runs (Vercel `fra1` with
-   Neon `aws-eu-central-1` is the nearest pair to Kenya). Every query is a network round trip, so a
-   distant region makes each page several seconds slower.
+5. **Region:** Neon `aws-eu-central-1` pairs with Vercel `fra1`, which `vercel.json` pins for the
+   app's functions. Every query is a network round trip, so keep the two together: from Kenya, a
+   Singapore database took about 1.4s per query against about 0.2s for Frankfurt.
+6. **Production:** when deploying, set Vercel's `DATABASE_URL` to the `production` branch's
+   **pooled** string and run `npm run db:migrate` against its direct string.
 
 `drizzle/0000_extensions.sql` enables `pg_trgm`. `0001_core_schema.sql` creates the core tables
 and the append-only triggers on the moderation and verification audit logs. After changing
