@@ -11,6 +11,7 @@ export const MAIN_NAV = [{ href: "/", label: "Explore" }] as const;
 export function accountLinks(user: HeaderUser) {
   return [
     { href: "/account", label: "Overview" },
+    ...(user.isLister ? [{ href: "/account/listings", label: "My listings" }] : []),
     { href: "/account/saved", label: "Saved properties" },
     ...(user.isLister ? [{ href: "/account/profile", label: "Listing profile" }] : []),
     { href: "/account/settings", label: "Settings" },

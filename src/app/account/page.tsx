@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Heart, Phone, UserRound } from "lucide-react";
+import { Heart, Phone, Plus, UserRound } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
 import { FormAlert } from "@/components/forms/FormAlert";
+import { planUsageSummary } from "@/components/listings/PlanUsagePanel";
 import { Badge, EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
+import { getListingPlanUsage, type ListingPlanUsage } from "@/db/queries/billing";
 import { getListerProfile } from "@/db/queries/lister-profiles";
+import { remainingSlots } from "@/lib/billing/entitlements";
 import { firstName } from "@/lib/email/templates";
 import { greetingFor } from "@/lib/greeting";
 import { displayKenyanPhone } from "@/lib/kenya";
@@ -16,24 +19,62 @@ import type { SearchParams } from "@/lib/search-params";
 
 export const metadata: Metadata = { title: "Your account" };
 
+/** Design "01 — Lister Dashboard" stat card. Other cards (enquiries, views) arrive with their data. */
+function ActiveListingsCard({ usage }: { usage: ListingPlanUsage }) {
+  const { headline, detail } = planUsageSummary(usage);
+  const hasPlan = usage.limit !== null;
+  return (
+    <section aria-labelledby="active-listings-heading" className="flex flex-col gap-2 rounded-xl border border-line bg-white p-6">
+      <h2 id="active-listings-heading" className="text-body-sm font-medium text-slate-700">
+        Active listings
+      </h2>
+      <p className="text-h1 tabular">
+        {hasPlan ? `${usage.activeListingCount} / ${usage.limit}` : usage.activeListingCount}
+      </p>
+      <p className="text-body-sm text-emerald-700">
+        {hasPlan && usage.phase === "active"
+          ? `${remainingSlots(usage.limit ?? 0, usage.activeListingCount)} slots available`
+          : detail || headline}
+      </p>
+      <Link href="/account/listings" className="mt-2 self-start text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink">
+        View my listings
+      </Link>
+    </section>
+  );
+}
+
 async function Overview({ searchParams }: { searchParams: SearchParams }) {
   const [user, params] = await Promise.all([requireUser(), searchParams]);
   const profile = await getListerProfile(getDb(), user.id);
   const isLister = hasAnyRole(user.roles, LISTER_ROLES);
+  const usage = isLister && profile ? await getListingPlanUsage(getDb(), user.id) : null;
 
   return (
     <>
       <PageHeading
         title={`${greetingFor(new Date())}, ${firstName(user.name)}`}
         description={
-          isLister ? "Your listing profile and account at a glance." : "Your saved homes and account at a glance."
+          isLister ? "Your listings, profile and account at a glance." : "Your saved homes and account at a glance."
+        }
+        action={
+          usage ? (
+            <Link href="/account/listings/new" className={buttonClasses({ size: "lg", className: "self-start" })}>
+              <Plus aria-hidden="true" className="size-4" />
+              Add a property
+            </Link>
+          ) : undefined
         }
       />
       {params.welcome === "lister" && (
         <FormAlert
           className="mb-6"
-          state={{ message: "Your listing profile is ready. Listing plans and property listings arrive next." }}
+          state={{ message: "Your listing profile is ready. Add your first property whenever you like." }}
         />
+      )}
+      {usage && (
+        <div className="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <ActiveListingsCard usage={usage} />
+        </div>
       )}
       <div className="grid gap-6 xl:grid-cols-2">
         {profile ? (

@@ -4,6 +4,7 @@ import type { DbExecutor } from "@/db/executor";
 import { listerProfiles, plans, properties, subscriptions, users } from "@/db/schema";
 import { ACTIVE_LISTING_STATUSES, type PlanKind } from "@/lib/billing/constants";
 import { canPublish, type PublishEntitlement } from "@/lib/billing/entitlements";
+import { subscriptionPhase, type SubscriptionPhase } from "@/lib/billing/periods";
 
 /**
  * Billing reads used by later slices (publish checks in S3, billing pages in S6). Entitlement is
@@ -85,6 +86,33 @@ export async function getPublishEntitlement(
     activeListingCount,
     now,
   });
+}
+
+export interface ListingPlanUsage {
+  /** Null when the pool has no live listing subscription. */
+  limit: number | null;
+  phase: SubscriptionPhase | null;
+  activeListingCount: number;
+  pool: ListingPool;
+}
+
+/** "x of y active listings used" for the lister dashboard and the create-listing panel. */
+export async function getListingPlanUsage(
+  db: DbExecutor,
+  userId: string,
+  now: Date = new Date(),
+): Promise<ListingPlanUsage> {
+  const pool = await getListingPool(db, userId);
+  const [plan, activeListingCount] = await Promise.all([
+    getListingSubscription(db, pool),
+    countActiveListings(db, pool),
+  ]);
+  return {
+    limit: plan?.listingLimit ?? null,
+    phase: plan ? subscriptionPhase(plan.subscription, now) : null,
+    activeListingCount,
+    pool,
+  };
 }
 
 /** The verified badge. The rule lives only in the database (`lister_verified_now`). */

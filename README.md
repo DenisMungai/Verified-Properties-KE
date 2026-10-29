@@ -97,17 +97,20 @@ Real prices are added later as a new plan version, never by editing these rows.
 ```text
 src/
   app/                  (auth) sign-in, sign-up, check-email, forgot/reset-password;
-                        account (overview, onboarding, profile, saved, settings); admin;
+                        account (overview, onboarding, profile, saved, settings,
+                        listings: new → [id]/basics → details → preview); admin;
                         api/auth (GET-only Better Auth callbacks); styleguide
   proxy.ts              optimistic session-cookie redirect for /account and /admin
   components/ui/        Button (primary/secondary/quiet/ghost/danger), IconButton, Field, Input,
                         Select, Textarea, Badge (VerifiedBadge), Chip, SegmentedControl, ...
   components/layout/    SiteHeader, AccountMenu, MobileMenu, SiteFooter, Logo, PageContainer
   components/auth|account|forms/   form components (useActionState + Server Actions)
+  components/listings/  stepper, Basics/Details forms, plan usage panel, summary, status actions
   db/                   schema.ts, index.ts (Neon HTTP), tx.ts (WebSocket transactions), queries/
   lib/                  auth-config (Better Auth factory), auth, session, roles, rate-limit,
                         email/, validation/, safe-redirect, env, format, kenya, greeting
   lib/billing/          constants, periods (30-day period, 3-day grace), entitlements (canPublish)
+  lib/listings/         workflow (lister transitions, material edits, status labels), slug
 scripts/                create-admin.ts, seed-plans.ts (operator only)
 drizzle/                SQL migrations
 docs/                   implementation plan v2.0
@@ -140,6 +143,12 @@ design/                 UI design system and screens
   shares its limit; everyone else uses their own plan. Published and pending-review listings use
   a slot. Publishing or un-pausing needs a paid-up plan; during grace, live listings stay up but
   nothing new goes live (`getPublishEntitlement()` in `src/db/queries/billing.ts`).
+- **Listing management** (plan §9): drafts save step by step and may be incomplete; Submit
+  checks the stored listing (`parseListing`), then the owner's plan under a per-pool advisory
+  lock. Verified owners publish at once; everyone else goes to `pending_review`. Only the owner or
+  an agency admin of the listing's agency can manage it (`manageableBy`). Status, owner, agency
+  and slug are never read from forms. A material edit (title, description, category, type,
+  location) by an unverified owner sends a published listing back to review.
 - **Featured is computed**, so there is no `featured` column for a client to set.
 - **Listing status `paused`** means the plan lapsed past grace or the listing is over the plan
   limit. Only `published` is public.

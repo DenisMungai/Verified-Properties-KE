@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
@@ -40,6 +41,9 @@ export async function saveListerProfileAction(_prev: ActionState, formData: Form
     return { formError: GENERIC_FAILURE, values };
   }
 
+  // The lister role may have just been granted: refresh the account layout so its menu shows
+  // "My listings" without a full reload.
+  revalidatePath("/account", "layout");
   if (formData.get("redirectTo") === "overview") redirect("/account?welcome=lister");
   return { ok: true, message: "Listing profile saved.", values };
 }
