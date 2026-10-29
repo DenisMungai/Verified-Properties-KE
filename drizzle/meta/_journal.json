@@ -15,6 +15,13 @@
       "when": 1793171755813,
       "tag": "0001_core_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793257569435,
+      "tag": "0002_billing",
+      "breakpoints": true
     }
   ]
 }

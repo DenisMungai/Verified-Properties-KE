@@ -4,10 +4,13 @@ import {
   boolean,
   check,
   doublePrecision,
+  foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
+  pgSequence,
   pgTable,
   primaryKey,
   text,
@@ -18,12 +21,14 @@ import {
 } from "drizzle-orm/pg-core";
 
 /*
- * Core schema for VerifiedPropertiesKE (plan v2.0 §6). Billing tables arrive in S2.
+ * Schema for VerifiedPropertiesKE (plan v2.0 §6): core tables (0001) and billing (0002).
  *
  * Rules encoded here:
  *  - Money is whole KES in integer columns.
- *  - The verified badge is never stored: it is derived (S2) from verification_requests plus
- *    active subscriptions. There is no per-profile or per-listing verified/featured flag.
+ *  - The verified badge is never stored: the `verified_listers_now` view and the
+ *    `lister_verified_now()` function (hand-written SQL in 0002) derive it from
+ *    verification_requests plus active subscriptions. There is no per-profile or per-listing
+ *    verified/featured flag.
  *  - Exact coordinates live in `exact_*` columns that public queries must never select.
  */
 
@@ -558,5 +563,257 @@ export const listingReports = pgTable(
     uniqueIndex("listing_reports_one_open_per_reporter")
       .on(t.propertyId, t.reporterUserId)
       .where(sql`${t.status} in ('open', 'reviewing')`),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Billing (plan v2.0 §4, §6)                                                 */
+/* -------------------------------------------------------------------------- */
+
+export const planKind = pgEnum("plan_kind", ["listing", "verification"]);
+
+export const subscriptionStatus = pgEnum("subscription_status", [
+  "pending",
+  "active",
+  "past_due",
+  "paused",
+  "cancelled",
+  "expired",
+]);
+
+export const invoiceStatus = pgEnum("invoice_status", ["open", "paid", "void", "refunded"]);
+
+/** `flagged`: amount mismatch or other anomaly; never activates anything. */
+export const paymentStatus = pgEnum("payment_status", [
+  "pending",
+  "confirmed",
+  "failed",
+  "cancelled",
+  "flagged",
+]);
+
+export const paymentMethod = pgEnum("payment_method", ["stk_push", "c2b_paybill", "manual"]);
+
+/**
+ * Feeds invoice numbers: VPK + 7 digits fits Daraja's 12-character account reference. Capped at
+ * 7 digits so it errors when exhausted instead of lpad() silently truncating into duplicates.
+ */
+export const invoiceNumberSeq = pgSequence("invoice_number_seq", { maxValue: 9_999_999 });
+
+/** Statuses that hold a subscription's place; at most one such row per owner and kind. */
+const LIVE_SUBSCRIPTION_STATUSES = sql.raw(`('pending', 'active', 'past_due', 'paused')`);
+
+/**
+ * Versioned plans. Terms (code, version, kind, price, limit, agency flag) are immutable by
+ * trigger; a price change is a new version. Only `name` and `is_active` may be updated.
+ */
+export const plans = pgTable(
+  "plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull(),
+    version: integer("version").notNull().default(1),
+    kind: planKind("kind").notNull(),
+    name: text("name").notNull(),
+    /** Whole shillings per 30-day period. */
+    priceKes: integer("price_kes").notNull(),
+    /** Active listings allowed; null for verification plans. */
+    listingLimit: integer("listing_limit"),
+    /** Bought by an agency; the limit is shared across its members. */
+    isAgencyPlan: boolean("is_agency_plan").notNull().default(false),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    unique("plans_code_version_unique").on(t.code, t.version),
+    // Target of the subscriptions (plan_id, kind) foreign key.
+    unique("plans_id_kind_unique").on(t.id, t.kind),
+    uniqueIndex("plans_one_active_version").on(t.code).where(sql`${t.isActive}`),
+    check("plans_price_nonneg", sql`${t.priceKes} >= 0`),
+    check("plans_limit_only_for_listing", sql`(${t.kind} = 'listing') = (${t.listingLimit} is not null)`),
+    check("plans_limit_positive", sql`${t.listingLimit} is null or ${t.listingLimit} > 0`),
+    check("plans_agency_is_listing", sql`not ${t.isAgencyPlan} or ${t.kind} = 'listing'`),
+  ],
+);
+
+/**
+ * One row per owner and kind while live; renewals extend the period and add an invoice.
+ * Owned by a lister (user) or, for agency listing plans, by an agency.
+ */
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerUserId: text("owner_user_id").references(() => users.id),
+    ownerAgencyId: uuid("owner_agency_id").references(() => agencies.id),
+    /** Mirrors the plan's kind; kept in step by the composite foreign key. */
+    kind: planKind("kind").notNull(),
+    planId: uuid("plan_id").notNull(),
+    status: subscriptionStatus("status").notNull().default("pending"),
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    graceEndsAt: timestamp("grace_ends_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      name: "subscriptions_plan_kind_fk",
+      columns: [t.planId, t.kind],
+      foreignColumns: [plans.id, plans.kind],
+    }),
+    check("subscriptions_one_owner", sql`(${t.ownerUserId} is null) <> (${t.ownerAgencyId} is null)`),
+    check(
+      "subscriptions_agency_owns_listing_only",
+      sql`${t.kind} = 'listing' or ${t.ownerAgencyId} is null`,
+    ),
+    check(
+      "subscriptions_period_valid",
+      sql`(${t.currentPeriodStart} is null and ${t.currentPeriodEnd} is null and ${t.graceEndsAt} is null)
+        or (${t.currentPeriodStart} is not null and ${t.currentPeriodEnd} > ${t.currentPeriodStart}
+          and ${t.graceEndsAt} >= ${t.currentPeriodEnd})`,
+    ),
+    check(
+      "subscriptions_paid_status_has_period",
+      sql`${t.status} not in ('active', 'past_due', 'paused') or ${t.currentPeriodEnd} is not null`,
+    ),
+    uniqueIndex("subscriptions_one_live_per_user")
+      .on(t.ownerUserId, t.kind)
+      .where(sql`${t.ownerUserId} is not null and ${t.status} in ${LIVE_SUBSCRIPTION_STATUSES}`),
+    uniqueIndex("subscriptions_one_live_per_agency")
+      .on(t.ownerAgencyId, t.kind)
+      .where(sql`${t.ownerAgencyId} is not null and ${t.status} in ${LIVE_SUBSCRIPTION_STATUSES}`),
+    index("subscriptions_status_grace_idx").on(t.status, t.graceEndsAt),
+  ],
+);
+
+/** Amount and plan are copied from `plans` at creation and are immutable by trigger. */
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceNumber: text("invoice_number")
+      .notNull()
+      .unique()
+      .default(sql`'VPK' || lpad(nextval('invoice_number_seq')::text, 7, '0')`),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => subscriptions.id),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id),
+    amountKes: integer("amount_kes").notNull(),
+    status: invoiceStatus("status").notNull().default("open"),
+    /** The 30 days this invoice paid for; set when the payment is confirmed. */
+    periodStart: timestamp("period_start", { withTimezone: true }),
+    periodEnd: timestamp("period_end", { withTimezone: true }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    check("invoices_amount_positive", sql`${t.amountKes} > 0`),
+    check("invoices_number_format", sql`${t.invoiceNumber} ~ '^VPK[0-9]{7,9}$'`),
+    check(
+      "invoices_period_valid",
+      sql`(${t.periodStart} is null and ${t.periodEnd} is null)
+        or (${t.periodStart} is not null and ${t.periodEnd} > ${t.periodStart})`,
+    ),
+    check(
+      "invoices_paid_has_period",
+      sql`${t.status} <> 'paid' or (${t.paidAt} is not null and ${t.periodStart} is not null)`,
+    ),
+    index("invoices_subscription_idx").on(t.subscriptionId, t.createdAt.desc()),
+  ],
+);
+
+/**
+ * One row per STK Push attempt or Paybill payment. CheckoutRequestID and the M-Pesa receipt are
+ * unique, so a repeated callback cannot create or confirm a second payment.
+ */
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id),
+    method: paymentMethod("method").notNull(),
+    /** E.164; mask before logging. */
+    phoneE164: text("phone_e164"),
+    checkoutRequestId: text("checkout_request_id").unique(),
+    merchantRequestId: text("merchant_request_id"),
+    mpesaReceipt: text("mpesa_receipt").unique(),
+    /** Amount requested, copied from the invoice. */
+    amountKes: integer("amount_kes").notNull(),
+    /** Amount Safaricom reports as paid. */
+    paidAmountKes: integer("paid_amount_kes"),
+    status: paymentStatus("status").notNull().default("pending"),
+    resultCode: integer("result_code"),
+    resultDesc: text("result_desc"),
+    flagReason: text("flag_reason"),
+    rawCallback: jsonb("raw_callback"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    check("payments_amount_nonneg", sql`${t.amountKes} >= 0`),
+    check("payments_paid_amount_nonneg", sql`${t.paidAmountKes} is null or ${t.paidAmountKes} >= 0`),
+    check(
+      "payments_stk_has_checkout_id",
+      sql`${t.method} <> 'stk_push' or ${t.checkoutRequestId} is not null`,
+    ),
+    check(
+      "payments_confirmed_has_receipt",
+      sql`${t.status} <> 'confirmed' or (${t.mpesaReceipt} is not null and ${t.confirmedAt} is not null)`,
+    ),
+    check("payments_flagged_has_reason", sql`${t.status} <> 'flagged' or ${t.flagReason} is not null`),
+    index("payments_invoice_idx").on(t.invoiceId),
+    index("payments_phone_idx").on(t.phoneE164),
+  ],
+);
+
+/**
+ * Append-only (enforced by trigger): every callback, query result and status change, including
+ * callbacks that match no payment, for reconciliation and disputes.
+ */
+export const paymentEvents = pgTable(
+  "payment_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    paymentId: uuid("payment_id").references(() => payments.id),
+    invoiceId: uuid("invoice_id").references(() => invoices.id),
+    /** stk_callback, stk_query, c2b_validation, c2b_confirmation, status_change, reconciliation */
+    eventType: text("event_type").notNull(),
+    sourceIp: text("source_ip"),
+    payload: jsonb("payload").notNull(),
+    createdAt,
+  },
+  (t) => [
+    index("payment_events_payment_idx").on(t.paymentId, t.createdAt),
+    index("payment_events_invoice_idx").on(t.invoiceId, t.createdAt),
+  ],
+);
+
+/** Append-only (enforced by trigger): refunds, credits, manual activations; who, when and why. */
+export const billingAuditLog = pgTable(
+  "billing_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    subscriptionId: uuid("subscription_id").references(() => subscriptions.id),
+    invoiceId: uuid("invoice_id").references(() => invoices.id),
+    paymentId: uuid("payment_id").references(() => payments.id),
+    amountKes: integer("amount_kes"),
+    reason: text("reason").notNull(),
+    createdAt,
+  },
+  (t) => [
+    check("billing_audit_log_amount_nonneg", sql`${t.amountKes} is null or ${t.amountKes} >= 0`),
+    check("billing_audit_log_reason_present", sql`char_length(trim(${t.reason})) > 0`),
+    index("billing_audit_log_created_idx").on(t.createdAt.desc()),
   ],
 );

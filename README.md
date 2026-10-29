@@ -61,9 +61,23 @@ ADMIN_CREATE_CONFIRM=yes npm run admin:create -- you@example.com --role billing_
    **pooled** string and run `npm run db:migrate` against its direct string.
 
 `drizzle/0000_extensions.sql` enables `pg_trgm`. `0001_core_schema.sql` creates the core tables
-and the append-only triggers on the moderation and verification audit logs. After changing
-`src/db/schema.ts`, run `npm run db:generate` and commit the new migration. CI fails if schema and
-migrations disagree.
+and the append-only triggers on the moderation and verification audit logs. `0002_billing.sql`
+adds the billing tables, then hand-written SQL that drizzle-kit does not track: append-only and
+immutable-terms triggers, the `verified_listers_now` view and `lister_verified_now()`. After
+changing `src/db/schema.ts`, run `npm run db:generate` and commit the new migration. CI fails if
+schema and migrations disagree.
+
+### Sandbox plans
+
+After migrating, seed the placeholder plans (Starter 3 / Pro 20 / Agency 100 listings, plus
+Verification, at KES 1–3 for the Daraja sandbox). Idempotent; operator only:
+
+```bash
+PLANS_SEED_CONFIRM=yes npm run plans:seed
+# PowerShell: $env:PLANS_SEED_CONFIRM="yes"; npm run plans:seed
+```
+
+Real prices are added later as a new plan version, never by editing these rows.
 
 ## Scripts
 
@@ -75,6 +89,7 @@ migrations disagree.
 | `npm test` | Vitest unit tests; `*.integration.test.ts` skip unless `TEST_DATABASE_URL` is exported |
 | `npm run test:integration` | Integration tests against the Neon test branch (env from `.env` / `.env.local`) |
 | `npm run admin:create` | Operator-only role grant (see First admin) |
+| `npm run plans:seed` | Operator-only sandbox plan seed (see Sandbox plans) |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle Kit |
 
 ## Structure
@@ -92,7 +107,8 @@ src/
   db/                   schema.ts, index.ts (Neon HTTP), tx.ts (WebSocket transactions), queries/
   lib/                  auth-config (Better Auth factory), auth, session, roles, rate-limit,
                         email/, validation/, safe-redirect, env, format, kenya, greeting
-scripts/                create-admin.ts (operator only)
+  lib/billing/          constants, periods (30-day period, 3-day grace), entitlements (canPublish)
+scripts/                create-admin.ts, seed-plans.ts (operator only)
 drizzle/                SQL migrations
 docs/                   implementation plan v2.0
 prompts/                one approved prompt per slice
@@ -111,9 +127,19 @@ design/                 UI design system and screens
   sign-up, `agent`/`owner` from the listing profile) or the operator script.
 - **Money** is whole shillings: `properties.price_kes` is `bigint`, capped at
   `Number.MAX_SAFE_INTEGER`. `formatKes` rejects fractions.
-- **The verified badge is never stored.** No profile or listing column holds it. It is derived
-  (S2) from an approved, unexpired review plus active verification and listing subscriptions.
-  `VerifiedBadge` always reads "Profile verified".
+- **The verified badge is never stored.** No profile or listing column holds it. The
+  `verified_listers_now` view (and `lister_verified_now()`, read by `isListerVerified()`) derives
+  it from an approved, unexpired review plus a verification subscription and a listing plan that
+  are each paid up or within 3 days of grace. Search ranking joins the view; nothing in
+  TypeScript re-implements the rule. `VerifiedBadge` always reads "Profile verified".
+- **Billing data model** (plan §4, §6): versioned `plans` whose price and limit are immutable by
+  trigger; one live `subscription` per owner and kind; `invoices` numbered `VPK0000001` (fits
+  Daraja's 12-character account reference) with immutable amounts; `payments` with unique
+  CheckoutRequestID and M-Pesa receipt; append-only `payment_events` and `billing_audit_log`.
+- **Listing pool:** a lister in an agency (`lister_profiles.agency_id`) uses the agency's plan and
+  shares its limit; everyone else uses their own plan. Published and pending-review listings use
+  a slot. Publishing or un-pausing needs a paid-up plan; during grace, live listings stay up but
+  nothing new goes live (`getPublishEntitlement()` in `src/db/queries/billing.ts`).
 - **Featured is computed**, so there is no `featured` column for a client to set.
 - **Listing status `paused`** means the plan lapsed past grace or the listing is over the plan
   limit. Only `published` is public.
