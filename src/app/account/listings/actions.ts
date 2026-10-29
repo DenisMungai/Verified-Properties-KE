@@ -66,6 +66,9 @@ function logFailure(action: string, error: unknown): void {
 }
 
 function savedMessage(result: Extract<ListingResult, { ok: true }>): string {
+  if (result.returnedToReview && result.status === "draft") {
+    return "Saved as a draft. You changed key details, so submit it again when you're ready.";
+  }
   if (result.returnedToReview) return "Saved. You changed key details, so the listing is back in review.";
   return result.status === "draft" ? "Draft saved." : "Changes saved.";
 }

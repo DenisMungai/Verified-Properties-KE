@@ -268,6 +268,23 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
     expect(row).toMatchObject({ status: "published", pausedAt: null, pauseReason: null });
   });
 
+  it("turns a paused listing into a draft on a material edit by an unverified owner", async () => {
+    const id = await readyDraft("u_solo");
+    const pause = `update properties set status = 'paused', published_at = now(), paused_at = now(),
+      pause_reason = 'plan_lapsed' where id = $1`;
+    await client.query(pause, [id]);
+    expect(await updateListing(db, "u_solo", id, { priceKes: 90_000 })).toMatchObject({ status: "paused" });
+
+    expect(await updateListing(db, "u_solo", id, { title: "Bright three bedroom flat in Kilimani" })).toEqual({
+      ok: true,
+      status: "draft",
+      returnedToReview: true,
+    });
+    const row = await getManageableListing(db, "u_solo", id);
+    expect(row).toMatchObject({ status: "draft", pausedAt: null, pauseReason: null });
+    expect(await unpauseListing(db, "u_solo", id)).toEqual({ ok: false, reason: "not_allowed" });
+  });
+
   it("applies the lister transition rules", async () => {
     const id = await readyDraft("u_solo");
     await client.query(`update properties set status = 'published', published_at = now(),

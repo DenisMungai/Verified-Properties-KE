@@ -187,8 +187,12 @@ Please check these when approving. Items 3, 5, 6 and 9 are product rules I've fi
    - A verified owner's listing stays published.
    - Price, facts and amenities are not material.
    - Editing is allowed in draft, rejected, pending_review, published and paused.
-9. **Paused listings** stay editable and keep their status when edited. Un-pausing goes straight
-   back to `published` once entitled.
+9. **Paused listings** stay editable and keep their status on non-material edits. Un-pausing goes
+   straight back to `published` once entitled.
+   *Amended 2026-10-29 after a security review:* a **material** edit by an **unverified** owner
+   turns a paused listing into a `draft` (clearing the pause fields), so un-pausing or the S9
+   renewal restore can never publish unreviewed content. The lister resubmits, which checks
+   entitlement and goes to review. A verified owner's paused listing stays paused.
 10. **Rate limit:** at most 20 new drafts per user per hour (`listingCreatePerUser`). Other listing
     actions are already bounded by session plus ownership. Production without Upstash refuses to
     run, as in S1.

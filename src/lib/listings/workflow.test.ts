@@ -91,13 +91,15 @@ describe("material edits", () => {
     expect(isMaterialEdit(base, { ...base })).toBe(false);
   });
 
-  it("sends an unverified owner's published listing back to review only on material edits", () => {
+  it("sends an unverified owner's live or paused listing back through review only on material edits", () => {
     const cases: Array<[ListingStatus, boolean, boolean, ListingStatus]> = [
       ["published", true, false, "pending_review"],
       ["published", false, false, "published"],
       ["published", true, true, "published"],
       ["draft", true, false, "draft"],
-      ["paused", true, false, "paused"],
+      ["paused", true, false, "draft"],
+      ["paused", false, false, "paused"],
+      ["paused", true, true, "paused"],
       ["rejected", true, false, "rejected"],
     ];
     for (const [current, material, verified, expected] of cases) {

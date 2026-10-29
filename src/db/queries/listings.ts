@@ -199,8 +199,9 @@ export async function createDraft(db: DbExecutor, userId: string, input: BasicsI
 }
 
 /**
- * Saves one step. A material change to a published listing by an unverified owner sends it back
- * to review; it keeps its slot because pending_review counts towards the plan limit.
+ * Saves one step. A material change by an unverified owner sends a published listing back to
+ * review (it keeps its slot, as pending_review counts towards the plan limit) and turns a paused
+ * listing into a draft that must be resubmitted.
  */
 export async function updateListing(
   db: DbExecutor,
@@ -216,12 +217,15 @@ export async function updateListing(
   const next = normalizeForCategory({ ...current, ...patch });
   const material = isMaterialEdit(current, next);
   const ownerVerified =
-    material && before.status === "published" ? await isListerVerified(db, before.ownerUserId) : false;
+    material && (before.status === "published" || before.status === "paused")
+      ? await isListerVerified(db, before.ownerUserId)
+      : false;
   const status = statusAfterEdit(before.status, material, ownerVerified);
+  const leftPause = before.status === "paused" && status !== "paused";
 
   const updated = await db
     .update(p)
-    .set({ ...next, status })
+    .set({ ...next, status, ...(leftPause ? { pausedAt: null, pauseReason: null } : {}) })
     .where(and(eq(p.id, id), eq(p.status, before.status), manageableBy(userId)))
     .returning({ id: p.id });
   if (updated.length === 0) return CONFLICT;

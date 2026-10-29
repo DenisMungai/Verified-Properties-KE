@@ -94,9 +94,16 @@ export function isMaterialEdit(
   return MATERIAL_FIELDS.some((field) => (before[field] ?? null) !== (after[field] ?? null));
 }
 
-/** The status after a lister saves edits. Verified listers are not pre-reviewed (plan §16). */
+/**
+ * The status after a lister saves edits. Verified listers are not pre-reviewed (plan §16).
+ * A materially edited paused listing becomes a draft, so un-pausing or a renewal restore can never
+ * publish unreviewed content; resubmitting sends it to review.
+ */
 export function statusAfterEdit(current: ListingStatus, material: boolean, ownerVerified: boolean): ListingStatus {
-  return current === "published" && material && !ownerVerified ? "pending_review" : current;
+  if (!material || ownerVerified) return current;
+  if (current === "published") return "pending_review";
+  if (current === "paused") return "draft";
+  return current;
 }
 
 export const STATUS_LABELS: Record<ListingStatus, string> = {
