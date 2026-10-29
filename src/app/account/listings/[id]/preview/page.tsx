@@ -10,10 +10,12 @@ import { PlanUsagePanel } from "@/components/listings/PlanUsagePanel";
 import { SubmitListingForm } from "@/components/listings/SubmitListingForm";
 import { getDb } from "@/db";
 import { getPublishEntitlement, isListerVerified } from "@/db/queries/billing";
+import { listPhotos } from "@/db/queries/listing-photos";
 import { listingFieldsOf, type EditableListing } from "@/db/queries/listings";
 import { PUBLISH_BLOCK_MESSAGES, type PublishEntitlement } from "@/lib/billing/entitlements";
 import { canSubmit } from "@/lib/listings/workflow";
-import { FIELD_LABELS, parseListing, stepForField, type ListingFields } from "@/lib/validation/listing";
+import { publicImageBaseUrl } from "@/lib/storage";
+import { CHECKLIST_LABELS, parseSubmission, stepForField } from "@/lib/validation/listing";
 import { editorHeading, loadEditableListing } from "../../editor-data";
 
 export const metadata: Metadata = { title: "Preview listing" };
@@ -25,7 +27,8 @@ const PAUSE_REASONS: Record<string, string> = {
 
 const STATUS_NOTES: Partial<Record<EditableListing["status"], string>> = {
   pending_review: "An admin checks listings from unverified listers before they go live. You'll see the result here.",
-  published: "This listing is live. Changing the title, description, type or location sends it back to review unless you're verified.",
+  published:
+    "This listing is live. Changing the title, description, type or location, or adding photos, sends it back to review unless you're verified.",
   rented: "Marked as rented. It no longer appears in search.",
   sold: "Marked as sold. It no longer appears in search.",
   withdrawn: "Withdrawn. It no longer appears in search.",
@@ -45,7 +48,7 @@ function MissingChecklist({ listingId, errors }: { listingId: string; errors: Re
                 href={`/account/listings/${listingId}/${stepForField(field)}#${field}`}
                 className="font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
               >
-                {FIELD_LABELS[field as keyof ListingFields] ?? field}
+                {CHECKLIST_LABELS[field] ?? field}
               </Link>
               <span className="text-slate-700">: {message}</span>
             </span>
@@ -125,13 +128,19 @@ function SubmitPanel({
 }
 
 async function Preview({ params }: { params: Promise<{ id: string }> }) {
-  const { listing, usage } = await loadEditableListing(params, "preview");
+  const { user, listing, usage } = await loadEditableListing(params, "preview");
   const db = getDb();
-  const parsed = parseListing(listingFieldsOf(listing));
-  const [entitlement, verified] = await Promise.all([
+  const [entitlement, verified, photos] = await Promise.all([
     getPublishEntitlement(db, listing.ownerUserId),
     isListerVerified(db, listing.ownerUserId),
+    listPhotos(db, user.id, listing.id).then((rows) => rows ?? []),
   ]);
+  const parsed = parseSubmission(listingFieldsOf(listing), {
+    count: photos.length,
+    hasCover: photos.some((photo) => photo.isCover),
+  });
+  // Cover first, then the rest in the lister's order.
+  const ordered = [...photos].sort((a, b) => Number(b.isCover) - Number(a.isCover));
 
   return (
     <ListingEditorLayout
@@ -150,8 +159,11 @@ async function Preview({ params }: { params: Promise<{ id: string }> }) {
         </div>
       }
     >
-      <p className="mb-6 text-caption text-slate-600">How buyers and tenants will see your listing. Photos arrive in the next step.</p>
-      <ListingSummary listing={listing} />
+      <p className="mb-6 text-caption text-slate-600">How buyers and tenants will see your listing.</p>
+      <ListingSummary
+        listing={listing}
+        photos={ordered.map((photo) => ({ baseUrl: publicImageBaseUrl(photo.storageKey), altText: photo.altText }))}
+      />
     </ListingEditorLayout>
   );
 }

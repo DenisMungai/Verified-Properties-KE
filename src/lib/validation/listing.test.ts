@@ -9,6 +9,8 @@ import {
   parseBasicsStep,
   parseDetailsStep,
   parseListing,
+  parseSubmission,
+  photoAltSchema,
   stepForField,
   type ListingFields,
 } from "./listing";
@@ -175,6 +177,26 @@ describe("parseListing (submit)", () => {
   it("maps fields to the step that fixes them", () => {
     expect(stepForField("bedrooms")).toBe("basics");
     expect(stepForField("description")).toBe("details");
+  });
+});
+
+describe("parseSubmission (photo rule)", () => {
+  it("needs at least one photo with a cover, reported with the other problems", () => {
+    expect(parseSubmission(complete, { count: 2, hasCover: true }).success).toBe(true);
+    expect(parseSubmission(complete, { count: 0, hasCover: false })).toEqual({
+      success: false,
+      errors: { photos: "Add at least one photo." },
+    });
+    const both = parseSubmission({ ...complete, title: "Short" }, { count: 0, hasCover: false });
+    expect(both.success ? [] : Object.keys(both.errors)).toEqual(["title", "photos"]);
+    expect(stepForField("photos")).toBe("photos");
+  });
+
+  it("requires a real photo description", () => {
+    expect(photoAltSchema.safeParse("  Living room with balcony view  ").data).toBe("Living room with balcony view");
+    expect(photoAltSchema.safeParse("    ").success).toBe(false);
+    expect(photoAltSchema.safeParse("Room").success).toBe(false);
+    expect(photoAltSchema.safeParse("x".repeat(201)).success).toBe(false);
   });
 });
 

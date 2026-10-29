@@ -113,9 +113,15 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
     );
   }
 
+  /** A draft that passes every submit rule, including the S4 photo requirement. */
   async function readyDraft(userId: string): Promise<string> {
     const { id } = await createDraft(db, userId, basics);
     await updateListing(db, userId, id, details);
+    await client.query(
+      `insert into property_images (property_id, storage_key, alt_text, is_cover)
+       values ($1::uuid, 'listings/' || $1::text || '/' || gen_random_uuid(), 'Living room with balcony', true)`,
+      [id],
+    );
     return id;
   }
 
@@ -171,7 +177,7 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
     const result = await submitListing(db, "u_solo", id);
     expect(result).toMatchObject({ ok: false, reason: "invalid" });
     if (!result.ok && result.reason === "invalid") {
-      expect(Object.keys(result.errors).sort()).toEqual(["bathrooms", "description", "title"]);
+      expect(Object.keys(result.errors).sort()).toEqual(["bathrooms", "description", "photos", "title"]);
     }
   });
 
@@ -299,7 +305,7 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
   it("deletes never-submitted drafts only", async () => {
     const draft = await readyDraft("u_solo");
     expect(await deleteDraft(db, "u_stranger", draft)).toEqual({ ok: false, reason: "not_found" });
-    expect(await deleteDraft(db, "u_solo", draft)).toEqual({ ok: true, status: "draft" });
+    expect(await deleteDraft(db, "u_solo", draft)).toMatchObject({ ok: true, status: "draft", photoKeys: [expect.any(String)] });
     expect(await getManageableListing(db, "u_solo", draft)).toBeNull();
 
     await givePlan({ userId: "u_solo" });

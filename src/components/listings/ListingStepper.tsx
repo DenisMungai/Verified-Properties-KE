@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-export type ListingStepKey = "basics" | "details" | "preview";
+export type ListingStepKey = "basics" | "details" | "photos" | "preview";
 
 const STEPS: { key: ListingStepKey; label: string }[] = [
   { key: "basics", label: "Basics" },
   { key: "details", label: "Details" },
-  // S4 inserts "Photos" here, matching the design's four steps.
+  { key: "photos", label: "Photos" },
   { key: "preview", label: "Preview" },
 ];
 
@@ -16,8 +16,8 @@ const STEPS: { key: ListingStepKey; label: string }[] = [
  */
 export function ListingStepper({ listingId, current }: { listingId?: string; current: ListingStepKey }) {
   return (
-    <nav aria-label="Listing steps" className="rounded-xl border border-line bg-white px-4 py-3 sm:px-6">
-      <ol className="flex items-center gap-2 sm:gap-6">
+    <nav aria-label="Listing steps" className="rounded-xl border border-line bg-white px-2 py-3 sm:px-6">
+      <ol className="flex items-center gap-1 sm:gap-6">
         {STEPS.map((step, index) => {
           const isCurrent = step.key === current;
           const content = (
@@ -27,7 +27,8 @@ export function ListingStepper({ listingId, current }: { listingId?: string; cur
             </>
           );
           const classes = cn(
-            "flex min-h-control items-center gap-2 rounded-md px-2 text-body-sm",
+            // Four steps fit one row at 390px with caption-size labels; body-sm from sm up.
+            "flex min-h-control items-center gap-1 rounded-md px-1 text-caption sm:gap-2 sm:px-2 sm:text-body-sm",
             isCurrent ? "font-semibold text-emerald-700" : "font-medium text-slate-600",
           );
           return (

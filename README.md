@@ -79,6 +79,27 @@ PLANS_SEED_CONFIRM=yes npm run plans:seed
 
 Real prices are added later as a new plan version, never by editing these rows.
 
+### Photo storage (R2)
+
+Without R2 settings, development stores photos under `.data/storage/` (git-ignored) and serves
+them through dev-only routes under `/api/dev-storage/`, which return 404 in production or once R2
+is set. Production refuses uploads until R2 is configured. Before deploying, once:
+
+1. Create two R2 buckets: a **public** one for listing photos (connect a custom domain or enable
+   r2.dev) and a **private** one with no public access.
+2. Create an R2 API token with Object Read & Write on both, and set the six `R2_*` variables
+   (see `.env.example`) in Vercel and `.env.local`.
+3. Add a CORS rule on the **private** bucket so browsers can upload directly:
+
+   ```json
+   [{ "AllowedOrigins": ["http://localhost:3000", "https://<your-domain>"],
+      "AllowedMethods": ["PUT"], "AllowedHeaders": ["content-type"], "MaxAgeSeconds": 3600 }]
+   ```
+
+4. Add a lifecycle rule on the private bucket: delete objects with prefix `uploads/` after 1 day.
+   The orphan sweep (`src/lib/storage/cleanup.ts`, scheduled in S9) does the same, plus unused
+   public variants.
+
 ## Scripts
 
 | Script | What it does |
@@ -98,19 +119,23 @@ Real prices are added later as a new plan version, never by editing these rows.
 src/
   app/                  (auth) sign-in, sign-up, check-email, forgot/reset-password;
                         account (overview, onboarding, profile, saved, settings,
-                        listings: new → [id]/basics → details → preview); admin;
-                        api/auth (GET-only Better Auth callbacks); styleguide
+                        listings: new → [id]/basics → details → photos → preview); admin;
+                        api/auth (GET-only Better Auth callbacks); api/dev-storage (dev only);
+                        styleguide
   proxy.ts              optimistic session-cookie redirect for /account and /admin
   components/ui/        Button (primary/secondary/quiet/ghost/danger), IconButton, Field, Input,
                         Select, Textarea, Badge (VerifiedBadge), Chip, SegmentedControl, ...
   components/layout/    SiteHeader, AccountMenu, MobileMenu, SiteFooter, Logo, PageContainer
   components/auth|account|forms/   form components (useActionState + Server Actions)
-  components/listings/  stepper, Basics/Details forms, plan usage panel, summary, status actions
+  components/listings/  stepper, Basics/Details forms, PhotoManager, ListingImage, plan usage panel,
+                        summary, status actions
   db/                   schema.ts, index.ts (Neon HTTP), tx.ts (WebSocket transactions), queries/
   lib/                  auth-config (Better Auth factory), auth, session, roles, rate-limit,
                         email/, validation/, safe-redirect, env, format, kenya, greeting
   lib/billing/          constants, periods (30-day period, 3-day grace), entitlements (canPublish)
   lib/listings/         workflow (lister transitions, material edits, status labels), slug
+  lib/storage/          ObjectStore (R2, dev disk), keys, limits, image processing (sharp),
+                        ingest, orphan cleanup
 scripts/                create-admin.ts, seed-plans.ts (operator only)
 drizzle/                SQL migrations
 docs/                   implementation plan v2.0
@@ -144,11 +169,20 @@ design/                 UI design system and screens
   a slot. Publishing or un-pausing needs a paid-up plan; during grace, live listings stay up but
   nothing new goes live (`getPublishEntitlement()` in `src/db/queries/billing.ts`).
 - **Listing management** (plan §9): drafts save step by step and may be incomplete; Submit
-  checks the stored listing (`parseListing`), then the owner's plan under a per-pool advisory
-  lock. Verified owners publish at once; everyone else goes to `pending_review`. Only the owner or
-  an agency admin of the listing's agency can manage it (`manageableBy`). Status, owner, agency
-  and slug are never read from forms. A material edit (title, description, category, type,
-  location) by an unverified owner sends a published listing back to review.
+  checks the stored listing and at least one photo (`parseSubmission`), then the owner's plan
+  under a per-pool advisory lock. Verified owners publish at once; everyone else goes to
+  `pending_review`. Only the owner or an agency admin of the listing's agency can manage it
+  (`manageableBy`). Status, owner, agency and slug are never read from forms. A material edit
+  (title, description, category, type, location, or a new photo) by an unverified owner sends a
+  published listing back to review and turns a paused one into a draft.
+- **Photos** (plan §9): the browser uploads straight to the **private** bucket through a 5-minute
+  presigned URL; file bytes never pass through a Server Action. The server then checks the real
+  type from the bytes (JPEG, PNG, WebP), size (8 MB) and dimensions (800 × 600 minimum), and
+  re-encodes with sharp into 480/960/1600 px WebP in the **public** bucket, which drops all EXIF
+  and GPS data. Keys are generated (`listings/<listing>/<image>-<width>.webp`), never taken from
+  file names. Up to 20 photos per listing, counted under a row lock; every photo needs a
+  description (alt text). `ListingImage` picks the variant per width with a `next/image` loader,
+  so there is no runtime image optimisation.
 - **Featured is computed**, so there is no `featured` column for a client to set.
 - **Listing status `paused`** means the plan lapsed past grace or the listing is over the plan
   limit. Only `published` is public.

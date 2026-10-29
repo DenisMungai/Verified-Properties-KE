@@ -21,6 +21,7 @@ export const POLICIES = {
   resendPerEmail: { name: "resend-verification:email", limit: 3, windowSeconds: 60 * 60 },
   passwordChangePerUser: { name: "password-change:user", limit: 5, windowSeconds: 15 * 60 },
   listingCreatePerUser: { name: "listing-create:user", limit: 20, windowSeconds: 60 * 60 },
+  photoUploadPerUser: { name: "photo-upload:user", limit: 80, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface LimitResult {

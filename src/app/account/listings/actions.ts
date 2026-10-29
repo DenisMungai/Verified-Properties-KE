@@ -30,6 +30,7 @@ import {
   parseDetailsStep,
 } from "@/lib/validation/listing";
 import { requireLister } from "./guard";
+import { deleteStoredPhotos } from "./stored-photos";
 
 /**
  * Listing Server Actions (prompt S3). Each one checks the session and lister role, validates with
@@ -125,7 +126,7 @@ export async function saveDetailsAction(_prev: ActionState, formData: FormData):
     return { formError: GENERIC_FAILURE, values };
   }
 
-  if (intent === "continue") redirect(`/account/listings/${listingId}/preview`);
+  if (intent === "continue") redirect(`/account/listings/${listingId}/photos`);
   return { ok: true, message, values };
 }
 
@@ -167,6 +168,7 @@ export async function changeListingStatusAction(formData: FormData): Promise<voi
       result = await withTransaction((tx) => unpauseListing(tx, user.id, listingId));
     } else if (intent === "delete") {
       result = await deleteDraft(getDb(), user.id, listingId);
+      if (result.ok) await deleteStoredPhotos(result.photoKeys ?? []);
     } else {
       result = await transitionListing(getDb(), user.id, listingId, intent satisfies ListerTransitionTarget);
     }

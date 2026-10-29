@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import type { EditableListing } from "@/db/queries/listings";
+import { ListingImage } from "./ListingImage";
 import { formatAreaSqm, formatKes, formatLandSize } from "@/lib/format";
 import { CATEGORY_LABELS, LISTING_TYPE_LABELS } from "@/lib/validation/listing";
 
@@ -28,12 +29,50 @@ export function listingLocation(listing: Pick<EditableListing, "neighbourhood" |
   return parts.filter((part, i) => i === 0 || part.toLowerCase() !== parts[i - 1].toLowerCase()).join(", ");
 }
 
+const STRIP_SIZE = 5;
+
+/** Cover photo, then a strip of up to five more with "+n more" (or the fallback panel). */
+function PhotoPreview({ photos }: { photos: { baseUrl: string | null; altText: string }[] }) {
+  const [cover, ...rest] = photos;
+  if (!cover) return <ListingImage baseUrl={null} alt="No photos yet" sizes="100vw" className="rounded-lg" />;
+  const strip = rest.slice(0, STRIP_SIZE);
+  const more = rest.length - strip.length;
+  return (
+    <div className="flex flex-col gap-2">
+      <ListingImage
+        baseUrl={cover.baseUrl}
+        alt={cover.altText}
+        sizes="(min-width: 1024px) 720px, 100vw"
+        preload
+        className="rounded-lg"
+      />
+      {strip.length > 0 && (
+        <ul aria-label="More photos" className="grid grid-cols-5 gap-2">
+          {strip.map((photo, index) => (
+            <li key={index}>
+              <ListingImage baseUrl={photo.baseUrl} alt={photo.altText} sizes="144px" className="rounded-md" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {more > 0 && <p className="text-caption text-slate-600">+{more} more</p>}
+    </div>
+  );
+}
+
 /** "How buyers will see it" summary on the Preview step. Text only, never rendered as HTML. */
-export function ListingSummary({ listing }: { listing: EditableListing }) {
+export function ListingSummary({
+  listing,
+  photos,
+}: {
+  listing: EditableListing;
+  photos: { baseUrl: string | null; altText: string }[];
+}) {
   const facts = listingFacts(listing);
   const paragraphs = listing.description.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   return (
     <article aria-labelledby="summary-title" className="flex flex-col gap-5">
+      <PhotoPreview photos={photos} />
       <p className="text-label uppercase text-slate-600">
         {LISTING_TYPE_LABELS[listing.listingType]} · {CATEGORY_LABELS[listing.category]}
       </p>

@@ -1,11 +1,19 @@
 import { Check } from "lucide-react";
 import type { ListingPlanUsage } from "@/db/queries/billing";
+import { FEATURED_PHOTO_COUNT } from "@/lib/storage/limits";
 
 const TIPS = [
   "Use a clear, accurate title",
   "Include the full KSh price",
   "Add bright, genuine photos",
   "Mention nearby amenities",
+  "Avoid misleading details",
+];
+
+export const PHOTO_TIPS = [
+  "Add bright, genuine photos",
+  "Start with the best room as your cover",
+  `Listings with ${FEATURED_PHOTO_COUNT} or more photos can be featured`,
   "Avoid misleading details",
 ];
 
@@ -28,7 +36,7 @@ export function planUsageSummary(usage: ListingPlanUsage): { headline: string; d
 }
 
 /** Design "04 — Create Listing" side panel: tips plus "Your current plan" with a usage bar. */
-export function PlanUsagePanel({ usage }: { usage: ListingPlanUsage }) {
+export function PlanUsagePanel({ usage, tips = TIPS }: { usage: ListingPlanUsage; tips?: string[] }) {
   const { headline, detail } = planUsageSummary(usage);
   const percent = usage.limit ? Math.min(100, Math.round((usage.activeListingCount / usage.limit) * 100)) : 0;
   return (
@@ -38,7 +46,7 @@ export function PlanUsagePanel({ usage }: { usage: ListingPlanUsage }) {
           A stronger listing
         </h2>
         <ul className="flex flex-col gap-3">
-          {TIPS.map((tip) => (
+          {tips.map((tip) => (
             <li key={tip} className="flex items-start gap-2 text-body-sm text-emerald-700">
               <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               {tip}

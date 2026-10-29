@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AMENITIES, COMMERCIAL_SUBTYPES, KENYA_COUNTIES } from "@/lib/kenya";
+import { PHOTO_ALT_MAX, PHOTO_ALT_MIN } from "@/lib/storage/limits";
 
 /**
  * Listing validation (plan v2.0 §9; prompt S3 decisions 2–3). Two levels:
@@ -86,10 +87,14 @@ export const DETAILS_FIELDS = [
 
 export type BasicsInput = Pick<ListingFields, (typeof BASICS_FIELDS)[number]>;
 export type DetailsInput = Pick<ListingFields, (typeof DETAILS_FIELDS)[number]>;
-export type ListingStep = "basics" | "details";
+export type ListingStep = "basics" | "details" | "photos";
+
+/** The submit checklist key for the photo requirement (prompt S4 decision 5). */
+export const PHOTOS_FIELD = "photos";
 
 /** Which step fixes a field, for the preview checklist. */
 export function stepForField(field: string): ListingStep {
+  if (field === PHOTOS_FIELD) return "photos";
   return (BASICS_FIELDS as readonly string[]).includes(field) ? "basics" : "details";
 }
 
@@ -331,6 +336,26 @@ export function parseListing(fields: ListingFields): ParseListingResult {
     : { success: false, errors };
 }
 
+export interface PhotoSummary {
+  count: number;
+  hasCover: boolean;
+}
+
+/** Submit-time check: every `parseListing` rule plus at least one photo with a cover. */
+export function parseSubmission(fields: ListingFields, photos: PhotoSummary): ParseListingResult {
+  const parsed = parseListing(fields);
+  if (photos.count > 0 && photos.hasCover) return parsed;
+  const photoError = { [PHOTOS_FIELD]: "Add at least one photo." };
+  return { success: false, errors: parsed.success ? photoError : { ...parsed.errors, ...photoError } };
+}
+
+/** A photo description (alt text): required, so the listing works with a screen reader. */
+export const photoAltSchema = z
+  .string({ error: "Describe this photo." })
+  .trim()
+  .min(PHOTO_ALT_MIN, { error: `Describe the photo in at least ${PHOTO_ALT_MIN} characters.` })
+  .max(PHOTO_ALT_MAX, { error: `Use ${PHOTO_ALT_MAX} characters or fewer.` });
+
 /** Plain-language labels for the preview checklist. */
 export const FIELD_LABELS: Record<keyof ListingFields, string> = {
   title: "Title",
@@ -353,6 +378,8 @@ export const FIELD_LABELS: Record<keyof ListingFields, string> = {
   subtype: "Commercial type",
   zoningNotes: "Zoning notes",
 };
+
+export const CHECKLIST_LABELS: Record<string, string> = { ...FIELD_LABELS, [PHOTOS_FIELD]: "Photos" };
 
 /* -------------------------------------------------------------------------- */
 /* Form readers                                                               */

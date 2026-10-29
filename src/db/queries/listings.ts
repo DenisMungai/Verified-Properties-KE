@@ -1,7 +1,7 @@
 import "server-only";
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
-import { listerProfiles, properties, users } from "@/db/schema";
+import { listerProfiles, properties, propertyImages, users } from "@/db/schema";
 import type { PublishEntitlement } from "@/lib/billing/entitlements";
 import { makeSlug } from "@/lib/listings/slug";
 import {
@@ -16,10 +16,11 @@ import {
 } from "@/lib/listings/workflow";
 import {
   normalizeForCategory,
-  parseListing,
+  parseSubmission,
   type BasicsInput,
   type DetailsInput,
   type ListingFields,
+  type PhotoSummary,
 } from "@/lib/validation/listing";
 import { getListingPool, getPublishEntitlement, isListerVerified, type ListingPool } from "./billing";
 
@@ -81,7 +82,7 @@ export type EditableListing = {
 };
 
 export type ListingResult =
-  | { ok: true; status: ListingStatus; returnedToReview?: boolean }
+  | { ok: true; status: ListingStatus; returnedToReview?: boolean; photoKeys?: string[] }
   | { ok: false; reason: "not_found" | "not_allowed" | "conflict" }
   | { ok: false; reason: "invalid"; errors: Record<string, string> }
   | { ok: false; reason: "entitlement"; entitlement: Extract<PublishEntitlement, { ok: false }> };
@@ -156,6 +157,32 @@ export async function listManageableListings(db: DbExecutor, userId: string) {
 }
 
 export type ManageableListingRow = Awaited<ReturnType<typeof listManageableListings>>[number];
+
+export type ListingPhotoSummary = PhotoSummary & { coverKey: string | null };
+
+/** Photo count and cover for each listing id. Callers pass ids they have already authorised. */
+export async function photoSummaries(db: DbExecutor, listingIds: string[]): Promise<Map<string, ListingPhotoSummary>> {
+  const out = new Map<string, ListingPhotoSummary>();
+  if (listingIds.length === 0) return out;
+  const pi = propertyImages;
+  const rows = await db
+    .select({
+      listingId: pi.propertyId,
+      count: sql<number>`count(*)::int`,
+      coverKey: sql<string | null>`max(${pi.storageKey}) filter (where ${pi.isCover})`,
+    })
+    .from(pi)
+    .where(inArray(pi.propertyId, listingIds))
+    .groupBy(pi.propertyId);
+  for (const row of rows) {
+    out.set(row.listingId, { count: row.count, hasCover: row.coverKey !== null, coverKey: row.coverKey });
+  }
+  return out;
+}
+
+export async function getPhotoSummary(db: DbExecutor, listingId: string): Promise<ListingPhotoSummary> {
+  return (await photoSummaries(db, [listingId])).get(listingId) ?? { count: 0, hasCover: false, coverKey: null };
+}
 
 const EMPTY_DETAILS: DetailsInput = {
   description: "",
@@ -258,7 +285,7 @@ export async function submitListing(tx: DbExecutor, userId: string, id: string, 
   if (!row) return NOT_FOUND;
   if (!canSubmit(row.status)) return NOT_ALLOWED;
 
-  const parsed = parseListing(listingFieldsOf(row));
+  const parsed = parseSubmission(listingFieldsOf(row), await getPhotoSummary(tx, id));
   if (!parsed.success) return { ok: false, reason: "invalid", errors: parsed.errors };
 
   const blocked = await checkEntitlement(tx, row.ownerUserId, now);
@@ -314,11 +341,18 @@ export async function transitionListing(
   return updated.length === 0 ? CONFLICT : { ok: true, status: to };
 }
 
-/** Deletes a draft that was never published or reviewed; anything else is archived instead. */
+/**
+ * Deletes a draft that was never published or reviewed; anything else is archived instead.
+ * Returns the photo base keys (the rows cascade) so the caller can delete the stored files.
+ */
 export async function deleteDraft(db: DbExecutor, userId: string, id: string): Promise<ListingResult> {
   const row = await getManageableListing(db, userId, id);
   if (!row) return NOT_FOUND;
   if (!canDeleteDraft(row)) return NOT_ALLOWED;
+  const photos = await db
+    .select({ key: propertyImages.storageKey })
+    .from(propertyImages)
+    .where(eq(propertyImages.propertyId, id));
   const deleted = await db
     .delete(p)
     .where(
@@ -330,5 +364,5 @@ export async function deleteDraft(db: DbExecutor, userId: string, id: string): P
       ),
     )
     .returning({ id: p.id });
-  return deleted.length === 0 ? CONFLICT : { ok: true, status: "draft" };
+  return deleted.length === 0 ? CONFLICT : { ok: true, status: "draft", photoKeys: photos.map((photo) => photo.key) };
 }

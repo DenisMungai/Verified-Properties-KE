@@ -5,14 +5,16 @@ import { Building2, Plus } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { MoreListingActions, PrimaryListingAction } from "@/components/listings/ListingActions";
+import { ListingImage } from "@/components/listings/ListingImage";
 import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
-import { listManageableListings, type ManageableListingRow } from "@/db/queries/listings";
+import { listManageableListings, photoSummaries, type ManageableListingRow } from "@/db/queries/listings";
 import type { ActionState } from "@/lib/action-state";
 import { PUBLISH_BLOCK_MESSAGES, type PublishBlockReason } from "@/lib/billing/entitlements";
 import { formatNairobiDate } from "@/lib/format";
 import { single, type SearchParams } from "@/lib/search-params";
+import { publicImageBaseUrl } from "@/lib/storage";
 import { requireLister } from "./guard";
 
 export const metadata: Metadata = { title: "My listings" };
@@ -26,6 +28,8 @@ const SUCCESS: Record<string, string> = {
   withdrawn: "Listing withdrawn.",
   archived: "Listing archived.",
   deleted: "Draft deleted.",
+  draft_saved: "Draft saved.",
+  saved: "Changes saved.",
 };
 
 const ERRORS: Record<string, string> = {
@@ -49,12 +53,19 @@ function bannerFor(params: Record<string, string | string[] | undefined>): Actio
 
 const location = (row: ManageableListingRow) => row.neighbourhood ?? row.town;
 
-function OwnerNote({ row, userId }: { row: ManageableListingRow; userId: string }) {
+type ListingRow = ManageableListingRow & { coverUrl: string | null };
+
+/** 64px cover thumbnail; decorative because the title beside it names the property. */
+function Thumb({ row }: { row: ListingRow }) {
+  return <ListingImage baseUrl={row.coverUrl} alt="" sizes="64px" className="w-16 shrink-0 rounded-md" />;
+}
+
+function OwnerNote({ row, userId }: { row: ListingRow; userId: string }) {
   if (row.ownerUserId === userId) return null;
   return <span className="block text-caption text-slate-600">Listed by {row.ownerName}</span>;
 }
 
-function ListingsTable({ rows, userId }: { rows: ManageableListingRow[]; userId: string }) {
+function ListingsTable({ rows, userId }: { rows: ListingRow[]; userId: string }) {
   const cell = "bg-canvas px-4 py-3 align-middle first:rounded-l-lg last:rounded-r-lg";
   return (
     <table className="hidden w-full border-separate border-spacing-y-2 text-body-sm md:table">
@@ -71,14 +82,19 @@ function ListingsTable({ rows, userId }: { rows: ManageableListingRow[]; userId:
       <tbody>
         {rows.map((row) => (
           <tr key={row.id}>
-            <td className={`${cell} max-w-72`}>
-              <Link href={`/account/listings/${row.id}/preview`} className="font-medium text-ink hover:text-emerald-700">
-                <span className="line-clamp-2 break-words">{row.title}</span>
-              </Link>
-              <OwnerNote row={row} userId={userId} />
-              {row.status === "rejected" && row.rejectionReason && (
-                <span className="mt-1 block text-caption text-danger">Needs changes: {row.rejectionReason}</span>
-              )}
+            <td className={`${cell} max-w-80`}>
+              <div className="flex items-center gap-3">
+                <Thumb row={row} />
+                <div className="min-w-0">
+                  <Link href={`/account/listings/${row.id}/preview`} className="font-medium text-ink hover:text-emerald-700">
+                    <span className="line-clamp-2 break-words">{row.title}</span>
+                  </Link>
+                  <OwnerNote row={row} userId={userId} />
+                  {row.status === "rejected" && row.rejectionReason && (
+                    <span className="mt-1 block text-caption text-danger">Needs changes: {row.rejectionReason}</span>
+                  )}
+                </div>
+              </div>
             </td>
             <td className={cell}>{location(row)}</td>
             <td className={cell}>
@@ -98,13 +114,14 @@ function ListingsTable({ rows, userId }: { rows: ManageableListingRow[]; userId:
   );
 }
 
-function ListingCards({ rows, userId }: { rows: ManageableListingRow[]; userId: string }) {
+function ListingCards({ rows, userId }: { rows: ListingRow[]; userId: string }) {
   return (
     <ul className="flex flex-col gap-3 md:hidden">
       {rows.map((row) => (
         <li key={row.id} className="flex flex-col gap-3 rounded-lg border border-line bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="flex items-start gap-3">
+            <Thumb row={row} />
+            <div className="min-w-0 flex-1">
               <Link href={`/account/listings/${row.id}/preview`} className="font-medium text-ink hover:text-emerald-700">
                 <span className="break-words">{row.title}</span>
               </Link>
@@ -137,7 +154,13 @@ const addButton = (
 
 async function Listings({ searchParams }: { searchParams: SearchParams }) {
   const [user, params] = await Promise.all([requireLister("/account/listings"), searchParams]);
-  const rows = await listManageableListings(getDb(), user.id);
+  const db = getDb();
+  const listings = await listManageableListings(db, user.id);
+  const covers = await photoSummaries(
+    db,
+    listings.map((row) => row.id),
+  );
+  const rows = listings.map((row) => ({ ...row, coverUrl: publicImageBaseUrl(covers.get(row.id)?.coverKey) }));
   const banner = bannerFor(params);
   return (
     <div className="flex flex-col gap-4">
