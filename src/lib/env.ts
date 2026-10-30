@@ -40,6 +40,8 @@ const serverSchema = z.object({
   MPESA_PASSKEY: z.string().optional(),
   MPESA_CALLBACK_TOKEN: z.string().min(24, { error: "must be at least 24 characters" }).optional(),
   MPESA_CALLBACK_BASE_URL: z.url().optional(),
+  /** Comma-separated IPv4 CIDRs allowed to call the payment callbacks (prompt S5 decision 3). */
+  MPESA_CALLBACK_ALLOWED_IPS: z.string().optional(),
 
   AT_USERNAME: z.string().optional(),
   AT_API_KEY: z.string().optional(),

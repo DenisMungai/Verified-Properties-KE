@@ -14,7 +14,11 @@
     "db:studio": "drizzle-kit studio",
     "test:integration": "node --env-file-if-exists=.env --env-file-if-exists=.env.local ./node_modules/vitest/vitest.mjs run integration",
     "admin:create": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/create-admin.ts",
-    "plans:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/seed-plans.ts"
+    "plans:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/seed-plans.ts",
+    "mpesa:pay": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-pay.ts",
+    "mpesa:simulate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-simulate.ts",
+    "mpesa:status": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-status.ts",
+    "mpesa:register-c2b": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-register-c2b.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1159.0",

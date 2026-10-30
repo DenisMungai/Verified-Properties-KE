@@ -100,6 +100,30 @@ is set. Production refuses uploads until R2 is configured. Before deploying, onc
    The orphan sweep (`src/lib/storage/cleanup.ts`, scheduled in S9) does the same, plus unused
    public variants.
 
+### M-Pesa (S5)
+
+Without Daraja credentials, development uses a **simulator**: set only `MPESA_CALLBACK_TOKEN`
+(`openssl rand -hex 24`). STK pushes send nothing to a phone, and `npm run mpesa:simulate` posts a
+realistic callback to the running dev server. Production refuses payments until all four Daraja
+credentials are set.
+
+```bash
+MPESA_PAY_CONFIRM=yes npm run mpesa:pay -- --email you@example.com --plan starter --phone 0712345678
+# PowerShell: $env:MPESA_PAY_CONFIRM="yes"; npm run mpesa:pay -- --email ... --plan starter --phone 07...
+npm run mpesa:simulate -- --checkout ws_CO_SIM_... [--result success|cancelled|insufficient] [--amount 5] [--receipt CODE]
+npm run mpesa:status -- VPK0000012
+```
+
+Daraja sandbox: create an app with M-Pesa Express on developer.safaricom.co.ke, set
+`MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE=174379` and the sandbox
+`MPESA_PASSKEY`, expose the dev server (`cloudflared tunnel --url http://localhost:3000`) and set
+`MPESA_CALLBACK_BASE_URL` to the https URL. `npm run mpesa:register-c2b [-- --shortcode 600xxx]`
+registers the Paybill callbacks.
+
+Before go-live: apply for Daraja production early, and confirm Safaricom's callback IP ranges
+(`MPESA_CALLBACK_ALLOWED_IPS`; production defaults to the community-documented
+`196.201.212-214.0/24`).
+
 ## Scripts
 
 | Script | What it does |
@@ -111,6 +135,8 @@ is set. Production refuses uploads until R2 is configured. Before deploying, onc
 | `npm run test:integration` | Integration tests against the Neon test branch (env from `.env` / `.env.local`) |
 | `npm run admin:create` | Operator-only role grant (see First admin) |
 | `npm run plans:seed` | Operator-only sandbox plan seed (see Sandbox plans) |
+| `npm run mpesa:pay` / `mpesa:simulate` / `mpesa:status` | Dev/sandbox payment tools (see M-Pesa) |
+| `npm run mpesa:register-c2b` | Operator: register the Paybill callback URLs with Daraja |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle Kit |
 
 ## Structure
@@ -121,6 +147,7 @@ src/
                         account (overview, onboarding, profile, saved, settings,
                         listings: new → [id]/basics → details → photos → preview); admin;
                         api/auth (GET-only Better Auth callbacks); api/dev-storage (dev only);
+                        api/payments (Daraja STK and C2B callbacks); account/billing actions;
                         styleguide
   proxy.ts              optimistic session-cookie redirect for /account and /admin
   components/ui/        Button (primary/secondary/quiet/ghost/danger), IconButton, Field, Input,
@@ -136,7 +163,9 @@ src/
   lib/listings/         workflow (lister transitions, material edits, status labels), slug
   lib/storage/          ObjectStore (R2, dev disk), keys, limits, image processing (sharp),
                         ingest, orphan cleanup
-scripts/                create-admin.ts, seed-plans.ts (operator only)
+  lib/mpesa/            Daraja client (HTTP, dev simulator), callback guard, payloads, start,
+                        settle (callback + STK Query), confirm (one transaction), C2B
+scripts/                create-admin.ts, seed-plans.ts (operator only), mpesa-*.ts (dev/sandbox)
 drizzle/                SQL migrations
 docs/                   implementation plan v2.0
 prompts/                one approved prompt per slice
@@ -183,6 +212,16 @@ design/                 UI design system and screens
   file names. Up to 20 photos per listing, counted under a row lock; every photo needs a
   description (alt text). `ListingImage` picks the variant per width with a `next/image` loader,
   so there is no runtime image optimisation.
+- **Payments** (plan §4): the client sends only a plan code and phone; price, plan and owner come
+  from the database. A payment is confirmed only when the STK callback (which alone carries the
+  receipt and amount) and STK Query agree; `confirmPayment` then marks it paid, extends the
+  subscription 30 days (an early renewal stacks onto the current end) and restores billing-paused
+  listings newest first, in one transaction under row locks. A replayed callback finds the payment
+  already confirmed; amount mismatches and disagreements are flagged and activate nothing. Every
+  callback, query and status change is appended to `payment_events`. Callback routes
+  (`/api/payments/...`, no "mpesa" in the path) need a secret path token (else 404) and, where
+  enforced, an allowlisted IP (else 403). Paybill (C2B) payments match the invoice number and
+  amount exactly; STK Query can't check them, so S9's reconciliation is the second check.
 - **Featured is computed**, so there is no `featured` column for a client to set.
 - **Listing status `paused`** means the plan lapsed past grace or the listing is over the plan
   limit. Only `published` is public.

@@ -22,6 +22,8 @@ export const POLICIES = {
   passwordChangePerUser: { name: "password-change:user", limit: 5, windowSeconds: 15 * 60 },
   listingCreatePerUser: { name: "listing-create:user", limit: 20, windowSeconds: 60 * 60 },
   photoUploadPerUser: { name: "photo-upload:user", limit: 80, windowSeconds: 60 * 60 },
+  paymentStartPerUser: { name: "payment-start:user", limit: 5, windowSeconds: 15 * 60 },
+  paymentStartPerPhone: { name: "payment-start:phone", limit: 3, windowSeconds: 15 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface LimitResult {
