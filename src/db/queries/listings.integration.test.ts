@@ -53,10 +53,10 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
   beforeEach(async () => {
     await client.query("BEGIN");
     starterPlanId = await one(
-      `insert into plans (code, kind, name, price_kes, listing_limit) values ('t_starter', 'listing', 'Starter', 1, 3) returning id`,
+      `insert into plans (code, kind, name, price_kes, listing_limit) values ('t_list_starter', 'listing', 'Starter', 1, 3) returning id`,
     );
     verificationPlanId = await one(
-      `insert into plans (code, kind, name, price_kes) values ('t_verify', 'verification', 'Verification', 1) returning id`,
+      `insert into plans (code, kind, name, price_kes) values ('t_list_verify', 'verification', 'Verification', 1) returning id`,
     );
     agencyId = await one(`insert into agencies (name, slug) values ('Test Agency', 't-agency-listings') returning id`);
     await insertLister("u_owner", { agency: true });

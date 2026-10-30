@@ -3,7 +3,8 @@ import { BRAND } from "@/lib/brand";
 import { PageContainer } from "./PageContainer";
 
 const FOOTER_LINKS = [
-  { href: "/", label: "Explore" },
+  { href: "/properties", label: "Explore" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
   { href: "/sign-in", label: "Log in" },
   { href: "/sign-up", label: "Get started" },

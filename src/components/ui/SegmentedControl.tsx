@@ -10,6 +10,11 @@ interface SegmentedControlBase<V extends string> {
   legend: string;
   legendClassName?: string;
   name: string;
+  /**
+   * Prefix for the radio ids (default: `name`). Give each control on a page, and on routes Next
+   * keeps mounted in the background, its own prefix so labels never target another control.
+   */
+  idPrefix?: string;
   options: readonly SegmentOption<V>[];
   size?: "md" | "lg";
   /** `pill`: filled Forest pill in a grey track (homepage). `outline`: bordered boxes (create listing). */
@@ -37,13 +42,13 @@ export type SegmentedControlProps<V extends string> = Uncontrolled<V> | Controll
  * arrow-key navigation from the browser (radio group semantics).
  */
 export function SegmentedControl<V extends string>(props: SegmentedControlProps<V>) {
-  const { legend, legendClassName = "sr-only", name, options, size = "md", variant = "pill", className } = props;
+  const { legend, legendClassName = "sr-only", name, idPrefix = name, options, size = "md", variant = "pill", className } = props;
   return (
     <fieldset className={cn("min-w-0", className)}>
       <legend className={legendClassName}>{legend}</legend>
       <div className={cn("inline-flex max-w-full", variant === "pill" ? "gap-1 rounded-pill bg-surface-muted p-1" : "flex-wrap gap-3")}>
         {options.map((option) => {
-          const id = `${name}-${option.value}`;
+          const id = `${idPrefix}-${option.value}`;
           const checkedProps =
             props.onValueChange !== undefined
               ? {

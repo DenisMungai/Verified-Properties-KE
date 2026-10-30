@@ -12,8 +12,9 @@ Drizzle · Zod 4 · Better Auth · M-Pesa Daraja · Cloudflare R2 · Upstash QSt
 - Slice prompts: [prompts/](prompts/)
 - UI design: [design/VerifiedPropertiesKE-Full-UI-Design-System/](design/VerifiedPropertiesKE-Full-UI-Design-System/)
 
-**Status:** S0 (foundation) and S1 (authentication, accounts, design alignment) are built.
-Next: S2 (billing schema and entitlements).
+**Status:** S0–S7 are built: foundation, auth, billing schema, listings, images, M-Pesa, billing
+UI and card payments, and public discovery (search, ranking, home page). Next: S8 (listing detail
+and engagement).
 
 ## Setup
 
@@ -153,6 +154,27 @@ Optional. Without `PAYSTACK_SECRET_KEY` the checkout offers M-Pesa only.
 Before go-live: confirm the Paystack Kenya account is activated for live card payments, and
 switch to `sk_live_...` in the hosting dashboard.
 
+### Search and ranking (S7)
+
+- `/properties` is the public search: Buy / Rent / Land, location text, property type, price,
+  bedrooms, bathrooms, furnished, parking and "Verified listers only", with chips, sorts and
+  pagination (12 per page). The URL is the state: `?mode=rent&q=Nairobi&type=apartment&beds=2`.
+  Unknown or malformed values are dropped, never errors. `/how-it-works` explains verification
+  and ranking; the disclosure line under the results links to it.
+- Public queries (`src/db/queries/public-listings.ts`) read only `published` rows and return only
+  the card columns. Exact coordinates, owner and agency ids and contact details never leave SQL.
+- **Recommended** ranks verified listers first (`lister_verified_now`), then by a score:
+  0.35 location match (pg_trgm) + 0.35 recency + 0.30 quality (photos, filled-in fields). The
+  verified tier rotates daily (Nairobi date) within 0.1 score buckets. No lister or agency holds
+  more than 3 of the first 20. **Newest** and **Price** are strict, with a "Verified listers" strip
+  of up to 3 on page 1. Weights and caps live in `src/lib/search/ranking.ts`.
+- The home page shows verified featured listings (5+ photos and a cover, at most 2 per lister,
+  6 slots) when any qualify, otherwise the newest. Until paid verification exists (Phase 2)
+  nobody is verified, so the strip and featured slots stay empty with real data.
+- Cards are not links until the detail page (S8). Seeing listings locally: publish one in the dev
+  branch's SQL editor (`update properties set status = 'published', published_at = now(),
+  reviewed_at = now() where status = 'pending_review';`) until the moderation queue arrives in S8.
+
 ## Scripts
 
 | Script | What it does |
@@ -177,7 +199,7 @@ src/
                         listings: new → [id]/basics → details → photos → preview); admin;
                         api/auth (GET-only Better Auth callbacks); api/dev-storage (dev only);
                         api/payments (Daraja STK and C2B callbacks); account/billing actions;
-                        styleguide
+                        properties (search), how-it-works, pricing; styleguide
   proxy.ts              optimistic session-cookie redirect for /account and /admin
   components/ui/        Button (primary/secondary/quiet/ghost/danger), IconButton, Field, Input,
                         Select, Textarea, Badge (VerifiedBadge), Chip, SegmentedControl, ...
@@ -185,11 +207,14 @@ src/
   components/auth|account|forms/   form components (useActionState + Server Actions)
   components/listings/  stepper, Basics/Details forms, PhotoManager, ListingImage, plan usage panel,
                         summary, status actions
+  components/search/    PropertyCard, SearchBar, FilterPanel, FilterDrawer, SortSelect, ResultsHeader,
+                        Pagination, VerifiedStrip, HomeSearch, LocationTiles
   db/                   schema.ts, index.ts (Neon HTTP), tx.ts (WebSocket transactions), queries/
   lib/                  auth-config (Better Auth factory), auth, session, roles, rate-limit,
                         email/, validation/, safe-redirect, env, format, kenya, greeting
   lib/billing/          constants, periods (30-day period, 3-day grace), entitlements (canPublish)
   lib/listings/         workflow (lister transitions, material edits, status labels), slug
+  lib/search/           search params (parse, canonical URLs, chips), ranking constants, card facts
   lib/storage/          ObjectStore (R2, dev disk), keys, limits, image processing (sharp),
                         ingest, orphan cleanup
   lib/mpesa/            Daraja client (HTTP, dev simulator), callback guard, payloads, start,
