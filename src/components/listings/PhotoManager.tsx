@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type MouseEvent } from "react";
 import { ArrowDown, ArrowRight, ArrowUp, ImagePlus, RotateCcw, Star, Trash2, X } from "lucide-react";
 import {
   deletePhotoAction,
@@ -72,7 +72,7 @@ function putFile(url: string, file: File, onProgress: (percent: number) => void)
 function stateText(item: Staged): string {
   switch (item.state) {
     case "ready":
-      return "Ready to upload";
+      return altReady(item.alt) ? "Not uploaded yet" : "Not uploaded yet: add a description";
     case "waiting":
       return "Waiting";
     case "uploading":
@@ -122,7 +122,24 @@ export function PhotoManager({
   const uploading = staged.some((item) => isActive(item.state));
   const uploadable = staged.filter((item) => item.state === "ready" || item.state === "failed");
   const canUpload = !uploading && uploadable.length > 0 && uploadable.every((item) => altReady(item.alt));
+  // Picked but not saved: these are lost if the lister leaves the step.
+  const notUploaded = staged.filter((item) => item.state === "ready" || item.state === "failed" || isActive(item.state)).length;
   const slotsLeft = MAX_PHOTOS_PER_LISTING - photos.length - staged.filter((s) => s.state !== "invalid").length;
+
+  // Warn before a reload or tab close would drop photos that were picked but never uploaded.
+  useEffect(() => {
+    if (notUploaded === 0) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [notUploaded]);
+
+  /** In-app links skip beforeunload, so confirm before leaving with photos still to upload. */
+  function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
+    if (notUploaded === 0) return;
+    const photos = `${notUploaded} photo${notUploaded === 1 ? " hasn't" : "s haven't"}`;
+    if (!window.confirm(`${photos} been uploaded yet and will be lost. Leave anyway?`)) event.preventDefault();
+  }
 
   function patch(key: string, changes: Partial<Staged>) {
     setStaged((items) => items.map((item) => (item.key === key ? { ...item, ...changes } : item)));
@@ -345,10 +362,16 @@ export function PhotoManager({
       )}
 
       <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <Link href={saveHref} className={buttonClasses({ variant: "secondary", size: "lg", className: "w-full sm:w-auto" })}>
+        <Link href={saveHref} onClick={confirmLeave} className={buttonClasses({ variant: "secondary", size: "lg", className: "w-full sm:w-auto" })}>
           Save draft
         </Link>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          {!uploading && notUploaded > 0 && (
+            <p className="text-caption font-medium text-warning-text">
+              {notUploaded} photo{notUploaded === 1 ? " isn't" : "s aren't"} uploaded yet. Describe {notUploaded === 1 ? "it" : "each one"} and
+              press Upload, or {notUploaded === 1 ? "it" : "they"} won&apos;t be saved.
+            </p>
+          )}
           {uploading ? (
             <>
               <Button size="lg" disabled aria-describedby="continue-wait" className="w-full sm:w-auto">
@@ -360,7 +383,7 @@ export function PhotoManager({
               </p>
             </>
           ) : (
-            <Link href={continueHref} className={buttonClasses({ size: "lg", className: "w-full sm:w-auto" })}>
+            <Link href={continueHref} onClick={confirmLeave} className={buttonClasses({ size: "lg", className: "w-full sm:w-auto" })}>
               Continue
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
