@@ -12,9 +12,9 @@ Drizzle · Zod 4 · Better Auth · M-Pesa Daraja · Cloudflare R2 · Upstash QSt
 - Slice prompts: [prompts/](prompts/)
 - UI design: [design/VerifiedPropertiesKE-Full-UI-Design-System/](design/VerifiedPropertiesKE-Full-UI-Design-System/)
 
-**Status:** S0–S7 are built: foundation, auth, billing schema, listings, images, M-Pesa, billing
-UI and card payments, and public discovery (search, ranking, home page). Next: S8 (listing detail
-and engagement).
+**Status:** S0–S8 are built: foundation, auth, billing schema, listings, images, M-Pesa, billing
+UI and card payments, public discovery (search, ranking, home page), and the listing detail page
+with saved listings, inquiries, reports and admin moderation. Next: S9 (QStash jobs).
 
 ## Setup
 
@@ -175,6 +175,27 @@ switch to `sk_live_...` in the hosting dashboard.
   branch's SQL editor (`update properties set status = 'published', published_at = now(),
   reviewed_at = now() where status = 'pending_review';`) until the moderation queue arrives in S8.
 
+### Listing detail, inquiries and moderation (S8)
+
+- `/properties/[slug]` shows a published listing: gallery (keyboard, swipe and a full-screen
+  viewer), facts, amenities, the lister panel and "Request a viewing". Any other status renders
+  the not-found page. Because the page streams, that response keeps HTTP 200 with a `noindex` tag
+  (Next.js behaviour for `notFound()` after streaming starts).
+- **Contact rule:** a verified lister's phone is public. Otherwise the phone and public email
+  appear only to a signed-in user after their first inquiry about that listing. The server
+  decides; hidden details never reach the page.
+- Inquiries need a signed-in user: at most 3 per listing per day, no exact repeats, never on your
+  own listing. Listers read them at `/account/inquiries`. Email alerts for new inquiries arrive
+  with Phase 2 notifications.
+- Hearts on cards and the detail page save to `/account/saved`. Signed-out hearts go to sign-in
+  and come back to the same page.
+- **Moderation** (platform admins only): `/admin/listings` queue with a review page (approve
+  needs the lister's plan to be active; reject needs a reason the lister sees), and
+  `/admin/reports` (dismiss, or take down: the listing becomes Rejected with the reason). Every
+  decision is written to the append-only `listing_moderation_log`.
+- Make yourself a moderator on the dev branch with
+  `ADMIN_CREATE_CONFIRM=yes npm run admin:create -- you@example.com`.
+
 ## Scripts
 
 | Script | What it does |
@@ -199,7 +220,9 @@ src/
                         listings: new → [id]/basics → details → photos → preview); admin;
                         api/auth (GET-only Better Auth callbacks); api/dev-storage (dev only);
                         api/payments (Daraja STK and C2B callbacks); account/billing actions;
-                        properties (search), how-it-works, pricing; styleguide
+                        properties ((search) results, [slug] detail, engagement actions),
+                        how-it-works, pricing; admin (overview, listings queue, reports);
+                        account/inquiries; styleguide
   proxy.ts              optimistic session-cookie redirect for /account and /admin
   components/ui/        Button (primary/secondary/quiet/ghost/danger), IconButton, Field, Input,
                         Select, Textarea, Badge (VerifiedBadge), Chip, SegmentedControl, ...
@@ -209,6 +232,9 @@ src/
                         summary, status actions
   components/search/    PropertyCard, SearchBar, FilterPanel, FilterDrawer, SortSelect, ResultsHeader,
                         Pagination, VerifiedStrip, HomeSearch, LocationTiles
+  components/listing/   Gallery, Description, FactsList, ListerPanel, InquiryForm, ReportForm,
+                        SaveButton
+  components/admin/     AdminNav, StatCard, DecisionForms
   db/                   schema.ts, index.ts (Neon HTTP), tx.ts (WebSocket transactions), queries/
   lib/                  auth-config (Better Auth factory), auth, session, roles, rate-limit,
                         email/, validation/, safe-redirect, env, format, kenya, greeting

@@ -24,6 +24,9 @@ export const POLICIES = {
   photoUploadPerUser: { name: "photo-upload:user", limit: 80, windowSeconds: 60 * 60 },
   paymentStartPerUser: { name: "payment-start:user", limit: 5, windowSeconds: 15 * 60 },
   paymentStartPerPhone: { name: "payment-start:phone", limit: 3, windowSeconds: 15 * 60 },
+  inquiryPerUser: { name: "inquiry:user", limit: 10, windowSeconds: 60 * 60 },
+  reportPerUser: { name: "report:user", limit: 10, windowSeconds: 60 * 60 },
+  favoritePerUser: { name: "favorite:user", limit: 120, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface LimitResult {

@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, gte, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, gte, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
-import { agencies, listerProfiles, properties, propertyImages } from "@/db/schema";
+import { agencies, favorites, listerProfiles, properties, propertyImages } from "@/db/schema";
 import type { LandSizeUnit } from "@/lib/format";
 import { PAGE_SIZE, escapeLike, type SearchFilters } from "@/lib/search/params";
 import {
@@ -249,4 +249,40 @@ export async function homeShowcase(db: DbExecutor, now = new Date()): Promise<Ho
   const featuredIds = new Set(featured.map((card) => card.id));
   const newest = newestRows.filter((card) => !featuredIds.has(card.id)).slice(0, HOME_SLOTS - featured.length);
   return { featured, newest };
+}
+
+export const SIMILAR_LIMIT = 3;
+
+/**
+ * Up to three published listings like this one (prompt S8 decision 10): same listing type and
+ * category, same town first, then same county, then newest. No verified boost, so nothing here is
+ * paid placement.
+ */
+export async function similarListings(
+  db: DbExecutor,
+  ref: { id: string; listingType: ListingTypeValue; category: Category; town: string; county: string },
+  now = new Date(),
+): Promise<PublicListingCard[]> {
+  const where = and(publishedOnly, eq(p.listingType, ref.listingType), eq(p.category, ref.category), ne(p.id, ref.id))!;
+  return cards(
+    db,
+    sql`with matched as (${matchedSql(where, null, now)})
+      select ${cardSelect} from matched
+      order by (lower("town") = lower(${ref.town})) desc, (lower("county") = lower(${ref.county})) desc, published desc, id
+      limit ${SIMILAR_LIMIT}`,
+  );
+}
+
+/** The user's saved listings that are still published, most recently saved first. */
+export async function savedListings(db: DbExecutor, userId: string, now = new Date()): Promise<PublicListingCard[]> {
+  const where = and(
+    publishedOnly,
+    sql`${p.id} in (select ${favorites.propertyId} from ${favorites} where ${favorites.userId} = ${userId})`,
+  )!;
+  return cards(
+    db,
+    sql`with matched as (${matchedSql(where, null, now)})
+      select ${cardSelect} from matched
+      order by (select f.created_at from favorites f where f.property_id = matched.id and f.user_id = ${userId}) desc, id`,
+  );
 }

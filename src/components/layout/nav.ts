@@ -18,6 +18,7 @@ export function accountLinks(user: HeaderUser) {
     ...(user.isLister
       ? [
           { href: "/account/listings", label: "My listings" },
+          { href: "/account/inquiries", label: "Inquiries" },
           { href: "/account/billing", label: "Subscription & billing" },
         ]
       : []),

@@ -12,7 +12,7 @@ import { ResultsHeader } from "@/components/search/ResultsHeader";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchPageSkeleton } from "@/components/search/SearchPageSkeleton";
 import { VerifiedStrip } from "@/components/search/VerifiedStrip";
-import { toCardData } from "@/components/search/card-data";
+import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
 import { EmptyState, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { searchListings } from "@/db/queries/public-listings";
@@ -91,9 +91,12 @@ async function Results({ href, filters }: { href: string; filters: SearchFilters
   const result = await loadResults(href);
   if (result.total === 0) return <NoResults filters={filters} />;
   const shown = { ...filters, page: result.page };
+  const ids = [...result.items, ...result.verifiedStrip].map((card) => card.id);
+  const saveContext = await saveContextFor(ids, searchHref(shown));
+  const saveFor = (id: string) => saveProps(saveContext, id);
   return (
     <>
-      <VerifiedStrip listings={toCardData(result.verifiedStrip)} />
+      <VerifiedStrip listings={toCardData(result.verifiedStrip)} saveFor={saveFor} />
       <section aria-labelledby="results-heading">
         <h2 id="results-heading" className="sr-only">
           Results, page {result.page} of {result.pageCount}
@@ -101,7 +104,7 @@ async function Results({ href, filters }: { href: string; filters: SearchFilters
         <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {toCardData(result.items).map((listing) => (
             <li key={listing.id} className="flex">
-              <PropertyCard listing={listing} />
+              <PropertyCard listing={listing} save={saveFor(listing.id)} />
             </li>
           ))}
         </ul>

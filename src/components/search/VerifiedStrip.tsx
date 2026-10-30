@@ -1,10 +1,17 @@
 import { PropertyCard, type PropertyCardData } from "./PropertyCard";
+import type { SaveButtonProps } from "@/components/listing/SaveButton";
 
 /**
  * Up to three matching verified listings above Newest and Price results (prompt S7 decision 7).
  * Labelled as paid placement; the same listings also keep their strict place in the results.
  */
-export function VerifiedStrip({ listings }: { listings: PropertyCardData[] }) {
+export function VerifiedStrip({
+  listings,
+  saveFor,
+}: {
+  listings: PropertyCardData[];
+  saveFor: (listingId: string) => SaveButtonProps;
+}) {
   if (listings.length === 0) return null;
   return (
     <section aria-labelledby="verified-strip-heading" className="flex flex-col gap-4 rounded-xl bg-mint-50 p-4 md:p-6">
@@ -19,7 +26,7 @@ export function VerifiedStrip({ listings }: { listings: PropertyCardData[] }) {
       <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {listings.map((listing) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} />
+            <PropertyCard listing={listing} save={saveFor(listing.id)} />
           </li>
         ))}
       </ul>

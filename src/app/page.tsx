@@ -7,7 +7,7 @@ import { HomeSearch } from "@/components/search/HomeSearch";
 import { LocationTiles } from "@/components/search/LocationTiles";
 import { PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { HOW_RANKING_WORKS_HREF } from "@/components/search/ResultsHeader";
-import { toCardData } from "@/components/search/card-data";
+import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { homeShowcase } from "@/db/queries/public-listings";
@@ -40,6 +40,7 @@ async function HomeListings() {
   }
 
   const showcase = featured.length > 0;
+  const saveContext = await saveContextFor([...featured, ...newest].map((card) => card.id), "/");
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -68,12 +69,12 @@ async function HomeListings() {
       <ul className={HOME_GRID}>
         {toCardData(featured).map((listing) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} featured />
+            <PropertyCard listing={listing} featured save={saveProps(saveContext, listing.id)} />
           </li>
         ))}
         {toCardData(newest).map((listing) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} />
+            <PropertyCard listing={listing} save={saveProps(saveContext, listing.id)} />
           </li>
         ))}
       </ul>

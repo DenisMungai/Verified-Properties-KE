@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { listingLocation } from "@/components/listings/ListingSummary";
+import { SaveButton, type SaveButtonProps } from "@/components/listing/SaveButton";
 import { Badge, Skeleton, VerifiedBadge } from "@/components/ui";
 import type { PublicListingCard } from "@/db/queries/public-listings";
 import { formatKes } from "@/lib/format";
@@ -12,24 +13,29 @@ export type PropertyCardData = Omit<PublicListingCard, "coverKey"> & { coverUrl:
 /** `sizes` for the 1 / 2 / 3-column card grids inside the 1280px container. */
 export const CARD_IMAGE_SIZES = "(min-width: 1280px) 400px, (min-width: 640px) 50vw, 100vw";
 
+export function listingHref(slug: string): string {
+  return `/properties/${slug}`;
+}
+
 /**
- * Design "Property card - reusable" (prompt S7 decision 10). Cards are not links in S7: the
- * detail page arrives in S8, which passes `href` to stretch a link over the card.
+ * Design "Property card - reusable" (prompt S7 decision 10, S8 decision 6). The title link is
+ * stretched over the whole card; the heart sits above it so both stay usable.
  */
 export function PropertyCard({
   listing,
   featured = false,
-  href,
+  save,
   sizes = CARD_IMAGE_SIZES,
 }: {
   listing: PropertyCardData;
   featured?: boolean;
-  href?: string;
+  /** The heart; omitted where saving doesn't apply. */
+  save?: SaveButtonProps;
   sizes?: string;
 }) {
   const facts = cardFacts(listing);
   return (
-    <article className="relative flex w-full flex-col overflow-hidden rounded-lg border border-line bg-white shadow-card">
+    <article className="relative flex w-full flex-col overflow-hidden rounded-lg border border-line bg-white shadow-card transition-shadow hover:shadow-popover has-[h3_a:focus-visible]:outline has-[h3_a:focus-visible]:outline-2 has-[h3_a:focus-visible]:outline-offset-2 has-[h3_a:focus-visible]:outline-emerald-600">
       <div className="relative">
         <ListingImage baseUrl={listing.coverUrl} alt={cardImageAlt(listing)} sizes={sizes} />
         {(listing.verified || featured) && (
@@ -38,6 +44,7 @@ export function PropertyCard({
             {featured && <Badge className="bg-white text-ink shadow-card">Featured</Badge>}
           </div>
         )}
+        {save && <SaveButton {...save} className="absolute right-3 top-3" />}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4 md:p-5">
         <p className="text-h3 font-bold text-ink">
@@ -45,13 +52,12 @@ export function PropertyCard({
           {listing.rentPeriod && <span> {RENT_SUFFIX[listing.rentPeriod]}</span>}
         </p>
         <h3 className="text-body font-medium text-ink">
-          {href ? (
-            <Link href={href} className="after:absolute after:inset-0 after:content-[''] hover:underline">
-              {listing.title}
-            </Link>
-          ) : (
-            listing.title
-          )}
+          <Link
+            href={listingHref(listing.slug)}
+            className="after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:outline-none"
+          >
+            {listing.title}
+          </Link>
         </h3>
         <p className="text-body-sm text-slate-600">{listingLocation(listing)}</p>
         {facts.length > 0 && <p className="text-body-sm text-slate-600">{facts.join(" · ")}</p>}

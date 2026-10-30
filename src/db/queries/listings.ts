@@ -40,8 +40,8 @@ export function manageableBy(userId: string): SQL {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Columns the editor uses. Deliberately excludes exact_* and the public map point. */
-const editorColumns = {
+/** Columns the editor (and the admin review page) uses. Deliberately excludes exact_* and the public map point. */
+export const editorColumns = {
   id: p.id,
   slug: p.slug,
   ownerUserId: p.ownerUserId,

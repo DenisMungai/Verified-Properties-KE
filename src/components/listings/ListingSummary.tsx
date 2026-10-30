@@ -11,7 +11,12 @@ function plural(n: number, word: string): string {
 }
 
 /** Key facts as short labels, with units always written out (plan §14). */
-export function listingFacts(listing: EditableListing): string[] {
+export function listingFacts(
+  listing: Pick<
+    EditableListing,
+    "bedrooms" | "bathrooms" | "areaSqm" | "landSize" | "landSizeUnit" | "subtype" | "furnished" | "parkingSpaces"
+  >,
+): string[] {
   const facts: string[] = [];
   if (listing.bedrooms !== null) facts.push(listing.bedrooms === 0 ? "Studio" : plural(listing.bedrooms, "bedroom"));
   if (listing.bathrooms !== null) facts.push(plural(listing.bathrooms, "bathroom"));

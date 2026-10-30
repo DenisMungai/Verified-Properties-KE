@@ -19,18 +19,29 @@ export function ListingImage({
   alt,
   sizes,
   preload = false,
+  fit = "cover",
   className,
 }: {
   baseUrl: string | null;
   alt: string;
   sizes: string;
   preload?: boolean;
+  /** `contain` shows the whole photo (full-screen gallery); `cover` fills the frame. */
+  fit?: "cover" | "contain";
   className?: string;
 }) {
   return (
     <div className={cn("relative aspect-[4/3] overflow-hidden bg-mint-100", className)}>
       {baseUrl ? (
-        <Image src={baseUrl} loader={variantLoader} alt={alt} fill sizes={sizes} preload={preload} className="object-cover" />
+        <Image
+          src={baseUrl}
+          loader={variantLoader}
+          alt={alt}
+          fill
+          sizes={sizes}
+          preload={preload}
+          className={fit === "contain" ? "object-contain" : "object-cover"}
+        />
       ) : (
         <Image src={LISTING_FALLBACK_SRC} alt={alt} fill unoptimized className="object-cover" />
       )}
