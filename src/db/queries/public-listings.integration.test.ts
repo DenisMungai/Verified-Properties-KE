@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, PAGE_SIZE, type SearchFilters } from "@/lib/search/params";
+import { HOME_SLOTS } from "@/lib/search/ranking";
 import { homeShowcase, searchListings, type PublicListingCard } from "./public-listings";
 
 /**
@@ -404,7 +405,8 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     expect(featuredIds).not.toContain(bFewPhotos);
     expect(featuredIds).not.toContain(plainNew);
 
-    expect(newest).toHaveLength(3);
+    // The newest fill the remaining slots: here, every one of the 4 non-featured listings.
+    expect(newest).toHaveLength(Math.min(HOME_SLOTS - featuredIds.length, 4));
     expect(newest.map((card) => card.id).slice(0, 2)).toEqual([plainNew, bFewPhotos]);
     expect(newest.some((card) => featuredIds.includes(card.id))).toBe(false);
   });
@@ -412,9 +414,9 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
   it("shows only the newest when nobody qualifies for featured", async () => {
     await insertLister("s7_home_only");
     const ids: string[] = [];
-    for (let i = 0; i < 8; i++) ids.push(await insertListing({ owner: "s7_home_only", photos: 6, ageDays: i + 1 }));
+    for (let i = 0; i < HOME_SLOTS + 2; i++) ids.push(await insertListing({ owner: "s7_home_only", photos: 6, ageDays: i + 1 }));
     const { featured, newest } = await homeShowcase(db, NOW);
     expect(featured).toEqual([]);
-    expect(newest.map((card: PublicListingCard) => card.id)).toEqual(ids.slice(0, 6));
+    expect(newest.map((card: PublicListingCard) => card.id)).toEqual(ids.slice(0, HOME_SLOTS));
   });
 });

@@ -13,7 +13,7 @@ import { getDb } from "@/db";
 import { homeShowcase } from "@/db/queries/public-listings";
 import { SEARCH_PATH } from "@/lib/search/params";
 
-const HOME_GRID = "grid gap-6 sm:grid-cols-2 xl:grid-cols-3";
+const HOME_GRID = "grid gap-6 sm:grid-cols-2 lg:grid-cols-4";
 
 /**
  * Verified featured listings when any qualify, otherwise the newest without a Featured label
@@ -86,7 +86,7 @@ function HomeListingsSkeleton() {
   return (
     <div className="flex flex-col gap-6">
       <Skeleton className="h-8 w-72 max-w-full" />
-      <PropertyGridSkeleton className={HOME_GRID} count={3} />
+      <PropertyGridSkeleton className={HOME_GRID} count={4} />
     </div>
   );
 }

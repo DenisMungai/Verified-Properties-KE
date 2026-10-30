@@ -28,8 +28,8 @@ export const CAP_WINDOW = 20;
 /** "Verified listers" strip above Newest and Price results, page 1 only. */
 export const VERIFIED_STRIP_SIZE = 3;
 
-/** Home page listings section. */
-export const HOME_SLOTS = 6;
+/** Home page listings section: two full rows of the 4-column home grid. */
+export const HOME_SLOTS = 8;
 export const HOME_PER_LISTER = 2;
 export const FEATURED_MIN_PHOTOS = FEATURED_PHOTO_COUNT;
 
