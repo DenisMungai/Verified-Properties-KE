@@ -5,6 +5,7 @@ import {
   recordPaymentEvent,
   storeStkCallback,
 } from "@/db/queries/payments";
+import { receiptAfterConfirm } from "@/lib/billing/receipts";
 import type { StkQueryResult } from "./client";
 import { closePayment, confirmPayment, flagPendingPayment, type ConfirmOutcome } from "./confirm";
 import type { PaymentDeps } from "./deps";
@@ -113,5 +114,6 @@ export async function settleStkPayment(deps: PaymentDeps, paymentId: string): Pr
       break;
   }
   log("reason" in result ? `${result.outcome}:${result.reason}` : result.outcome);
+  await receiptAfterConfirm(deps, result);
   return result;
 }

@@ -6,6 +6,7 @@ import { ListingEditorLayout, ListingEditorSkeleton } from "@/components/listing
 import { MoreListingActions, PrimaryListingAction } from "@/components/listings/ListingActions";
 import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { ListingSummary } from "@/components/listings/ListingSummary";
+import { PlanBlockLink } from "@/components/billing/PlanBlockLink";
 import { PlanUsagePanel } from "@/components/listings/PlanUsagePanel";
 import { SubmitListingForm } from "@/components/listings/SubmitListingForm";
 import { getDb } from "@/db";
@@ -64,11 +65,13 @@ function SubmitPanel({
   errors,
   entitlement,
   verified,
+  planCode,
 }: {
   listing: EditableListing;
   errors: Record<string, string> | null;
   entitlement: PublishEntitlement;
   verified: boolean;
+  planCode: string | null;
 }) {
   const submittable = canSubmit(listing.status);
   return (
@@ -98,10 +101,10 @@ function SubmitPanel({
 
       {submittable && errors && <MissingChecklist listingId={listing.id} errors={errors} />}
       {submittable && !errors && !entitlement.ok && (
-        <div className="flex flex-col gap-1 rounded-md bg-warning-tint px-4 py-3 text-body-sm text-warning-text">
+        <div className="flex flex-col gap-3 rounded-md bg-warning-tint px-4 py-3 text-body-sm text-warning-text">
           <p className="font-semibold">{PUBLISH_BLOCK_MESSAGES[entitlement.reason]}</p>
-          {/* The billing page arrives in S6. */}
-          <p>Listing plans open soon. Your draft is saved in the meantime.</p>
+          <p>Your draft is saved in the meantime.</p>
+          <PlanBlockLink reason={entitlement.reason} currentPlanCode={planCode ?? undefined} className="self-start" />
         </div>
       )}
       {submittable && !errors && entitlement.ok && (
@@ -154,6 +157,7 @@ async function Preview({ params }: { params: Promise<{ id: string }> }) {
             errors={parsed.success ? null : parsed.errors}
             entitlement={entitlement}
             verified={verified}
+            planCode={usage.planCode}
           />
           <PlanUsagePanel usage={usage} />
         </div>

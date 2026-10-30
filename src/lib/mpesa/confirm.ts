@@ -6,24 +6,27 @@ import {
   lockPayment,
   lockSubscription,
   ownerOf,
+  paidAmountCovering,
   paymentWithReceipt,
   recordPaymentEvent,
   restorePausedListings,
   updatePayment,
+  updateSubscription,
   type Payment,
+  type Plan,
 } from "@/db/queries/payments";
-import { invoices, subscriptions } from "@/db/schema";
+import { invoices } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { PAID_SUBSCRIPTION_STATUSES, type SubscriptionStatus } from "@/lib/billing/constants";
-import { nextPeriod } from "@/lib/billing/periods";
+import { planChangeAtConfirmation, type PlanTerms } from "@/lib/billing/plan-change";
 import { wholeKes } from "./payloads";
 import type { ClosedStatus } from "./result-codes";
 
 /**
- * Turning a Safaricom-confirmed payment into an active plan (prompt S5 decision 7). Run inside
- * one transaction; rows are locked payment → invoice → subscription, so two callbacks for the
- * same money serialise and the second sees `already_confirmed`. That lock plus the unique
- * receipt is what stops a replayed callback from extending a plan twice.
+ * Turning a confirmed payment (M-Pesa or card) into an active plan (prompt S5 decision 7; plan
+ * changes from prompt S6 decisions 1–3). Run inside one transaction; rows are locked payment →
+ * invoice → subscription, so two callbacks for the same money serialise and the second sees
+ * `already_confirmed`. That lock plus the unique receipt or card reference is what stops a
+ * replayed callback from extending a plan twice.
  */
 
 export type FlagReason =
@@ -34,15 +37,11 @@ export type FlagReason =
   | "missing_receipt";
 
 export type ConfirmOutcome =
-  | { outcome: "confirmed"; periodEnd: Date; restoredListingIds: string[] }
+  | { outcome: "confirmed"; paymentId: string; periodEnd: Date; restoredListingIds: string[] }
   | { outcome: "already_confirmed" }
   | { outcome: "not_pending"; status: Payment["status"] }
   | { outcome: "not_found" }
   | { outcome: "flagged"; reason: FlagReason };
-
-function isPaid(status: SubscriptionStatus): boolean {
-  return (PAID_SUBSCRIPTION_STATUSES as readonly SubscriptionStatus[]).includes(status);
-}
 
 async function statusChange(
   tx: DbExecutor,
@@ -87,10 +86,23 @@ export async function closePayment(
   return { outcome: "closed", status };
 }
 
+export interface ConfirmInput {
+  /** The M-Pesa receipt; null for card payments, whose identity is their unique provider reference. */
+  receipt: string | null;
+  paidAmount: number | null;
+  confirmedAt: Date;
+  /** Card display details from the gateway, stored with the confirmation. */
+  card?: { brand: string | null; last4: string | null };
+}
+
+function terms(plan: Plan): PlanTerms {
+  return { id: plan.id, code: plan.code, name: plan.name, priceKes: plan.priceKes, listingLimit: plan.listingLimit };
+}
+
 export async function confirmPayment(
   tx: DbExecutor,
   paymentId: string,
-  { receipt, paidAmount, confirmedAt }: { receipt: string; paidAmount: number | null; confirmedAt: Date },
+  { receipt, paidAmount, confirmedAt, card }: ConfirmInput,
 ): Promise<ConfirmOutcome> {
   const payment = await lockPayment(tx, paymentId);
   if (!payment) return { outcome: "not_found" };
@@ -98,7 +110,7 @@ export async function confirmPayment(
   if (payment.status !== "pending") return { outcome: "not_pending", status: payment.status };
 
   const paidAmountKes = wholeKes(paidAmount);
-  if (await paymentWithReceipt(tx, receipt, payment.id)) {
+  if (receipt && (await paymentWithReceipt(tx, receipt, payment.id))) {
     return flagPayment(tx, payment, "duplicate_receipt", paidAmountKes);
   }
 
@@ -109,42 +121,59 @@ export async function confirmPayment(
   }
 
   const sub = await lockSubscription(tx, invoice.subscriptionId);
-  if (!sub) return flagPayment(tx, payment, "invoice_not_open", paidAmountKes);
+  const [currentPlan, invoicePlan] = sub ? await Promise.all([getPlan(tx, sub.planId), getPlan(tx, invoice.planId)]) : [];
+  if (!sub || !currentPlan || !invoicePlan) return flagPayment(tx, payment, "invoice_not_open", paidAmountKes);
 
-  const paid = isPaid(sub.status);
-  const period = nextPeriod({ confirmedAt, currentPeriodEnd: paid ? sub.currentPeriodEnd : null });
-  const continuous = paid && sub.currentPeriodEnd?.getTime() === period.start.getTime();
+  const change = planChangeAtConfirmation({
+    subscription: sub,
+    currentPlan: terms(currentPlan),
+    invoicePlan: terms(invoicePlan),
+    confirmedAt,
+    coveringPaidAmountKes: await paidAmountCovering(tx, sub.id, confirmedAt),
+  });
 
-  await updatePayment(tx, payment.id, { status: "confirmed", mpesaReceipt: receipt, paidAmountKes, confirmedAt });
+  await updatePayment(tx, payment.id, {
+    status: "confirmed",
+    paidAmountKes,
+    confirmedAt,
+    ...(receipt ? { mpesaReceipt: receipt } : {}),
+    ...(card ? { cardBrand: card.brand, cardLast4: card.last4 } : {}),
+  });
   await tx
     .update(invoices)
-    .set({ status: "paid", paidAt: confirmedAt, periodStart: period.start, periodEnd: period.end })
+    .set({ status: "paid", paidAt: confirmedAt, periodStart: change.periodStart, periodEnd: change.periodEnd })
     .where(eq(invoices.id, invoice.id));
-  await tx
-    .update(subscriptions)
-    .set({
-      status: "active",
-      currentPeriodStart: continuous && sub.currentPeriodStart ? sub.currentPeriodStart : period.start,
-      currentPeriodEnd: period.end,
-      graceEndsAt: period.graceEndsAt,
-    })
-    .where(eq(subscriptions.id, sub.id));
+  await updateSubscription(tx, sub.id, {
+    status: "active",
+    planId: change.planId,
+    currentPeriodStart: change.currentPeriodStart,
+    currentPeriodEnd: change.periodEnd,
+    graceEndsAt: change.graceEndsAt,
+    scheduledPlanId: change.scheduledPlanId,
+    scheduledChangeAt: change.scheduledChangeAt,
+  });
 
+  // The plan in force now: a schedule only ever points at a later date here.
   let restoredListingIds: string[] = [];
-  const plan = await getPlan(tx, sub.planId);
-  if (plan?.kind === "listing" && plan.listingLimit !== null) {
+  const plan = change.planId === invoicePlan.id ? invoicePlan : currentPlan;
+  if (plan.kind === "listing" && plan.listingLimit !== null) {
     restoredListingIds = await restorePausedListings(tx, ownerOf(sub), plan.listingLimit, confirmedAt);
   }
 
-  await statusChange(tx, payment, { entity: "payment", from: payment.status, to: "confirmed", receipt });
+  await statusChange(tx, payment, { entity: "payment", from: payment.status, to: "confirmed", receipt: receipt ?? payment.providerReference });
   await statusChange(tx, payment, { entity: "invoice", from: invoice.status, to: "paid" });
   await statusChange(tx, payment, {
     entity: "subscription",
     subscriptionId: sub.id,
     from: sub.status,
     to: "active",
-    periodEnd: period.end.toISOString(),
+    change: change.kind,
+    planFrom: sub.planId,
+    planTo: change.planId,
+    scheduledPlanId: change.scheduledPlanId,
+    creditDays: change.creditDays,
+    periodEnd: change.periodEnd.toISOString(),
     restoredListings: restoredListingIds.length,
   });
-  return { outcome: "confirmed", periodEnd: period.end, restoredListingIds };
+  return { outcome: "confirmed", paymentId: payment.id, periodEnd: change.periodEnd, restoredListingIds };
 }

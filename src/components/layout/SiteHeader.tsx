@@ -44,7 +44,7 @@ async function MobileActions() {
 /** Design: white 72px bar, green wordmark, Explore, Log in (secondary) + Get started (primary). */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-white">
+    <header className="sticky top-0 z-40 border-b border-line bg-white print:hidden">
       <PageContainer className="flex h-header items-center gap-6">
         <Logo />
         <nav aria-label="Main" className="ml-auto hidden md:block">

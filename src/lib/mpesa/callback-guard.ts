@@ -44,8 +44,8 @@ export function normalizeIp(ip: string): string | null {
   return ipv4ToInt(candidate) === null ? null : candidate;
 }
 
-/** "a/b, c/d" -> CIDRs. A bare address means /32. Throws on anything malformed. */
-export function parseCidrs(list: string): Cidr[] {
+/** "a/b, c/d" -> CIDRs. A bare address means /32. Throws on anything malformed, naming `source`. */
+export function parseCidrs(list: string, source = "MPESA_CALLBACK_ALLOWED_IPS"): Cidr[] {
   return list
     .split(",")
     .map((entry) => entry.trim())
@@ -55,7 +55,7 @@ export function parseCidrs(list: string): Cidr[] {
       const base = ipv4ToInt(ip);
       const bits = Number(bitsText);
       if (base === null || !/^\d{1,2}$/.test(bitsText) || bits > 32) {
-        throw new Error(`Invalid CIDR in MPESA_CALLBACK_ALLOWED_IPS: ${entry}`);
+        throw new Error(`Invalid CIDR in ${source}: ${entry}`);
       }
       const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
       return { base: (base & mask) >>> 0, mask };

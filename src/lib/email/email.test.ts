@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EmailNotConfiguredError, createTransport, maskEmail } from "./send";
-import { firstName, passwordResetEmail, verificationEmail } from "./templates";
+import { firstName, passwordResetEmail, paymentReceiptEmail, verificationEmail } from "./templates";
 
 const url = "http://localhost:3000/api/auth/verify-email?token=abc&callbackURL=%2Faccount";
 
@@ -17,6 +17,28 @@ describe("templates", () => {
     const email = passwordResetEmail("<script>x</script>", url);
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");
+  });
+
+  it("lists the receipt details in html and text, escaped", () => {
+    const email = paymentReceiptEmail(
+      "Wanjiru Kamau",
+      {
+        invoiceNumber: "VPK0000042",
+        planName: "Pro <b>",
+        period: "1 Nov 2026 – 1 Dec 2026",
+        amount: "KSh 2,500",
+        paidWith: "M-Pesa QAB12CD34E",
+        paidAt: "1 Nov 2026, 09:00",
+      },
+      "http://localhost:3000/account/billing/receipts/VPK0000042",
+    );
+    expect(email.subject).toContain("VPK0000042");
+    expect(email.text).toContain("Hi Wanjiru,");
+    expect(email.text).not.toContain("Kamau");
+    expect(email.text).toContain("Amount: KSh 2,500");
+    expect(email.text).toContain("Paid with: M-Pesa QAB12CD34E");
+    expect(email.html).toContain("Pro &lt;b&gt;");
+    expect(email.html).not.toContain("Pro <b>");
   });
 
   it("falls back when the name is blank", () => {

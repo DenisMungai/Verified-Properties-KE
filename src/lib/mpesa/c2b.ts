@@ -1,6 +1,7 @@
 import "server-only";
 import { findInvoiceByNumber, insertC2bPayment, recordPaymentEvent } from "@/db/queries/payments";
 import { normalizeKenyanPhone } from "@/lib/kenya";
+import { receiptAfterConfirm } from "@/lib/billing/receipts";
 import { confirmPayment, type ConfirmOutcome } from "./confirm";
 import type { PaymentDeps } from "./deps";
 import { parseC2b, wholeKes, type C2bPayment } from "./payloads";
@@ -77,5 +78,6 @@ export async function confirmC2b(deps: PaymentDeps, c2b: C2bPayment, raw: unknow
       `[mpesa] paybill trans=${c2b.transId} invoice=${c2b.billRef} outcome=${result.outcome}${"reason" in result ? `:${result.reason}` : ""}`,
     );
   }
+  await receiptAfterConfirm(deps, result);
   return result;
 }

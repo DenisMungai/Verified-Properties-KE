@@ -17,9 +17,9 @@ async function AccountNavLoader() {
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   return (
-    <PageContainer className="grid gap-6 py-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10 lg:py-12">
+    <PageContainer className="grid gap-6 py-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10 lg:py-12 print:block print:py-0">
       {/* min-w-0: the nav's scrolling tab row must not widen the single mobile column. */}
-      <aside className="min-w-0">
+      <aside className="min-w-0 print:hidden">
         <Suspense fallback={<Skeleton className="h-control w-full" />}>
           <AccountNavLoader />
         </Suspense>

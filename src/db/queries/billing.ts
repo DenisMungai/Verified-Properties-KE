@@ -40,19 +40,29 @@ export async function getListingPool(db: DbExecutor, userId: string): Promise<Li
   return row?.agencyId ? { kind: "agency", agencyId: row.agencyId } : { kind: "user", userId };
 }
 
-/** The pool's live listing subscription and its plan's limit, or null when there is none. */
+/**
+ * The plan in force at `now` (prompt S6 decision 3): a scheduled downgrade takes over at its change
+ * date without waiting for a job to rewrite `plan_id`.
+ */
+export function effectivePlanIdAt(now: Date) {
+  return sql`case when ${subscriptions.scheduledChangeAt} <= ${now.toISOString()}::timestamptz
+    then ${subscriptions.scheduledPlanId} else ${subscriptions.planId} end`;
+}
+
+/** The pool's live listing subscription and its effective plan, or null when there is none. */
 export async function getListingSubscription(
   db: DbExecutor,
   pool: ListingPool,
-): Promise<{ subscription: Subscription; listingLimit: number | null } | null> {
+  now: Date = new Date(),
+): Promise<{ subscription: Subscription; listingLimit: number | null; plan: Plan } | null> {
   const owner =
     pool.kind === "agency"
       ? eq(subscriptions.ownerAgencyId, pool.agencyId)
       : eq(subscriptions.ownerUserId, pool.userId);
   const [row] = await db
-    .select({ subscription: subscriptions, listingLimit: plans.listingLimit })
+    .select({ subscription: subscriptions, listingLimit: plans.listingLimit, plan: plans })
     .from(subscriptions)
-    .innerJoin(plans, eq(plans.id, subscriptions.planId))
+    .innerJoin(plans, eq(plans.id, effectivePlanIdAt(now)))
     .where(and(owner, eq(subscriptions.kind, "listing"), inArray(subscriptions.status, [...LIVE_STATUSES])))
     .limit(1);
   return row ?? null;
@@ -77,7 +87,7 @@ export async function getPublishEntitlement(
 ): Promise<PublishEntitlement> {
   const pool = await getListingPool(db, userId);
   const [plan, activeListingCount] = await Promise.all([
-    getListingSubscription(db, pool),
+    getListingSubscription(db, pool, now),
     countActiveListings(db, pool),
   ]);
   return canPublish({
@@ -94,6 +104,8 @@ export interface ListingPlanUsage {
   phase: SubscriptionPhase | null;
   activeListingCount: number;
   pool: ListingPool;
+  /** The effective plan's code, for "Renew plan" links. */
+  planCode: string | null;
 }
 
 /** "x of y active listings used" for the lister dashboard and the create-listing panel. */
@@ -104,7 +116,7 @@ export async function getListingPlanUsage(
 ): Promise<ListingPlanUsage> {
   const pool = await getListingPool(db, userId);
   const [plan, activeListingCount] = await Promise.all([
-    getListingSubscription(db, pool),
+    getListingSubscription(db, pool, now),
     countActiveListings(db, pool),
   ]);
   return {
@@ -112,6 +124,7 @@ export async function getListingPlanUsage(
     phase: plan ? subscriptionPhase(plan.subscription, now) : null,
     activeListingCount,
     pool,
+    planCode: plan?.plan.code ?? null,
   };
 }
 

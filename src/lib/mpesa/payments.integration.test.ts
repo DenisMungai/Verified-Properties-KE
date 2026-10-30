@@ -56,6 +56,8 @@ describe.skipIf(!url)("M-Pesa payments (integration)", { timeout: 60_000 }, () =
       )!,
       now: () => clock,
       rateLimiter: createMemoryLimiter(),
+      email: async () => {},
+      appUrl: "https://app.example",
       sleep: async () => {},
     };
   });
@@ -247,7 +249,7 @@ describe.skipIf(!url)("M-Pesa payments (integration)", { timeout: 60_000 }, () =
     expect((await subscriptionOf("owner_agency_id", agencyId)).status).toBe("pending");
   });
 
-  it("switches an unpaid plan choice but refuses a plan change on a paid plan", async () => {
+  it("switches an unpaid plan choice, and sends a downgrade on a paid plan to scheduling", async () => {
     const userId = await insertUser("pay_u_switch");
     const starter = await startOk(userId);
     clock = new Date(clock.getTime() + 100_000);
@@ -257,7 +259,7 @@ describe.skipIf(!url)("M-Pesa payments (integration)", { timeout: 60_000 }, () =
 
     expect(await pay(pro, { amount: 5 })).toMatchObject({ outcome: "confirmed" });
     clock = new Date(clock.getTime() + 100_000);
-    expect(await start(userId, "t_pay_starter")).toMatchObject({ ok: false, code: "plan_change_unavailable" });
+    expect(await start(userId, "t_pay_starter")).toMatchObject({ ok: false, code: "use_schedule" });
   });
 
   it("records a refused STK push and points to the Paybill", async () => {

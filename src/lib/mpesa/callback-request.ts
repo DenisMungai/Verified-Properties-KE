@@ -26,9 +26,10 @@ export function guardCallback(settings: MpesaSettings | null, token: string, hea
 }
 
 export type BodyResult = { ok: true; json: unknown } | { ok: false; status: 400 | 413 };
+export type RawBodyResult = { ok: true; raw: Buffer } | { ok: false; status: 400 | 413 };
 
-/** Reads at most `maxBytes` of the body and parses it as JSON. */
-export async function readJsonBody(request: Request, maxBytes = MAX_CALLBACK_BYTES): Promise<BodyResult> {
+/** Reads at most `maxBytes` of the body as bytes (signed webhooks need the exact bytes). */
+export async function readRawBody(request: Request, maxBytes = MAX_CALLBACK_BYTES): Promise<RawBodyResult> {
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (declared > maxBytes) return { ok: false, status: 413 };
   if (!request.body) return { ok: false, status: 400 };
@@ -46,8 +47,15 @@ export async function readJsonBody(request: Request, maxBytes = MAX_CALLBACK_BYT
     }
     chunks.push(value);
   }
+  return { ok: true, raw: Buffer.concat(chunks) };
+}
+
+/** Reads at most `maxBytes` of the body and parses it as JSON. */
+export async function readJsonBody(request: Request, maxBytes = MAX_CALLBACK_BYTES): Promise<BodyResult> {
+  const body = await readRawBody(request, maxBytes);
+  if (!body.ok) return body;
   try {
-    return { ok: true, json: JSON.parse(Buffer.concat(chunks).toString("utf8")) };
+    return { ok: true, json: JSON.parse(body.raw.toString("utf8")) };
   } catch {
     return { ok: false, status: 400 };
   }

@@ -22,6 +22,13 @@
       "when": 1793257569435,
       "tag": "0002_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793343668261,
+      "tag": "0003_scheduled_plan_change",
+      "breakpoints": true
     }
   ]
 }

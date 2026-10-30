@@ -124,6 +124,35 @@ Before go-live: apply for Daraja production early, and confirm Safaricom's callb
 (`MPESA_CALLBACK_ALLOWED_IPS`; production defaults to the community-documented
 `196.201.212-214.0/24`).
 
+### Billing pages (S6)
+
+- `/pricing` (public), `/account/billing` (plan, renewal date, usage, invoices and receipts),
+  `/account/billing/checkout?plan=pro` (plan picker and payment), and a printable receipt per paid
+  invoice. The checkout's "Check your phone" panel polls the payment every 3 s for 2 minutes, then
+  shows the Paybill fallback.
+- **Upgrade** (higher listing limit) starts when paid; unused days of the current plan become
+  extra days on the new one. **Downgrade** is scheduled for the period end with nothing to pay;
+  once in force, the lister chooses which listings stay live on the billing page (S9 picks the
+  newest after 3 days).
+- Receipt emails go to the plan owner (or every agency admin) once per confirmed payment. In
+  development without Resend they print to the dev terminal.
+
+### Card payments (Paystack, S6)
+
+Optional. Without `PAYSTACK_SECRET_KEY` the checkout offers M-Pesa only.
+
+1. Sign up at paystack.com (Kenya). In Settings > API Keys & Webhooks copy the **test** secret key
+   into `.env.local` as `PAYSTACK_SECRET_KEY=sk_test_...` and restart `npm run dev`.
+2. On the checkout choose **Card**. Paystack's test checkout lists its test cards; a successful
+   one returns you to "Payment received". The return page verifies the payment itself, so no
+   tunnel is needed locally.
+3. Webhook (optional locally, required in production): set the webhook URL to
+   `https://<host>/api/payments/card/webhook`. Requests without a valid `x-paystack-signature`
+   get 401. A live key enforces Paystack's webhook IPs (`PAYSTACK_WEBHOOK_ALLOWED_IPS` overrides).
+
+Before go-live: confirm the Paystack Kenya account is activated for live card payments, and
+switch to `sk_live_...` in the hosting dashboard.
+
 ## Scripts
 
 | Script | What it does |

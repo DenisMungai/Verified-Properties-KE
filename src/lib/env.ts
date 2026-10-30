@@ -43,6 +43,14 @@ const serverSchema = z.object({
   /** Comma-separated IPv4 CIDRs allowed to call the payment callbacks (prompt S5 decision 3). */
   MPESA_CALLBACK_ALLOWED_IPS: z.string().optional(),
 
+  /** Paystack secret key for card payments (prompt S6 decision 17); unset hides the Card option. */
+  PAYSTACK_SECRET_KEY: z
+    .string()
+    .regex(/^sk_(test|live)_[A-Za-z0-9]+$/, { error: "must be a Paystack secret key (sk_test_... or sk_live_...)" })
+    .optional(),
+  /** Comma-separated IPv4 CIDRs allowed to call the card webhook; defaults to Paystack's IPs with a live key. */
+  PAYSTACK_WEBHOOK_ALLOWED_IPS: z.string().optional(),
+
   AT_USERNAME: z.string().optional(),
   AT_API_KEY: z.string().optional(),
   AT_SENDER_ID: z.string().optional(),

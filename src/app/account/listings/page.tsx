@@ -4,11 +4,13 @@ import { Suspense } from "react";
 import { Building2, Plus } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
 import { FormAlert } from "@/components/forms/FormAlert";
+import { PlanBlockLink, isPublishBlockReason } from "@/components/billing/PlanBlockLink";
 import { MoreListingActions, PrimaryListingAction } from "@/components/listings/ListingActions";
 import { ListingImage } from "@/components/listings/ListingImage";
 import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
+import { getListingPlanUsage } from "@/db/queries/billing";
 import { listManageableListings, photoSummaries, type ManageableListingRow } from "@/db/queries/listings";
 import type { ActionState } from "@/lib/action-state";
 import { PUBLISH_BLOCK_MESSAGES, type PublishBlockReason } from "@/lib/billing/entitlements";
@@ -162,9 +164,13 @@ async function Listings({ searchParams }: { searchParams: SearchParams }) {
   );
   const rows = listings.map((row) => ({ ...row, coverUrl: publicImageBaseUrl(covers.get(row.id)?.coverKey) }));
   const banner = bannerFor(params);
+  const error = single(params.error);
+  const blocked = isPublishBlockReason(error) ? error : null;
+  const usage = blocked ? await getListingPlanUsage(db, user.id) : null;
   return (
     <div className="flex flex-col gap-4">
       {banner && <FormAlert state={banner} />}
+      {blocked && <PlanBlockLink reason={blocked} currentPlanCode={usage?.planCode ?? undefined} className="self-start" />}
       {rows.length === 0 ? (
         <EmptyState
           icon={<Building2 />}

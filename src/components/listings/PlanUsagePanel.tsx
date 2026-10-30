@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check } from "lucide-react";
 import type { ListingPlanUsage } from "@/db/queries/billing";
 import { FEATURED_PHOTO_COUNT } from "@/lib/storage/limits";
@@ -70,6 +71,12 @@ export function PlanUsagePanel({ usage, tips = TIPS }: { usage: ListingPlanUsage
           </div>
         )}
         {detail && <p className="text-caption text-slate-700">{detail}</p>}
+        <Link
+          href={usage.limit === null ? "/account/billing/checkout" : "/account/billing"}
+          className="inline-flex min-h-control items-center self-start text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+        >
+          {usage.limit === null ? "Choose a plan" : "Manage plan"}
+        </Link>
       </div>
     </aside>
   );

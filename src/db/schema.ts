@@ -592,7 +592,8 @@ export const paymentStatus = pgEnum("payment_status", [
   "flagged",
 ]);
 
-export const paymentMethod = pgEnum("payment_method", ["stk_push", "c2b_paybill", "manual"]);
+/** `card`: Visa or Mastercard through Paystack's hosted checkout (prompt S6 decision 14). */
+export const paymentMethod = pgEnum("payment_method", ["stk_push", "c2b_paybill", "manual", "card"]);
 
 /**
  * Feeds invoice numbers: VPK + 7 digits fits Daraja's 12-character account reference. Capped at
@@ -654,6 +655,12 @@ export const subscriptions = pgTable(
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     graceEndsAt: timestamp("grace_ends_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /**
+     * A downgrade waiting for the period end (prompt S6 decision 3). From `scheduledChangeAt` the
+     * scheduled plan is the effective one; S9 later writes it into `planId`.
+     */
+    scheduledPlanId: uuid("scheduled_plan_id"),
+    scheduledChangeAt: timestamp("scheduled_change_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -662,6 +669,19 @@ export const subscriptions = pgTable(
       columns: [t.planId, t.kind],
       foreignColumns: [plans.id, plans.kind],
     }),
+    foreignKey({
+      name: "subscriptions_scheduled_plan_kind_fk",
+      columns: [t.scheduledPlanId, t.kind],
+      foreignColumns: [plans.id, plans.kind],
+    }),
+    check(
+      "subscriptions_schedule_complete",
+      sql`(${t.scheduledPlanId} is null) = (${t.scheduledChangeAt} is null)`,
+    ),
+    check(
+      "subscriptions_schedule_changes_plan",
+      sql`${t.scheduledPlanId} is null or ${t.scheduledPlanId} <> ${t.planId}`,
+    ),
     check("subscriptions_one_owner", sql`(${t.ownerUserId} is null) <> (${t.ownerAgencyId} is null)`),
     check(
       "subscriptions_agency_owns_listing_only",
@@ -744,6 +764,11 @@ export const payments = pgTable(
     checkoutRequestId: text("checkout_request_id").unique(),
     merchantRequestId: text("merchant_request_id"),
     mpesaReceipt: text("mpesa_receipt").unique(),
+    /** The card gateway's transaction reference (Paystack `reference`); our own, set at start. */
+    providerReference: text("provider_reference").unique(),
+    /** Display only, from the gateway's Verify response; the gateway keeps the card. */
+    cardBrand: text("card_brand"),
+    cardLast4: text("card_last4"),
     /** Amount requested, copied from the invoice. */
     amountKes: integer("amount_kes").notNull(),
     /** Amount Safaricom reports as paid. */
@@ -765,8 +790,11 @@ export const payments = pgTable(
     ),
     check(
       "payments_confirmed_has_receipt",
-      sql`${t.status} <> 'confirmed' or (${t.mpesaReceipt} is not null and ${t.confirmedAt} is not null)`,
+      sql`${t.status} <> 'confirmed' or (${t.confirmedAt} is not null and (${t.mpesaReceipt} is not null or ${t.providerReference} is not null))`,
     ),
+    // Compared as text: a new enum value cannot be used as a literal in the migration that adds it.
+    check("payments_card_has_reference", sql`${t.method}::text <> 'card' or ${t.providerReference} is not null`),
+    check("payments_card_last4_format", sql`${t.cardLast4} is null or ${t.cardLast4} ~ '^[0-9]{4}$'`),
     check("payments_flagged_has_reason", sql`${t.status} <> 'flagged' or ${t.flagReason} is not null`),
     index("payments_invoice_idx").on(t.invoiceId),
     index("payments_phone_idx").on(t.phoneE164),

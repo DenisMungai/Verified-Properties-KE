@@ -36,9 +36,17 @@ function ActiveListingsCard({ usage }: { usage: ListingPlanUsage }) {
           ? `${remainingSlots(usage.limit ?? 0, usage.activeListingCount)} slots available`
           : detail || headline}
       </p>
-      <Link href="/account/listings" className="mt-2 self-start text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink">
-        View my listings
-      </Link>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        <Link href="/account/listings" className="inline-flex min-h-control items-center text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink">
+          View my listings
+        </Link>
+        <Link
+          href={hasPlan ? "/account/billing" : "/account/billing/checkout"}
+          className="inline-flex min-h-control items-center text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+        >
+          {hasPlan ? "Manage plan" : "Choose a plan"}
+        </Link>
+      </div>
     </section>
   );
 }

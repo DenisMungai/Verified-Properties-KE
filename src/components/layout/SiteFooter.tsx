@@ -4,6 +4,7 @@ import { PageContainer } from "./PageContainer";
 
 const FOOTER_LINKS = [
   { href: "/", label: "Explore" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/sign-in", label: "Log in" },
   { href: "/sign-up", label: "Get started" },
 ] as const;
@@ -11,7 +12,7 @@ const FOOTER_LINKS = [
 /** Minimal footer with real links only (no dead links, plan §12). */
 export function SiteFooter() {
   return (
-    <footer className="mt-auto bg-ink text-white">
+    <footer className="mt-auto bg-ink text-white print:hidden">
       <PageContainer className="flex flex-col gap-6 py-10 md:flex-row md:items-start md:justify-between">
         <div className="flex max-w-sm flex-col gap-2">
           <p className="text-h4 font-bold text-white">{BRAND.name}</p>

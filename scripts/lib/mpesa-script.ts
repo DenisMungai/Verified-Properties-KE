@@ -13,6 +13,7 @@ import { mpesaSettingsFor, type MpesaSettings } from "../../src/lib/mpesa/config
 import { createDarajaClient } from "../../src/lib/mpesa/daraja";
 import type { PaymentDeps } from "../../src/lib/mpesa/deps";
 import { createSimulatorClient } from "../../src/lib/mpesa/simulator";
+import { createTransport } from "../../src/lib/email/send";
 import { getRateLimiter } from "../../src/lib/rate-limit";
 
 export interface ScriptContext {
@@ -68,6 +69,8 @@ export function scriptPaymentDeps(ctx: ScriptContext): PaymentDeps | null {
     settings,
     now: () => new Date(),
     rateLimiter: getRateLimiter(),
+    email: createTransport({ resendApiKey: ctx.env.RESEND_API_KEY, emailFrom: ctx.env.EMAIL_FROM }),
+    appUrl: ctx.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, ""),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   };
 }

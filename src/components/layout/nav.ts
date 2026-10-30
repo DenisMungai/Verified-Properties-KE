@@ -6,12 +6,20 @@ export interface HeaderUser {
 }
 
 /** Public navigation. Only pages that exist are listed (no dead links, plan §12). */
-export const MAIN_NAV = [{ href: "/", label: "Explore" }] as const;
+export const MAIN_NAV = [
+  { href: "/", label: "Explore" },
+  { href: "/pricing", label: "Pricing" },
+] as const;
 
 export function accountLinks(user: HeaderUser) {
   return [
     { href: "/account", label: "Overview" },
-    ...(user.isLister ? [{ href: "/account/listings", label: "My listings" }] : []),
+    ...(user.isLister
+      ? [
+          { href: "/account/listings", label: "My listings" },
+          { href: "/account/billing", label: "Subscription & billing" },
+        ]
+      : []),
     { href: "/account/saved", label: "Saved properties" },
     ...(user.isLister ? [{ href: "/account/profile", label: "Listing profile" }] : []),
     { href: "/account/settings", label: "Settings" },

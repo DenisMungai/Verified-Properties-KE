@@ -1,9 +1,8 @@
 import "server-only";
 import { getDb } from "@/db";
 import { storedStkResult } from "@/db/queries/payments";
-import { withTransaction } from "@/db/tx";
+import { getBillingDeps } from "@/lib/billing/app-deps";
 import { getServerEnv } from "@/lib/env";
-import { getRateLimiter } from "@/lib/rate-limit";
 import type { DarajaClient } from "./client";
 import { mpesaSettingsFor, type MpesaSettings } from "./config";
 import { createDarajaClient } from "./daraja";
@@ -40,12 +39,9 @@ export function getPaymentDeps(): PaymentDeps | null {
   }
   client ??= createClient(settings);
   return {
-    db: getDb(),
-    withTransaction,
+    ...getBillingDeps(),
     daraja: client,
     settings,
-    now: () => new Date(),
-    rateLimiter: getRateLimiter(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   };
 }

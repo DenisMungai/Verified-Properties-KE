@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lte, max, ne, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import {
   agencyMembers,
@@ -130,6 +130,38 @@ export async function lockSubscription(tx: DbExecutor, id: string): Promise<Subs
   return row ?? null;
 }
 
+/** Plan, period and schedule written together when a payment confirms or a downgrade is scheduled. */
+export async function updateSubscription(
+  tx: DbExecutor,
+  id: string,
+  values: Partial<
+    Pick<
+      Subscription,
+      "status" | "planId" | "currentPeriodStart" | "currentPeriodEnd" | "graceEndsAt" | "scheduledPlanId" | "scheduledChangeAt"
+    >
+  >,
+): Promise<void> {
+  await tx.update(subscriptions).set(values).where(eq(subscriptions.id, id));
+}
+
+/** The amount actually paid for the period covering `at`, for the upgrade credit (prompt S6 decision 1). */
+export async function paidAmountCovering(db: DbExecutor, subscriptionId: string, at: Date): Promise<number | null> {
+  const [row] = await db
+    .select({ amountKes: invoices.amountKes })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.subscriptionId, subscriptionId),
+        eq(invoices.status, "paid"),
+        lte(invoices.periodStart, at),
+        gt(invoices.periodEnd, at),
+      ),
+    )
+    .orderBy(desc(invoices.periodStart))
+    .limit(1);
+  return row?.amountKes ?? null;
+}
+
 export async function openInvoices(tx: DbExecutor, subscriptionId: string): Promise<Invoice[]> {
   return tx
     .select()
@@ -222,6 +254,23 @@ export async function insertC2bPayment(
   return row ?? null;
 }
 
+/** A pending card payment; its reference is our own and unique (prompt S6 decision 16). */
+export async function insertCardPayment(
+  db: DbExecutor,
+  values: { invoiceId: string; providerReference: string; amountKes: number },
+): Promise<Payment> {
+  const [row] = await db
+    .insert(payments)
+    .values({ ...values, method: "card", status: "pending" })
+    .returning();
+  return row;
+}
+
+export async function findPaymentByProviderReference(db: DbExecutor, reference: string): Promise<Payment | null> {
+  const [row] = await db.select().from(payments).where(eq(payments.providerReference, reference)).limit(1);
+  return row ?? null;
+}
+
 export async function getPayment(db: DbExecutor, id: string): Promise<Payment | null> {
   const [row] = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
   return row ?? null;
@@ -282,7 +331,20 @@ export async function storeStkCallback(
 export async function updatePayment(
   tx: DbExecutor,
   id: string,
-  values: Partial<Pick<Payment, "status" | "mpesaReceipt" | "paidAmountKes" | "flagReason" | "confirmedAt" | "resultCode" | "resultDesc">>,
+  values: Partial<
+    Pick<
+      Payment,
+      | "status"
+      | "mpesaReceipt"
+      | "paidAmountKes"
+      | "flagReason"
+      | "confirmedAt"
+      | "resultCode"
+      | "resultDesc"
+      | "cardBrand"
+      | "cardLast4"
+    >
+  >,
 ): Promise<void> {
   await tx.update(payments).set(values).where(eq(payments.id, id));
 }
@@ -295,7 +357,11 @@ export type PaymentEventType =
   | "c2b_validation"
   | "c2b_confirmation"
   | "callback_rejected"
-  | "status_change";
+  | "status_change"
+  | "card_init"
+  | "card_init_failed"
+  | "card_webhook"
+  | "card_verify";
 
 export async function recordPaymentEvent(
   db: DbExecutor,
@@ -314,6 +380,15 @@ export async function recordPaymentEvent(
     sourceIp: event.sourceIp ?? null,
     payload: event.payload ?? {},
   });
+}
+
+/** When an event of this type was last recorded for the payment (throttles repeat checks). */
+export async function lastEventAt(db: DbExecutor, paymentId: string, eventType: PaymentEventType): Promise<Date | null> {
+  const [row] = await db
+    .select({ at: max(paymentEvents.createdAt) })
+    .from(paymentEvents)
+    .where(and(eq(paymentEvents.paymentId, paymentId), eq(paymentEvents.eventType, eventType)));
+  return row?.at ?? null;
 }
 
 /** The callback result stored on a payment, for the dev simulator's STK Query. */
