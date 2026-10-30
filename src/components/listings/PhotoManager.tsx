@@ -72,7 +72,8 @@ function putFile(url: string, file: File, onProgress: (percent: number) => void)
 function stateText(item: Staged): string {
   switch (item.state) {
     case "ready":
-      return altReady(item.alt) ? "Not uploaded yet" : "Not uploaded yet: add a description";
+      if (altReady(item.alt)) return "Ready: press Upload to save it";
+      return item.alt.trim() ? "Not uploaded yet: the description is too short" : "Not uploaded yet: add a description";
     case "waiting":
       return "Waiting";
     case "uploading":
@@ -121,7 +122,10 @@ export function PhotoManager({
 
   const uploading = staged.some((item) => isActive(item.state));
   const uploadable = staged.filter((item) => item.state === "ready" || item.state === "failed");
-  const canUpload = !uploading && uploadable.length > 0 && uploadable.every((item) => altReady(item.alt));
+  // Described photos upload now; the rest wait for their description instead of blocking the batch.
+  const described = uploadable.filter((item) => altReady(item.alt));
+  const needDescription = uploadable.length - described.length;
+  const canUpload = !uploading && described.length > 0;
   // Picked but not saved: these are lost if the lister leaves the step.
   const notUploaded = staged.filter((item) => item.state === "ready" || item.state === "failed" || isActive(item.state)).length;
   const slotsLeft = MAX_PHOTOS_PER_LISTING - photos.length - staged.filter((s) => s.state !== "invalid").length;
@@ -316,17 +320,20 @@ export function PhotoManager({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Button
                   size="lg"
-                  onClick={() => void uploadAll(uploadable)}
+                  onClick={() => void uploadAll(described)}
                   disabled={!canUpload}
                   loading={uploading}
                   className="w-full sm:w-auto"
                 >
-                  {uploadable.length > 0
-                    ? `Upload ${uploadable.length} photo${uploadable.length === 1 ? "" : "s"}`
+                  {described.length > 0
+                    ? `Upload ${described.length} photo${described.length === 1 ? "" : "s"}`
                     : "Upload photos"}
                 </Button>
-                {!uploading && uploadable.some((item) => !altReady(item.alt)) && (
-                  <p className="text-caption text-slate-600">Describe every photo to upload it.</p>
+                {!uploading && needDescription > 0 && (
+                  <p className="text-caption text-slate-600">
+                    {needDescription} photo{needDescription === 1 ? " needs a description" : "s need descriptions"} of at least{" "}
+                    {PHOTO_ALT_MIN} characters before {needDescription === 1 ? "it" : "they"} can upload.
+                  </p>
                 )}
               </div>
             </div>
@@ -408,6 +415,8 @@ function StagedRow({
   const active = isActive(item.state);
   const failed = item.state === "failed" || item.state === "invalid";
   const fieldId = `alt-${item.key}`;
+  const typed = item.alt.trim().length;
+  const tooShort = typed > 0 && typed < PHOTO_ALT_MIN;
   return (
     <li className="flex flex-col gap-3 rounded-lg border border-line p-3 sm:flex-row sm:gap-4">
       {/* A local preview of the chosen file; decorative, the description field names it. */}
@@ -420,7 +429,12 @@ function StagedRow({
           <Field
             id={fieldId}
             label="Describe this photo"
-            hint="For people using screen readers, e.g. “Living room with balcony view”"
+            hint={`At least ${PHOTO_ALT_MIN} characters, e.g. “Living room with balcony view”. Read aloud to people using screen readers.`}
+            error={
+              tooShort
+                ? `Add ${PHOTO_ALT_MIN - typed} more character${PHOTO_ALT_MIN - typed === 1 ? "" : "s"} (at least ${PHOTO_ALT_MIN}).`
+                : undefined
+            }
             required
           >
             {(control) => (
