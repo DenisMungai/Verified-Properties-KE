@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getPayment, recordPaymentEvent, type Payment } from "@/db/queries/payments";
 import { payments } from "@/db/schema";
 import { receiptAfterConfirm } from "@/lib/billing/receipts";
-import { confirmPayment, type ConfirmOutcome } from "@/lib/mpesa/confirm";
+import { closePayment, confirmPayment, type ConfirmOutcome } from "@/lib/mpesa/confirm";
 import type { CardDeps } from "./deps";
 
 /**
@@ -12,7 +12,7 @@ import type { CardDeps } from "./deps";
  *
  * A declined or abandoned attempt leaves the payment `pending` with the gateway status noted:
  * Paystack lets the payer retry on the same checkout, and a later success must still confirm.
- * Stale pending card payments are closed by S9 reconciliation.
+ * Stale pending card payments are closed by the S9 `payment-checks` job.
  */
 
 export type CardSettleOutcome =
@@ -33,7 +33,10 @@ async function noteGatewayStatus(deps: Pick<CardDeps, "db">, payment: Payment, s
     .where(and(eq(payments.id, payment.id), eq(payments.status, "pending")));
 }
 
-export async function settleCardPayment(deps: CardDeps, paymentId: string, source: "return" | "webhook" | "poll"): Promise<CardSettleOutcome> {
+/** Who asked for the Verify: the payer returning, the webhook, the status poll or an S9 job. */
+export type CardSettleSource = "return" | "webhook" | "poll" | "job";
+
+export async function settleCardPayment(deps: CardDeps, paymentId: string, source: CardSettleSource): Promise<CardSettleOutcome> {
   const payment = await getPayment(deps.db, paymentId);
   if (!payment || payment.method !== "card" || !payment.providerReference) return { outcome: "not_found" };
   if (payment.status !== "pending") {
@@ -86,5 +89,21 @@ export async function settleCardPayment(deps: CardDeps, paymentId: string, sourc
     `[card] verify reference=${reference} source=${source} outcome=${result.outcome}${"reason" in result ? `:${result.reason}` : ""}`,
   );
   await receiptAfterConfirm(deps, result);
+  return result;
+}
+
+/**
+ * A card attempt still pending a day later, after one more Verify that wasn't a success (prompt S9
+ * decision 11): closed as `cancelled` when the payer abandoned the checkout, otherwise `failed`.
+ * Locked and re-checked, so a success that lands first wins.
+ */
+export async function closeStaleCardPayment(
+  deps: Pick<CardDeps, "withTransaction">,
+  paymentId: string,
+  gatewayStatus: string,
+): Promise<Awaited<ReturnType<typeof closePayment>>> {
+  const status = gatewayStatus === "abandoned" ? "cancelled" : "failed";
+  const result = await deps.withTransaction((tx) => closePayment(tx, paymentId, status));
+  console.info(`[card] stale payment=${paymentId} gateway=${gatewayStatus} outcome=${result.outcome}`);
   return result;
 }

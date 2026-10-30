@@ -115,3 +115,37 @@ export function paymentReceiptEmail(name: string, receipt: PaymentReceiptDetails
     text: [body, "", ...details.map(([label, value]) => `${label}: ${value}`), "", `View receipt: ${url}`, "", footnote].join("\n"),
   };
 }
+
+export interface RenewalReminderDetails {
+  planName: string;
+  /** "5d": five days before the period end; "1d": the day before. */
+  reminder: "5d" | "1d";
+  /** "5 Dec 2026", already formatted in Nairobi time. */
+  endsOn: string;
+  /** "KSh 2,500" */
+  price: string;
+}
+
+/** Renewal reminders 5 days and 1 day before a listing plan ends (prompt S9 decision 9). */
+export function renewalReminderEmail(name: string, details: RenewalReminderDetails, url: string): EmailContent {
+  const when = details.reminder === "1d" ? "tomorrow" : "in 5 days";
+  const body =
+    `Hi ${firstName(name)}, your ${details.planName} plan ends ${when}, on ${details.endsOn}. ` +
+    "Your listings stay live for 3 days after that, then they're paused until you renew.";
+  const rows = [
+    ["Plan", details.planName],
+    ["Ends on", details.endsOn],
+    ["Renewal price", details.price],
+  ] as const;
+  const footnote = "Renewing adds 30 days from your current end date, so you don't lose any days by renewing early.";
+  return {
+    subject: `Your ${details.planName} plan ends ${when}`,
+    html: layout({ heading: `Your plan ends ${when}`, body, actionLabel: "Renew plan", url, footnote, details: rows }),
+    text: [body, "", ...rows.map(([label, value]) => `${label}: ${value}`), "", `Renew plan: ${url}`, "", footnote].join("\n"),
+  };
+}
+
+/** The SMS version: no name, under 160 characters with a typical plan name and app URL. */
+export function renewalReminderSms(details: Pick<RenewalReminderDetails, "planName" | "endsOn">, billingUrl: string): string {
+  return `${BRAND.name}: your ${details.planName} plan ends ${details.endsOn}. Renew to keep your listings live: ${billingUrl}`;
+}

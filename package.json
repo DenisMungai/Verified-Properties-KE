@@ -18,13 +18,16 @@
     "mpesa:pay": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-pay.ts",
     "mpesa:simulate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-simulate.ts",
     "mpesa:status": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-status.ts",
-    "mpesa:register-c2b": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-register-c2b.ts"
+    "mpesa:register-c2b": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-register-c2b.ts",
+    "jobs:run": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-run.ts",
+    "jobs:schedule": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-schedule.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1159.0",
     "@aws-sdk/s3-request-presigner": "^3.1159.0",
     "@fontsource/poppins": "^5.3.0",
     "@neondatabase/serverless": "^1.2.0",
+    "@upstash/qstash": "^2.12.1",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.40.0",
     "better-auth": "^1.7.14",

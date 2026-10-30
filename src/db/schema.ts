@@ -823,6 +823,40 @@ export const paymentEvents = pgTable(
   ],
 );
 
+/**
+ * Renewal reminders (prompt S9 decision 8): one row per subscription, period end, reminder and
+ * channel, claimed before sending so a retried or overlapping job never sends twice. Not a payment
+ * record, so not append-only: the status moves pending → sent / failed / skipped.
+ */
+export const billingReminders = pgTable(
+  "billing_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => subscriptions.id),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    /** "5d" or "1d" before the period end. */
+    reminder: text("reminder").notNull(),
+    /** "email" or "sms". */
+    channel: text("channel").notNull(),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(1),
+    /** The error's name only, never its message. */
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("billing_reminders_once").on(t.subscriptionId, t.periodEnd, t.reminder, t.channel),
+    check("billing_reminders_reminder_valid", sql`${t.reminder} in ('5d', '1d')`),
+    check("billing_reminders_channel_valid", sql`${t.channel} in ('email', 'sms')`),
+    check("billing_reminders_status_valid", sql`${t.status} in ('pending', 'sent', 'failed', 'skipped')`),
+    check("billing_reminders_attempts_positive", sql`${t.attempts} >= 1`),
+    check("billing_reminders_error_length", sql`${t.lastError} is null or char_length(${t.lastError}) <= 100`),
+  ],
+);
+
 /** Append-only (enforced by trigger): refunds, credits, manual activations; who, when and why. */
 export const billingAuditLog = pgTable(
   "billing_audit_log",

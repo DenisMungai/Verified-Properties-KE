@@ -361,7 +361,8 @@ export type PaymentEventType =
   | "card_init"
   | "card_init_failed"
   | "card_webhook"
-  | "card_verify";
+  | "card_verify"
+  | "reconciliation";
 
 export async function recordPaymentEvent(
   db: DbExecutor,
@@ -442,6 +443,27 @@ export async function restorePausedListings(
     })
     .where(and(inArray(properties.id, keep), eq(properties.status, "paused")));
   return keep;
+}
+
+/**
+ * After a listing plan's grace ends (prompt S9 decision 5): the pool's published listings move to
+ * `paused` (`plan_lapsed`) and leave search. Listings in review keep their slot; approval already
+ * needs an active plan. Restored by `restorePausedListings` on renewal.
+ */
+export async function pausePoolListings(tx: DbExecutor, pool: ListingPool, now: Date): Promise<string[]> {
+  const owner = pool.kind === "agency" ? eq(properties.agencyId, pool.agencyId) : eq(properties.ownerUserId, pool.userId);
+  const live = await tx
+    .select({ id: properties.id })
+    .from(properties)
+    .where(and(owner, eq(properties.status, "published")))
+    .for("update");
+  if (live.length === 0) return [];
+  const paused = await tx
+    .update(properties)
+    .set({ status: "paused", pausedAt: now, pauseReason: "plan_lapsed" })
+    .where(and(inArray(properties.id, live.map((row) => row.id)), eq(properties.status, "published")))
+    .returning({ id: properties.id });
+  return paused.map((row) => row.id);
 }
 
 /* -------------------------------------------------------------------------- */

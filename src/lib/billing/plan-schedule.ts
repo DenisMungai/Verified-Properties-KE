@@ -149,23 +149,38 @@ export async function keepListingsAfterDowngrade(deps: Deps, userId: string, kee
     const activeIds = new Set(active.map((row) => row.id));
     if (keep.size > limit || [...keep].some((id) => !activeIds.has(id))) return fail("invalid_choice");
 
-    const leaving = active.filter((row) => !keep.has(row.id));
-    const toPause = leaving.filter((row) => row.status === "published").map((row) => row.id);
-    const toDraft = leaving.filter((row) => row.status === "pending_review").map((row) => row.id);
-    if (toPause.length > 0) {
-      await tx
-        .update(properties)
-        .set({ status: "paused", pausedAt: now, pauseReason: "over_plan_limit" })
-        .where(and(inArray(properties.id, toPause), eq(properties.status, "published")));
-    }
-    if (toDraft.length > 0) {
-      await tx
-        .update(properties)
-        .set({ status: "draft" })
-        .where(and(inArray(properties.id, toDraft), eq(properties.status, "pending_review")));
-    }
-    await scheduleEvent(tx, sub, { action: "listings_kept", kept: keep.size, paused: toPause.length, toDraft: toDraft.length });
-    console.info(`[billing] downgrade choice subscription=${sub.id} kept=${keep.size} paused=${toPause.length} draft=${toDraft.length}`);
+    const { paused, toDraft } = await applyKeepSelection(tx, active, keep, now);
+    await scheduleEvent(tx, sub, { action: "listings_kept", kept: keep.size, paused, toDraft });
+    console.info(`[billing] downgrade choice subscription=${sub.id} kept=${keep.size} paused=${paused} draft=${toDraft}`);
     return { ok: true, changeAt: null };
   });
+}
+
+/**
+ * Takes the listings not in `keep` out of the plan's limit: published ones are paused for the
+ * limit, ones in review go back to draft. Shared by the lister's choice and the S9 auto-pick.
+ * `active` must be the pool's slot-using listings, locked by the caller.
+ */
+export async function applyKeepSelection(
+  tx: DbExecutor,
+  active: readonly { id: string; status: string }[],
+  keep: ReadonlySet<string>,
+  now: Date,
+): Promise<{ paused: number; toDraft: number }> {
+  const leaving = active.filter((row) => !keep.has(row.id));
+  const toPause = leaving.filter((row) => row.status === "published").map((row) => row.id);
+  const toDraft = leaving.filter((row) => row.status === "pending_review").map((row) => row.id);
+  if (toPause.length > 0) {
+    await tx
+      .update(properties)
+      .set({ status: "paused", pausedAt: now, pauseReason: "over_plan_limit" })
+      .where(and(inArray(properties.id, toPause), eq(properties.status, "published")));
+  }
+  if (toDraft.length > 0) {
+    await tx
+      .update(properties)
+      .set({ status: "draft" })
+      .where(and(inArray(properties.id, toDraft), eq(properties.status, "pending_review")));
+  }
+  return { paused: toPause.length, toDraft: toDraft.length };
 }

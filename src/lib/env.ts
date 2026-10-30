@@ -29,6 +29,8 @@ const serverSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
+  /** QStash region host (prompt S9 decision 14); unset uses the client's default. */
+  QSTASH_URL: z.url().optional(),
   QSTASH_TOKEN: z.string().optional(),
   QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
   QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
