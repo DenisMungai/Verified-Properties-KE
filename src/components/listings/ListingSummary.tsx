@@ -60,7 +60,7 @@ function PhotoPreview({ photos }: { photos: { baseUrl: string | null; altText: s
           ))}
         </ul>
       )}
-      {more > 0 && <p className="text-caption text-slate-600">+{more} more</p>}
+      {more > 0 && <p className="text-micro text-slate-600">+{more} more</p>}
     </div>
   );
 }
@@ -78,18 +78,18 @@ export function ListingSummary({
   return (
     <article aria-labelledby="summary-title" className="flex flex-col gap-5">
       <PhotoPreview photos={photos} />
-      <p className="text-label uppercase text-slate-600">
+      <p className="text-micro tracking-wide font-semibold uppercase text-slate-600">
         {LISTING_TYPE_LABELS[listing.listingType]} · {CATEGORY_LABELS[listing.category]}
       </p>
       <div className="flex flex-col gap-2">
-        <h2 id="summary-title" className="text-h2 break-words">
+        <h2 id="summary-title" className="text-title break-words">
           {listing.title}
         </h2>
-        <p className="text-price text-emerald-700">
+        <p className="text-display-sm text-emerald-700">
           {formatKes(listing.priceKes)}
           {listing.rentPeriod && <span className="text-body font-normal text-slate-600"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
         </p>
-        <p className="flex items-start gap-2 text-body-sm text-slate-700">
+        <p className="flex items-start gap-2 text-small text-slate-700">
           <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           {listingLocation(listing)}
         </p>
@@ -97,7 +97,7 @@ export function ListingSummary({
       {facts.length > 0 && (
         <ul aria-label="Key facts" className="flex flex-wrap gap-2">
           {facts.map((fact) => (
-            <li key={fact} className="rounded-pill border border-line bg-white px-3 py-1 text-body-sm text-ink">
+            <li key={fact} className="rounded-full border border-line bg-white px-3 py-1 text-small text-ink">
               {fact}
             </li>
           ))}
@@ -112,12 +112,12 @@ export function ListingSummary({
           ))}
         </div>
       ) : (
-        <p className="text-body-sm text-slate-600">No description yet.</p>
+        <p className="text-small text-slate-600">No description yet.</p>
       )}
       {listing.amenities.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h3 className="text-body-sm font-semibold text-ink">Amenities</h3>
-          <p className="text-body-sm text-slate-700">{listing.amenities.join(" · ")}</p>
+          <h3 className="text-small font-semibold text-ink">Amenities</h3>
+          <p className="text-small text-slate-700">{listing.amenities.join(" · ")}</p>
         </div>
       )}
     </article>

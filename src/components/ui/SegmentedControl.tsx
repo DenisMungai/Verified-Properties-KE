@@ -46,7 +46,7 @@ export function SegmentedControl<V extends string>(props: SegmentedControlProps<
   return (
     <fieldset className={cn("min-w-0", className)}>
       <legend className={legendClassName}>{legend}</legend>
-      <div className={cn("inline-flex max-w-full", variant === "pill" ? "gap-1 rounded-pill bg-surface-muted p-1" : "flex-wrap gap-3")}>
+      <div className={cn("inline-flex max-w-full", variant === "pill" ? "gap-1 rounded-full bg-surface-muted p-1" : "flex-wrap gap-3")}>
         {options.map((option) => {
           const id = `${idPrefix}-${option.value}`;
           const checkedProps =
@@ -69,12 +69,12 @@ export function SegmentedControl<V extends string>(props: SegmentedControlProps<
               <label
                 htmlFor={id}
                 className={cn(
-                  "flex cursor-pointer items-center whitespace-nowrap text-button transition-colors",
+                  "flex cursor-pointer items-center whitespace-nowrap text-small font-semibold transition-colors",
                   variant === "pill"
                     ? // Design (homepage "Buy / Rent / Land"): selected option is a filled Forest pill.
-                      "justify-center rounded-pill px-5 text-slate-700 hover:bg-white hover:text-ink peer-checked:bg-emerald-600 peer-checked:text-white"
+                      "justify-center rounded-full px-4 text-slate-700 hover:bg-white hover:text-ink peer-checked:bg-emerald-600 peer-checked:text-white"
                     : // Design "04 — Create Listing": bordered boxes; selected has a Forest border on Soft green.
-                      "min-w-40 rounded-md border border-line-strong bg-white px-5 text-ink hover:border-ink peer-checked:border-emerald-600 peer-checked:bg-mint-50 peer-checked:text-emerald-700",
+                      "min-w-32 rounded border border-line-strong bg-white px-4 text-ink hover:border-ink peer-checked:border-emerald-600 peer-checked:bg-mint-50 peer-checked:text-emerald-700",
                   "peer-focus-visible:shadow-focus peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600",
                   "peer-disabled:cursor-not-allowed peer-disabled:text-slate-500",
                   size === "md" ? "h-control" : "h-control-lg",

@@ -12,7 +12,7 @@ export function FormAlert({ state, className }: { state: ActionState; className?
       <p
         role="alert"
         className={cn(
-          "flex items-start gap-2 rounded-md bg-danger-tint px-4 py-3 text-body-sm font-medium text-danger",
+          "flex items-start gap-2 rounded-md bg-danger-tint px-4 py-3 text-small font-medium text-danger",
           className,
         )}
       >
@@ -25,7 +25,7 @@ export function FormAlert({ state, className }: { state: ActionState; className?
     return (
       <p
         role="status"
-        className={cn("flex items-start gap-2 rounded-md bg-mint-50 px-4 py-3 text-body-sm font-medium text-success", className)}
+        className={cn("flex items-start gap-2 rounded-md bg-mint-50 px-4 py-3 text-small font-medium text-success", className)}
       >
         <CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         {state.message}

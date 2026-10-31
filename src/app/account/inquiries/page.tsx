@@ -22,10 +22,10 @@ function InquiryItem({ inquiry }: { inquiry: ReceivedInquiry }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className="text-body font-semibold text-ink">{inquiry.fullName}</p>
-          <p className="text-caption text-slate-600">
+          <p className="text-micro text-slate-600">
             About{" "}
             {live ? (
-              <Link href={listingHref(inquiry.propertySlug)} className="font-medium text-emerald-700 underline underline-offset-2">
+              <Link href={listingHref(inquiry.propertySlug)} className="font-medium text-emerald-700 underline underline-offset-4">
                 {inquiry.propertyTitle}
               </Link>
             ) : (
@@ -40,13 +40,13 @@ function InquiryItem({ inquiry }: { inquiry: ReceivedInquiry }) {
       <p className="whitespace-pre-line break-words text-body text-slate-700">{inquiry.message}</p>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
         {inquiry.phone && (
-          <a href={`tel:${inquiry.phone}`} className="inline-flex min-h-control items-center gap-2 text-body-sm font-semibold text-emerald-700 hover:underline">
+          <a href={`tel:${inquiry.phone}`} className="inline-flex min-h-control items-center gap-2 text-small font-semibold text-emerald-700 hover:underline">
             <Phone aria-hidden="true" className="size-4" />
             {displayKenyanPhone(inquiry.phone)}
           </a>
         )}
         {inquiry.email && (
-          <a href={`mailto:${inquiry.email}`} className="inline-flex min-h-control items-center gap-2 break-all text-body-sm font-semibold text-emerald-700 hover:underline">
+          <a href={`mailto:${inquiry.email}`} className="inline-flex min-h-control items-center gap-2 break-all text-small font-semibold text-emerald-700 hover:underline">
             <Mail aria-hidden="true" className="size-4 shrink-0" />
             {inquiry.email}
           </a>
@@ -87,7 +87,7 @@ async function InquiryList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p role="status" className="text-body-sm text-slate-600">
+        <p role="status" className="text-small text-slate-600">
           {inquiries.length} {inquiries.length === 1 ? "inquiry" : "inquiries"}
           {unread > 0 ? ` · ${unread} unread` : ""}
         </p>

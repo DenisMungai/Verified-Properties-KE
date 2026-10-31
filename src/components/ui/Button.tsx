@@ -6,7 +6,7 @@ export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost" | "dange
 export type ButtonSize = "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-5 text-button transition-colors " +
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 text-small font-semibold transition-colors duration-200 " +
   "disabled:cursor-not-allowed aria-disabled:cursor-not-allowed";
 
 /** Design: Button - Primary / Secondary / Quiet. */

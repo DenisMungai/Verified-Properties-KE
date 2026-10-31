@@ -7,7 +7,7 @@ import { CATEGORIES, CATEGORY_LABELS } from "@/lib/validation/listing";
 import { SEARCH_FORM_ID } from "./ids";
 
 /** Design: section eyebrows in caption caps, Muted. */
-const eyebrow = "mb-2 text-label uppercase text-slate-600";
+const eyebrow = "mb-1.5 text-micro tracking-wide font-semibold uppercase text-slate-600";
 
 const ROOM_OPTIONS = [
   { value: "", label: "Any" },
@@ -19,27 +19,27 @@ const ROOM_OPTIONS = [
 
 function Checkbox({ name, value = "1", defaultChecked, children }: { name: string; value?: string; defaultChecked: boolean; children: ReactNode }) {
   return (
-    <label className="flex min-h-control cursor-pointer items-center gap-3 text-body-sm text-ink">
+    <label className="flex min-h-control cursor-pointer items-center gap-2 text-small text-ink">
       <input
         type="checkbox"
         name={name}
         value={value}
         form={SEARCH_FORM_ID}
         defaultChecked={defaultChecked}
-        className="size-5 shrink-0 cursor-pointer rounded-sm border-line-strong accent-emerald-600"
+        className="size-4 shrink-0 cursor-pointer rounded-sm border-line-strong accent-emerald-600"
       />
       {children}
     </label>
   );
 }
 
-/** "Any / 1+ / 2+ / 3+ / 4+" as native radios, five 44px pills across the sidebar. */
+/** "Any / 1+ / 2+ / 3+ / 4+" as native radios, five 44px-tall pills across the sidebar. */
 function RoomPills({ name, legend, value }: { name: string; legend: string; value: number | null }) {
   const current = value === null ? "" : String(value);
   return (
     <fieldset>
       <legend className={eyebrow}>{legend}</legend>
-      <div className="grid grid-cols-5 gap-1 rounded-pill bg-surface-muted p-1">
+      <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-surface-muted p-0.5">
         {ROOM_OPTIONS.map((option) => {
           const id = `filter-${name}-${option.value || "any"}`;
           return (
@@ -56,7 +56,7 @@ function RoomPills({ name, legend, value }: { name: string; legend: string; valu
               <label
                 htmlFor={id}
                 className={cn(
-                  "flex h-control cursor-pointer items-center justify-center rounded-pill text-button text-slate-700",
+                  "flex h-control cursor-pointer items-center justify-center rounded-md text-micro font-semibold text-slate-700",
                   "hover:bg-white hover:text-ink peer-checked:bg-emerald-600 peer-checked:text-white",
                   "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600",
                 )}
@@ -89,7 +89,7 @@ export function FilterPanel({
   const land = filters.mode === "land";
   const priceErrorId = priceError ? "filter-price-error" : undefined;
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {!land && (
         <fieldset>
           <legend className={eyebrow}>Property type</legend>
@@ -103,7 +103,7 @@ export function FilterPanel({
 
       <fieldset aria-describedby={priceErrorId}>
         <legend className={eyebrow}>Price range</legend>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
           <div>
             <label htmlFor="filter-min-price" className="sr-only">
               Minimum price in shillings
@@ -138,7 +138,7 @@ export function FilterPanel({
           </div>
         </div>
         {priceError && (
-          <p id={priceErrorId} className="mt-2 flex items-start gap-1.5 text-caption font-medium text-danger">
+          <p id={priceErrorId} className="mt-2 flex items-start gap-1.5 text-micro font-medium text-danger">
             <CircleAlert aria-hidden="true" className="mt-px size-4 shrink-0" />
             {priceError}
           </p>

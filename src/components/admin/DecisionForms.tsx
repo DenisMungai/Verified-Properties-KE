@@ -61,7 +61,7 @@ function ReasonDecision({
           />
         )}
       </Field>
-      <p aria-live="polite" className="-mt-1 text-caption text-slate-600">
+      <p aria-live="polite" className="-mt-1 text-micro text-slate-600">
         {length} / {DECISION_REASON_MAX}
       </p>
       <Button type="submit" variant="danger" loading={pending} className="self-start">

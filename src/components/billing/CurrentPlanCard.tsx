@@ -10,7 +10,7 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
   const percent = Math.min(100, Math.round((used / limit) * 100));
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-body-sm text-slate-700 tabular">
+      <p className="text-small text-slate-700 tabular">
         {used} of {limit} active listings used
       </p>
       <div
@@ -19,9 +19,9 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
         aria-valuemin={0}
         aria-valuemax={limit}
         aria-valuenow={Math.min(used, limit)}
-        className="h-2 overflow-hidden rounded-pill bg-line"
+        className="h-2 overflow-hidden rounded-full bg-line"
       >
-        <div className="h-full rounded-pill bg-emerald-600" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-emerald-600" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -42,9 +42,9 @@ export function CurrentPlanCard({ overview, now }: { overview: BillingOverview; 
 
   if (!subscription || !shown || !phase) {
     return (
-      <section aria-labelledby="current-plan-heading" className="flex flex-col gap-4 rounded-xl border border-line bg-white p-4 md:p-6">
-        <p className="text-caption font-semibold uppercase tracking-wider text-slate-600">Current listing plan</p>
-        <h2 id="current-plan-heading" className="text-h2">
+      <section aria-labelledby="current-plan-heading" className="flex flex-col gap-4 rounded-lg border border-line bg-white p-4 md:p-5">
+        <p className="text-micro font-semibold uppercase tracking-wider text-slate-600">Current listing plan</p>
+        <h2 id="current-plan-heading" className="text-title">
           No listing plan yet
         </h2>
         <p className="text-body text-slate-600">Drafts are free; you&rsquo;ll need a plan to publish.</p>
@@ -53,7 +53,7 @@ export function CurrentPlanCard({ overview, now }: { overview: BillingOverview; 
             Choose a plan
           </Link>
         ) : (
-          <p className="text-body-sm text-slate-700">Your agency admin manages this plan.</p>
+          <p className="text-small text-slate-700">Your agency admin manages this plan.</p>
         )}
       </section>
     );
@@ -62,10 +62,10 @@ export function CurrentPlanCard({ overview, now }: { overview: BillingOverview; 
   // Renew charges the scheduled plan when a downgrade is waiting (prompt S6 decision 3).
   const renewCode = overview.scheduledPlan?.code ?? plan?.code;
   return (
-    <section aria-labelledby="current-plan-heading" className="flex flex-col gap-6 rounded-xl border border-line bg-white p-4 md:p-6">
+    <section aria-labelledby="current-plan-heading" className="flex flex-col gap-6 rounded-lg border border-line bg-white p-4 md:p-5">
       <div className="flex flex-col gap-2">
-        <p className="text-caption font-semibold uppercase tracking-wider text-slate-600">Current listing plan</p>
-        <h2 id="current-plan-heading" className="text-h2">
+        <p className="text-micro font-semibold uppercase tracking-wider text-slate-600">Current listing plan</p>
+        <h2 id="current-plan-heading" className="text-title">
           {shown.name}
         </h2>
         <p className="text-body text-slate-600">{listingLimitLine(shown.listingLimit)}</p>
@@ -91,7 +91,7 @@ export function CurrentPlanCard({ overview, now }: { overview: BillingOverview; 
             </Link>
           </div>
         ) : (
-          <p className="text-body-sm text-slate-700">Your agency admin manages this plan.</p>
+          <p className="text-small text-slate-700">Your agency admin manages this plan.</p>
         )}
       </div>
     </section>

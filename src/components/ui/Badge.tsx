@@ -27,13 +27,13 @@ export function Badge({ tone = "neutral", icon, className, children }: BadgeProp
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-pill px-3 py-1 text-caption font-semibold",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-micro font-semibold",
         tones[tone],
         className,
       )}
     >
       {icon && (
-        <span aria-hidden="true" className="inline-flex [&>svg]:size-3.5">
+        <span aria-hidden="true" className="inline-flex [&>svg]:size-3">
           {icon}
         </span>
       )}

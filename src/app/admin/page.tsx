@@ -31,14 +31,14 @@ async function Overview() {
   }
   const counts = await adminCounts(getDb());
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Published listings" value={counts.published} note="Live in search" />
         <StatCard label="Pending review" value={counts.pending} note="Needs moderation" href="/admin/listings" />
         <StatCard label="Open reports" value={counts.openReports} note="Reported by users" href="/admin/reports" />
       </div>
-      <section aria-labelledby="quick-actions" className="flex flex-col gap-3 rounded-xl bg-mint-50 p-5 md:p-6">
-        <h2 id="quick-actions" className="text-h3 text-emerald-700">
+      <section aria-labelledby="quick-actions" className="flex flex-col gap-3 rounded-lg bg-mint-50 p-5 md:p-6">
+        <h2 id="quick-actions" className="text-title text-emerald-700">
           Quick actions
         </h2>
         <ul className="flex flex-col gap-2">

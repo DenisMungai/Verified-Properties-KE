@@ -41,20 +41,23 @@ async function MobileActions() {
   return <MobileMenu user={await headerUser()} />;
 }
 
-/** Design: white 72px bar, green wordmark, Explore, Log in (secondary) + Get started (primary). */
+/**
+ * Compact sticky bar (66px): wordmark left, nav centred, account actions right. Below md the
+ * nav moves into the slide-out drawer.
+ */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-white print:hidden">
-      <PageContainer className="flex h-header items-center gap-6">
-        <Logo />
-        <nav aria-label="Main" className="ml-auto hidden md:block">
-          <ul className="flex items-center gap-2">
+    <header className="sticky top-0 z-40 min-h-[66px] border-b border-line bg-white/95 backdrop-blur print:hidden">
+      <PageContainer className="flex h-[66px] items-center gap-4 md:grid md:grid-cols-[1fr_auto_1fr]">
+        <Logo className="justify-self-start" />
+        <nav aria-label="Main" className="hidden md:block">
+          <ul className="flex items-center gap-4">
             {MAIN_NAV.map((item) => (
               <li key={item.href}>
                 <NavLink
                   href={item.href}
-                  className="inline-flex min-h-control items-center rounded-md px-3 text-body-sm font-medium text-slate-700 hover:text-ink"
-                  activeClassName="text-emerald-700"
+                  className="inline-flex min-h-control items-center rounded-md px-1 text-[10px] font-medium text-slate-700 transition-colors hover:text-ink 2xl:text-small"
+                  activeClassName="font-semibold text-emerald-700"
                 >
                   {item.label}
                 </NavLink>
@@ -62,8 +65,8 @@ export function SiteHeader() {
             ))}
           </ul>
         </nav>
-        <div className="hidden items-center gap-3 md:flex">
-          <Suspense fallback={<Skeleton className="h-control w-56" />}>
+        <div className="hidden items-center justify-end gap-2 md:flex">
+          <Suspense fallback={<Skeleton className="h-control w-48" />}>
             <DesktopActions />
           </Suspense>
         </div>

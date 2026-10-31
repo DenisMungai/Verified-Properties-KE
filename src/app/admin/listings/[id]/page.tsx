@@ -48,34 +48,34 @@ async function Review({ params }: { params: Params }) {
 
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <div className="min-w-0 rounded-xl border border-line bg-white p-5 md:p-6">
+      <div className="min-w-0 rounded-lg border border-line bg-white p-5 md:p-6">
         <ListingSummary
           listing={listing}
           photos={photos.map((photo) => ({ baseUrl: publicImageBaseUrl(photo.storageKey), altText: photo.altText }))}
         />
       </div>
       <div className="flex flex-col gap-6">
-        <section aria-labelledby="lister-heading" className="flex flex-col gap-2 rounded-xl border border-line bg-white p-5">
-          <h2 id="lister-heading" className="text-h4">
+        <section aria-labelledby="lister-heading" className="flex flex-col gap-2 rounded-lg border border-line bg-white p-5">
+          <h2 id="lister-heading" className="text-title">
             Lister
           </h2>
           <p className="text-body text-ink">{lister.agencyName ?? lister.displayName ?? lister.accountName}</p>
-          {lister.agencyName && lister.displayName && <p className="text-body-sm text-slate-700">Listed by {lister.displayName}</p>}
-          <p className="break-all text-body-sm text-slate-700">{lister.email}</p>
+          {lister.agencyName && lister.displayName && <p className="text-small text-slate-700">Listed by {lister.displayName}</p>}
+          <p className="break-all text-small text-slate-700">{lister.email}</p>
           <div className="flex flex-wrap gap-2 pt-1">
             <ListingStatusBadge status={listing.status} />
             <Badge tone={plan.tone}>{plan.label}</Badge>
           </div>
         </section>
 
-        <section aria-labelledby="decision-heading" className="flex flex-col gap-5 rounded-xl border border-line bg-white p-5">
-          <h2 id="decision-heading" className="text-h4">
+        <section aria-labelledby="decision-heading" className="flex flex-col gap-5 rounded-lg border border-line bg-white p-5">
+          <h2 id="decision-heading" className="text-title">
             Decision
           </h2>
           {pending ? (
             <>
               {planPhase !== "active" && (
-                <p className="rounded-md bg-warning-tint px-4 py-3 text-body-sm text-warning-text">
+                <p className="rounded-md bg-warning-tint px-4 py-3 text-small text-warning-text">
                   The lister&apos;s plan isn&apos;t active, so approving will be refused until they pay. You can still reject.
                 </p>
               )}
@@ -85,22 +85,22 @@ async function Review({ params }: { params: Params }) {
               </div>
             </>
           ) : (
-            <p className="text-body-sm text-slate-700">This listing isn&apos;t waiting for review, so there&apos;s nothing to decide.</p>
+            <p className="text-small text-slate-700">This listing isn&apos;t waiting for review, so there&apos;s nothing to decide.</p>
           )}
         </section>
 
-        <section aria-labelledby="history-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-white p-5">
-          <h2 id="history-heading" className="text-h4">
+        <section aria-labelledby="history-heading" className="flex flex-col gap-3 rounded-lg border border-line bg-white p-5">
+          <h2 id="history-heading" className="text-title">
             Moderation history
           </h2>
           {history.length === 0 ? (
-            <p className="text-body-sm text-slate-600">No decisions yet.</p>
+            <p className="text-small text-slate-600">No decisions yet.</p>
           ) : (
             <ol className="flex flex-col gap-3">
               {history.map((entry) => (
-                <li key={entry.id} className="flex flex-col gap-0.5 text-body-sm">
+                <li key={entry.id} className="flex flex-col gap-0.5 text-small">
                   <span className="font-medium text-ink">{ACTION_LABELS[entry.action] ?? entry.action}</span>
-                  <span className="text-caption text-slate-600">
+                  <span className="text-micro text-slate-600">
                     {formatNairobiDateTime(entry.createdAt)}
                     {entry.actorName ? ` · ${entry.actorName}` : ""}
                   </span>
@@ -118,11 +118,11 @@ async function Review({ params }: { params: Params }) {
 export default function ReviewListingPage({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/admin/listings" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-body-sm font-medium text-emerald-700 hover:underline">
+      <Link href="/admin/listings" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
         <ArrowLeft aria-hidden="true" className="size-4" />
         Back to the queue
       </Link>
-      <h1 className="text-h1-sm md:text-h1">Review listing</h1>
+      <h1 className="text-display-sm">Review listing</h1>
       <Suspense fallback={<Skeleton className="h-96" />}>
         <Review params={params} />
       </Suspense>

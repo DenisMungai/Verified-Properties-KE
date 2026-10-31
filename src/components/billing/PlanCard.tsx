@@ -28,21 +28,21 @@ export function PlanCard({
     <section
       aria-labelledby={headingId}
       className={cn(
-        "flex flex-col gap-6 rounded-xl border bg-white p-4 md:p-6",
+        "flex flex-col gap-6 rounded-lg border bg-white p-4 md:p-5",
         highlighted ? "border-emerald-600 ring-1 ring-emerald-600" : "border-line",
       )}
     >
       <div className="flex flex-col gap-1">
-        <h2 id={headingId} className="text-h3">
+        <h2 id={headingId} className="text-title">
           {name}
         </h2>
-        {audience && <p className="text-body-sm text-slate-600">{audience}</p>}
+        {audience && <p className="text-small text-slate-600">{audience}</p>}
       </div>
       <p className="flex items-baseline gap-2">
-        <span className="text-h1 tabular">{formatKes(priceKes)}</span>
-        <span className="text-body-sm text-slate-600">/ 30 days</span>
+        <span className="text-display-sm tabular">{formatKes(priceKes)}</span>
+        <span className="text-small text-slate-600">/ 30 days</span>
       </p>
-      <ul className="flex flex-col gap-2 text-body-sm text-ink">
+      <ul className="flex flex-col gap-2 text-small text-ink">
         <li className="flex items-start gap-2">
           <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-emerald-600" />
           {listingLimitLine(listingLimit)}

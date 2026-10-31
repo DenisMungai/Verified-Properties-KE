@@ -37,7 +37,7 @@ export function StyleguideDemo() {
   return (
     <div className="grid gap-8 lg:grid-cols-2">
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 rounded-lg border border-line bg-white p-6">
-        <h3 className="text-h4">Kenyan phone number</h3>
+        <h3 className="text-title">Kenyan phone number</h3>
         <Field
           id="demo-phone"
           label="M-Pesa phone number"
@@ -61,7 +61,7 @@ export function StyleguideDemo() {
         </Button>
         <div aria-live="polite">
           {result && (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-mint-50 p-4 text-body-sm">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-mint-50 p-4 text-small">
               <dt className="flex items-center gap-1.5 font-medium text-success">
                 <CircleCheck aria-hidden="true" className="size-4" />
                 Stored (E.164)
@@ -75,7 +75,7 @@ export function StyleguideDemo() {
       </form>
 
       <div className="flex flex-col gap-6 rounded-lg border border-line bg-white p-6">
-        <h3 className="text-h4">Controlled components</h3>
+        <h3 className="text-title">Controlled components</h3>
         <SegmentedControl
           legend="Search mode"
           name="demo-mode"
@@ -87,7 +87,7 @@ export function StyleguideDemo() {
             { value: "land", label: "Land" },
           ]}
         />
-        <p className="text-body-sm text-slate-600" aria-live="polite">
+        <p className="text-small text-slate-600" aria-live="polite">
           Selected mode: <span className="font-medium text-ink">{mode}</span>
         </p>
         <div className="flex flex-wrap gap-2">

@@ -31,7 +31,7 @@ export function ListingEditorLayout({
         <ListingStepper listingId={listingId} current={step} />
         {notice}
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
-          <section className="min-w-0 rounded-xl border border-line bg-white p-6 md:p-8">{children}</section>
+          <section className="min-w-0 rounded-lg border border-line bg-white p-5 md:p-6">{children}</section>
           {aside}
         </div>
       </div>
@@ -44,10 +44,10 @@ export function ListingEditorSkeleton() {
     <div className="flex flex-col gap-6" aria-busy="true">
       <span className="sr-only">Loading listing</span>
       <Skeleton className="h-10 w-80 max-w-full" />
-      <Skeleton className="h-control-lg rounded-xl" />
+      <Skeleton className="h-control-lg rounded-lg" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
-        <Skeleton className="h-96 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-96 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     </div>
   );

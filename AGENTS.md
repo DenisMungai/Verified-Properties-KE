@@ -41,7 +41,7 @@ In order of precedence:
    business rules, phases, exit criteria, launch checklist).
 3. The approved prompt file in `prompts/` for the slice being built.
 4. **`design/VerifiedPropertiesKE-Full-UI-Design-System/`** — the UI design: the design-system
-   sheet (colour tokens, Poppins, 90% CSS root, 8pt rhythm, 12px control radius, 1280px content),
+   sheet (colour tokens, Poppins, 90% CSS root; type, radius and width now follow the compact system below),
    components, public pages (desktop + 390px mobile) and lister/admin dashboards. It replaces the
    older PropertyHub design markdown and boards for anything visual. Build the intended design,
    not mock defects (overlapping text, low-contrast text), and keep plan wording rules (the badge
@@ -53,8 +53,20 @@ In order of precedence:
 
 Design rules that are easy to break:
 
-- `html { font-size: 90% }`: rem sizes render at 0.9×. Touch targets are px (`h-control` 44px,
-  `h-control-lg` 48px) and must stay ≥44px.
+- Compact system (`prompts/ui-compact-design-system.md`) overrides the design folder for type,
+  spacing, radius, shadows and layout; colours still come from the design folder's tokens.
+- `html { font-size: 90% }`: rem sizes render at 0.9×. Six font sizes only: `display`,
+  `display-sm` (page H1s, big prices), `title` (section headings), `body` (paragraphs), `small`
+  (most UI: labels, buttons, links, inputs, table cells) and `micro` (meta, hints, badges). Never
+  `text-base` / `text-lg` / `text-xl` for UI text. Teach `src/lib/cn.ts` any new size token.
+- Touch targets are px: buttons, inputs, selects, nav and menu items `h-control` 44px
+  (`h-control-lg` 48px); secondary controls (pagination, toolbar selects, card heart, chip remove)
+  may be 32px, with a 44px hit area where neighbours allow.
+- Tailwind default radii: cards `rounded-sm`, inputs `rounded`, buttons / panels `rounded-lg`,
+  hero / popovers `rounded-xl`, pills `rounded-full`; no `rounded-2xl`+. No drop shadows except
+  `hover:shadow-sm` on property cards; 1px `border-line` separates surfaces.
+- Layout: `PageContainer` is 1440px (`width="text"` 1160px); property grids use `CARD_GRID`
+  (2 / 3 / 4 columns, square images); card padding `p-3`, panels `p-5`/`p-6`.
 - Colours come from `tailwind.config.ts` tokens: Forest `emerald-600`, Deep green `emerald-700`,
   Soft green `mint-50`, Charcoal `ink`, Muted `slate-600`, Border `line`. Form-control borders use
   `line-strong` (3:1). Warning text uses `warning-text`, never `warning`. No navy.

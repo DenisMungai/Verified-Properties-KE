@@ -4,10 +4,10 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const chipClasses =
-  "inline-flex min-h-9 items-center gap-1 rounded-pill border border-line bg-white pl-3 text-body-sm text-ink";
+  "inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-white pl-4 text-small font-medium text-ink";
 
 const removeClasses =
-  "relative -my-1 inline-flex size-8 items-center justify-center rounded-pill text-slate-600 hover:bg-mint-50 hover:text-ink " +
+  "relative inline-flex size-7 items-center justify-center rounded-full text-slate-600 hover:bg-mint-50 hover:text-ink " +
   // Invisible 44px hit area around the small visual button.
   "after:absolute after:left-1/2 after:top-1/2 after:size-control after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']";
 
@@ -40,9 +40,9 @@ export type ChipProps = RemovableByLink | RemovableByButton | StaticChip;
 
 /** Active-filter chip. The remove control is labelled for screen readers ("Remove Nairobi"). */
 export function Chip({ children, className, ...props }: ChipProps) {
-  const icon = <X aria-hidden="true" className="size-4" />;
+  const icon = <X aria-hidden="true" className="size-3.5" />;
   return (
-    <span className={cn(chipClasses, !props.removeLabel && "pr-3", className)}>
+    <span className={cn(chipClasses, props.removeLabel ? "pr-0.5" : "pr-4", className)}>
       {children}
       {props.removeHref !== undefined && (
         <Link href={props.removeHref} aria-label={props.removeLabel} className={removeClasses}>

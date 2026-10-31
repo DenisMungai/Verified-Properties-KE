@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="flex scroll-mt-24 flex-col gap-3">
-      <h2 id={`${id}-heading`} className="text-h3">
+      <h2 id={`${id}-heading`} className="text-title">
         {title}
       </h2>
       <div className="flex flex-col gap-3 text-body text-slate-700">{children}</div>
@@ -25,12 +25,12 @@ function Section({ id, title, children }: { id: string; title: string; children:
 /** The help page behind the ranking disclosure (plan v2.0 §5 "Disclosure"; prompt S7 decision 8). */
 export default function HowItWorksPage() {
   return (
-    <PageContainer className="py-10 lg:py-16">
-      <article className="mx-auto flex max-w-prose flex-col gap-10">
+    <PageContainer width="text" className="pb-8 pt-6">
+      <article className="mx-auto flex max-w-prose flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <p className="text-label uppercase text-emerald-700">How it works</p>
-          <h1 className="text-h1-sm md:text-h1">Verification and search ranking</h1>
-          <p className="text-body-lg text-slate-600">
+          <p className="text-micro tracking-wide font-semibold uppercase text-emerald-700">How it works</p>
+          <h1 className="text-display-sm">Verification and search ranking</h1>
+          <p className="text-body text-slate-600">
             What the badge means, what it costs listers, and how we decide the order of search results.
           </p>
         </header>

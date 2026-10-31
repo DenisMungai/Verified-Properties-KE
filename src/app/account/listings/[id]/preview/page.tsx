@@ -39,15 +39,15 @@ const STATUS_NOTES: Partial<Record<EditableListing["status"], string>> = {
 function MissingChecklist({ listingId, errors }: { listingId: string; errors: Record<string, string> }) {
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-body-sm font-semibold text-ink">Before you submit</h3>
+      <h3 className="text-small font-semibold text-ink">Before you submit</h3>
       <ul className="flex flex-col gap-2">
         {Object.entries(errors).map(([field, message]) => (
-          <li key={field} className="flex items-start gap-2 text-body-sm">
+          <li key={field} className="flex items-start gap-2 text-small">
             <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning-text" />
             <span>
               <Link
                 href={`/account/listings/${listingId}/${stepForField(field)}#${field}`}
-                className="font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+                className="font-medium text-emerald-700 underline underline-offset-4 hover:text-ink"
               >
                 {CHECKLIST_LABELS[field] ?? field}
               </Link>
@@ -75,40 +75,40 @@ function SubmitPanel({
 }) {
   const submittable = canSubmit(listing.status);
   return (
-    <section aria-labelledby="submit-heading" className="flex flex-col gap-4 rounded-xl border border-line bg-white p-6">
+    <section aria-labelledby="submit-heading" className="flex flex-col gap-4 rounded-lg border border-line bg-white p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="submit-heading" className="text-h4">
+        <h2 id="submit-heading" className="text-title">
           {submittable ? (verified ? "Ready to publish?" : "Ready to submit?") : "Listing status"}
         </h2>
         <ListingStatusBadge status={listing.status} />
       </div>
 
       {listing.status === "rejected" && listing.rejectionReason && (
-        <p className="rounded-md bg-danger-tint px-4 py-3 text-body-sm text-danger">
+        <p className="rounded-md bg-danger-tint px-4 py-3 text-small text-danger">
           <span className="font-semibold">Needs changes: </span>
           {listing.rejectionReason}
         </p>
       )}
       {listing.status === "paused" && (
-        <p className="text-body-sm text-slate-700">
+        <p className="text-small text-slate-700">
           {PAUSE_REASONS[listing.pauseReason ?? ""] ?? "This listing is paused and not in search."} Un-pause it once your
           plan has room.
         </p>
       )}
       {!submittable && STATUS_NOTES[listing.status] && (
-        <p className="text-body-sm text-slate-700">{STATUS_NOTES[listing.status]}</p>
+        <p className="text-small text-slate-700">{STATUS_NOTES[listing.status]}</p>
       )}
 
       {submittable && errors && <MissingChecklist listingId={listing.id} errors={errors} />}
       {submittable && !errors && !entitlement.ok && (
-        <div className="flex flex-col gap-3 rounded-md bg-warning-tint px-4 py-3 text-body-sm text-warning-text">
+        <div className="flex flex-col gap-3 rounded-md bg-warning-tint px-4 py-3 text-small text-warning-text">
           <p className="font-semibold">{PUBLISH_BLOCK_MESSAGES[entitlement.reason]}</p>
           <p>Your draft is saved in the meantime.</p>
           <PlanBlockLink reason={entitlement.reason} currentPlanCode={planCode ?? undefined} className="self-start" />
         </div>
       )}
       {submittable && !errors && entitlement.ok && (
-        <p className="text-body-sm text-slate-700">
+        <p className="text-small text-slate-700">
           {verified
             ? "You're a verified lister, so the listing goes live as soon as you publish."
             : "An admin checks it before it goes live. It uses one of your plan's listing slots while in review."}
@@ -163,7 +163,7 @@ async function Preview({ params }: { params: Promise<{ id: string }> }) {
         </div>
       }
     >
-      <p className="mb-6 text-caption text-slate-600">How buyers and tenants will see your listing.</p>
+      <p className="mb-6 text-micro text-slate-600">How buyers and tenants will see your listing.</p>
       <ListingSummary
         listing={listing}
         photos={ordered.map((photo) => ({ baseUrl: publicImageBaseUrl(photo.storageKey), altText: photo.altText }))}

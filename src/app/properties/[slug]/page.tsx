@@ -12,6 +12,7 @@ import { ListerPanel, type Viewer } from "@/components/listing/ListerPanel";
 import { ReportForm } from "@/components/listing/ReportForm";
 import { SaveButton } from "@/components/listing/SaveButton";
 import { listingLocation } from "@/components/listings/ListingSummary";
+import { CardRail } from "@/components/search/CardRail";
 import { PropertyCard, listingHref } from "@/components/search/PropertyCard";
 import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
 import { Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
@@ -66,7 +67,7 @@ function Breadcrumbs({ listing }: { listing: PublicListingDetail }) {
   ];
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-x-2 text-caption text-slate-600">
+      <ol className="flex flex-wrap items-center gap-x-2 text-small text-slate-600">
         {crumbs.map((crumb, i) => (
           <li key={crumb.href} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">/</span>}
@@ -90,18 +91,13 @@ async function SimilarListings({ listing }: { listing: PublicListingDetail }) {
     listingHref(listing.slug),
   );
   return (
-    <section aria-labelledby="similar-heading" className="flex flex-col gap-6">
-      <h2 id="similar-heading" className="text-h2">
-        Similar listings
-      </h2>
-      <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {toCardData(similar).map((card) => (
-          <li key={card.id} className="flex">
-            <PropertyCard listing={card} save={saveProps(context, card.id)} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <CardRail headingId="similar-heading" heading="Similar listings">
+      {toCardData(similar).map((card) => (
+        <li key={card.id}>
+          <PropertyCard listing={card} save={saveProps(context, card.id)} sizes="256px" />
+        </li>
+      ))}
+    </CardRail>
   );
 }
 
@@ -138,17 +134,17 @@ async function ListingDetail({ params }: { params: Params }) {
 
   return (
     <>
-      <PageContainer className="flex flex-col gap-6 pb-28 pt-8 lg:gap-8 lg:pb-16 lg:pt-10">
-        <div className="flex flex-col gap-3">
+      <PageContainer className="flex flex-col gap-6 pb-28 pt-6 lg:gap-8 lg:pb-8">
+        <div className="flex flex-col gap-2">
           <Breadcrumbs listing={listing} />
           <div className="flex items-start justify-between gap-4">
-            <h1 className="text-h1-sm md:text-h1">{listing.title}</h1>
+            <h1 className="text-display-sm">{listing.title}</h1>
             {!mine && <SaveButton {...saveProps(saveContext, listing.id)} />}
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-body-sm text-slate-600">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-small text-slate-600">
             {listing.verified && <VerifiedBadge />}
             <span className="flex items-center gap-1.5">
-              <MapPin aria-hidden="true" className="size-4" />
+              <MapPin aria-hidden="true" className="size-3.5" />
               {listingLocation(listing)}
             </span>
             {listing.publishedAt && <span>Listed {formatNairobiDate(listing.publishedAt)}</span>}
@@ -157,10 +153,10 @@ async function ListingDetail({ params }: { params: Params }) {
 
         <Gallery photos={photos} title={listing.title} />
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-12">
-          <div className="flex min-w-0 flex-col gap-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+          <div className="flex min-w-0 flex-col gap-6">
             <section aria-labelledby="about-heading" className="flex flex-col gap-3">
-              <h2 id="about-heading" className="text-h2">
+              <h2 id="about-heading" className="text-title">
                 About this property
               </h2>
               <Description text={listing.description} />
@@ -170,7 +166,7 @@ async function ListingDetail({ params }: { params: Params }) {
               {viewer.kind === "buyer" ? (
                 <ReportForm listingId={listing.id} />
               ) : viewer.kind === "signed_out" ? (
-                <Link href={viewer.signInHref} className="inline-flex min-h-control items-center text-button text-slate-700 hover:text-ink">
+                <Link href={viewer.signInHref} className="inline-flex min-h-control items-center text-small font-semibold text-slate-700 hover:text-ink">
                   Sign in to report this listing
                 </Link>
               ) : null}
@@ -181,17 +177,17 @@ async function ListingDetail({ params }: { params: Params }) {
           </aside>
         </div>
 
-        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+        <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
           <SimilarListings listing={listing} />
         </Suspense>
       </PageContainer>
 
       {/* Mobile: price and a jump to the contact card stay in reach. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white px-4 py-3 shadow-popover lg:hidden">
-        <div className="mx-auto flex max-w-container items-center justify-between gap-4">
-          <p className="text-h4 font-bold text-ink">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white px-4 py-3 lg:hidden">
+        <div className="mx-auto flex max-w-page items-center justify-between gap-4">
+          <p className="text-title font-bold text-ink">
             {formatKes(listing.priceKes)}
-            {listing.rentPeriod && <span className="text-body-sm font-normal text-slate-600"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
+            {listing.rentPeriod && <span className="text-small font-normal text-slate-600"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
           </p>
           <a href="#contact" className={buttonClasses()}>
             Contact lister
@@ -204,15 +200,15 @@ async function ListingDetail({ params }: { params: Params }) {
 
 function DetailSkeleton() {
   return (
-    <PageContainer className="py-8 lg:py-10">
+    <PageContainer className="pb-8 pt-6">
       <div aria-busy="true" className="flex flex-col gap-6">
         <span className="sr-only">Loading listing…</span>
         <Skeleton className="h-4 w-56" />
-        <Skeleton className="h-10 w-3/4" />
+        <Skeleton className="h-9 w-3/4" />
         <Skeleton className="aspect-[4/3] w-full rounded-xl lg:aspect-auto lg:h-[28rem]" />
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_25rem]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <Skeleton className="h-64" />
-          <Skeleton className="h-96 rounded-xl" />
+          <Skeleton className="h-96 rounded-lg" />
         </div>
       </div>
     </PageContainer>

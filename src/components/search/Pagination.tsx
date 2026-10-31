@@ -6,8 +6,9 @@ import { pageHref, type SearchFilters } from "@/lib/search/params";
 
 const WINDOW = 5;
 
+/** 32px squares: the design's floor for secondary controls (WCAG 2.2 AA 2.5.8 needs 24px). */
 const itemClasses =
-  "inline-flex h-control min-w-control items-center justify-center gap-1 rounded-md border px-3 text-button";
+  "inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded border px-2 text-small font-semibold transition-colors";
 
 /** Up to five numbered pages around the current one; the current page and dead ends aren't links. */
 export function pageWindow(page: number, pageCount: number): number[] {
@@ -35,7 +36,7 @@ export function Pagination({ filters, page, pageCount }: { filters: SearchFilter
   if (pageCount <= 1) return null;
   return (
     <nav aria-label="Pagination">
-      <ul className="flex flex-wrap items-center justify-center gap-2">
+      <ul className="flex flex-wrap items-center justify-center gap-1.5">
         <li>
           <Edge href={page > 1 ? pageHref(filters, page - 1) : null} label="Previous page">
             <ChevronLeft aria-hidden="true" className="size-4" />

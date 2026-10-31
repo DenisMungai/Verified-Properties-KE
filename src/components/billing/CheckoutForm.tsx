@@ -118,11 +118,11 @@ export function CheckoutForm({
       : `Pay ${formatKes(selected.payKes)} with M-Pesa`;
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6 rounded-xl border border-line bg-white p-4 md:p-6" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-6 rounded-lg border border-line bg-white p-4 md:p-5" noValidate>
       {error && <FormAlert state={{ formError: error }} />}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-h4">Choose a plan</legend>
+        <legend className="mb-3 text-title">Choose a plan</legend>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {options.map((option) => {
             const id = `plan-${option.code}`;
@@ -142,24 +142,24 @@ export function CheckoutForm({
                 <label
                   htmlFor={id}
                   className={cn(
-                    "flex h-full cursor-pointer flex-col gap-2 rounded-xl border bg-white p-4 transition-colors hover:border-ink",
+                    "flex h-full cursor-pointer flex-col gap-2 rounded-lg border bg-white p-4 transition-colors hover:border-ink",
                     "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600",
                     checked ? "border-emerald-600 ring-2 ring-emerald-600" : "border-line-strong",
                   )}
                 >
                   <span className="flex items-start justify-between gap-2">
-                    <span className="text-h4">{option.name}</span>
+                    <span className="text-title">{option.name}</span>
                     {option.isCurrent && (
-                      <span className="rounded-pill bg-mint-50 px-3 py-1 text-caption font-semibold text-emerald-700">
+                      <span className="rounded-full bg-mint-50 px-3 py-1 text-micro font-semibold text-emerald-700">
                         Current plan
                       </span>
                     )}
                   </span>
-                  <span className="text-body-sm text-slate-600">{listingLimitLine(option.listingLimit)}</span>
+                  <span className="text-small text-slate-600">{listingLimitLine(option.listingLimit)}</span>
                   <span className="text-body font-semibold tabular">
                     {option.kind === "downgrade" ? "Nothing to pay now" : `${formatKes(option.payKes)} / 30 days`}
                   </span>
-                  <span id={`${id}-line`} className="text-body-sm text-emerald-700">
+                  <span id={`${id}-line`} className="text-small text-emerald-700">
                     {option.line}
                   </span>
                 </label>
@@ -172,7 +172,7 @@ export function CheckoutForm({
       {showMethods && (
         <SegmentedControl<Method>
           legend="How do you want to pay?"
-          legendClassName="mb-3 text-h4"
+          legendClassName="mb-3 text-title"
           name="method"
           variant="outline"
           options={[
@@ -208,7 +208,7 @@ export function CheckoutForm({
       )}
 
       {!isDowngrade && method === "card" && (
-        <p className="flex items-start gap-2 text-body-sm text-slate-700">
+        <p className="flex items-start gap-2 text-small text-slate-700">
           <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-emerald-600" />
           You&rsquo;ll enter your Visa or Mastercard details on Paystack&rsquo;s secure page. We never see or store your
           card number.
@@ -216,7 +216,7 @@ export function CheckoutForm({
       )}
 
       <div className="flex flex-col gap-3 border-t border-line pt-6">
-        <p className="text-body-sm text-slate-700">
+        <p className="text-small text-slate-700">
           {isDowngrade
             ? `${selected.name} starts when your current period ends. You keep your current plan until then.`
             : method === "card"

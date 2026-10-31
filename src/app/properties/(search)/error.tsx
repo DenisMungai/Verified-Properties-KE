@@ -10,7 +10,7 @@ import { Button, EmptyState } from "@/components/ui";
  */
 export default function PropertiesError({ retry }: { error: unknown; retry: () => void }) {
   return (
-    <PageContainer className="py-12">
+    <PageContainer className="py-10">
       <EmptyState
         title="We couldn't load properties"
         description="Something went wrong on our side. Please try again in a moment."

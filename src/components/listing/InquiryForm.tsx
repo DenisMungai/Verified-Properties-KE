@@ -59,7 +59,7 @@ export function InquiryForm({
       <Button type="submit" size="lg" loading={pending} className="w-full">
         Request a viewing
       </Button>
-      <p className="text-caption text-slate-600">Your details are shared only with this lister.</p>
+      <p className="text-micro text-slate-600">Your details are shared only with this lister.</p>
     </form>
   );
 }

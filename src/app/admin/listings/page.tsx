@@ -29,16 +29,16 @@ async function Queue({ searchParams }: { searchParams: SearchParams }) {
       {rows.length === 0 ? (
         <EmptyState icon={<ClipboardCheck />} title="Nothing to review" description="New and edited listings from unverified listers appear here." />
       ) : (
-        <div className="rounded-xl border border-line bg-white p-2 md:p-4">
-          <table className="w-full border-separate border-spacing-y-2 text-left text-body-sm">
+        <div className="rounded-lg border border-line bg-white p-2 md:p-4">
+          <table className="w-full border-separate border-spacing-y-2 text-left text-small">
             <caption className="sr-only">Listings awaiting moderation, oldest first</caption>
-            <thead className="hidden text-caption text-slate-600 md:table-header-group">
+            <thead className="hidden text-micro text-slate-600 md:table-header-group">
               <tr>
-                <th scope="col" className="px-4 py-2 font-medium">Listing</th>
-                <th scope="col" className="px-4 py-2 font-medium">Lister</th>
-                <th scope="col" className="px-4 py-2 font-medium">Submitted</th>
-                <th scope="col" className="px-4 py-2 font-medium">Reason</th>
-                <th scope="col" className="px-4 py-2 font-medium"><span className="sr-only">Action</span></th>
+                <th scope="col" className="px-4 py-2 font-semibold uppercase tracking-wide">Listing</th>
+                <th scope="col" className="px-4 py-2 font-semibold uppercase tracking-wide">Lister</th>
+                <th scope="col" className="px-4 py-2 font-semibold uppercase tracking-wide">Submitted</th>
+                <th scope="col" className="px-4 py-2 font-semibold uppercase tracking-wide">Reason</th>
+                <th scope="col" className="px-4 py-2 font-semibold uppercase tracking-wide"><span className="sr-only">Action</span></th>
               </tr>
             </thead>
             <tbody>

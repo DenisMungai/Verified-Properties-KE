@@ -50,7 +50,7 @@ export function Description({ text }: { text: string }) {
           aria-expanded={expanded}
           aria-controls={id}
           onClick={() => setExpanded((open) => !open)}
-          className="inline-flex min-h-control items-center rounded-md px-2 text-button text-emerald-700 hover:bg-mint-50"
+          className="inline-flex min-h-control items-center rounded-md px-2 text-small font-semibold text-emerald-700 hover:bg-mint-50"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Heart } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
-import { PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
+import { CARD_GRID, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { toCardData } from "@/components/search/card-data";
 import { EmptyState, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
@@ -42,7 +42,7 @@ async function SavedList() {
           }
         />
       ) : (
-        <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className={CARD_GRID}>
           {saved.map((listing) => (
             <li key={listing.id} className="flex">
               <PropertyCard listing={listing} save={{ listingId: listing.id, saved: true, refreshAfter: true }} />
@@ -58,7 +58,7 @@ export default function SavedPage() {
   return (
     <>
       <PageHeading title="Saved properties" description="Your shortlist, all in one place." />
-      <Suspense fallback={<PropertyGridSkeleton count={3} />}>
+      <Suspense fallback={<PropertyGridSkeleton count={4} />}>
         <SavedList />
       </Suspense>
     </>

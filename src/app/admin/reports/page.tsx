@@ -28,28 +28,28 @@ function reasonLabel(reason: string): string {
 
 function ReportItem({ report }: { report: OpenReport }) {
   return (
-    <li className="flex flex-col gap-4 rounded-xl border border-line bg-white p-5">
+    <li className="flex flex-col gap-4 rounded-lg border border-line bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-body font-semibold text-ink">
             {report.propertyStatus === "published" ? (
-              <Link href={listingHref(report.propertySlug)} className="text-emerald-700 underline underline-offset-2">
+              <Link href={listingHref(report.propertySlug)} className="text-emerald-700 underline underline-offset-4">
                 {report.propertyTitle}
               </Link>
             ) : (
-              <Link href={`/admin/listings/${report.propertyId}`} className="text-emerald-700 underline underline-offset-2">
+              <Link href={`/admin/listings/${report.propertyId}`} className="text-emerald-700 underline underline-offset-4">
                 {report.propertyTitle}
               </Link>
             )}
           </p>
-          <p className="text-caption text-slate-600">
+          <p className="text-micro text-slate-600">
             {reasonLabel(report.reason)} · reported {formatNairobiDateTime(report.createdAt)}
             {report.reporterName ? ` by ${report.reporterName}` : ""}
           </p>
         </div>
         <ListingStatusBadge status={report.propertyStatus} />
       </div>
-      {report.details && <p className="whitespace-pre-line break-words text-body-sm text-slate-700">{report.details}</p>}
+      {report.details && <p className="whitespace-pre-line break-words text-small text-slate-700">{report.details}</p>}
       <div className="grid gap-5 border-t border-line pt-4 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8">
         <DismissReportForm reportId={report.id} />
         <TakeDownForm reportId={report.id} />

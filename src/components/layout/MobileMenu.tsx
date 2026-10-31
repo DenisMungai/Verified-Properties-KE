@@ -7,12 +7,14 @@ import { Menu, X } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/actions";
 import { buttonClasses } from "@/components/ui/Button";
 import { Logo } from "./Logo";
+import { NavLink } from "./NavLink";
 import { MAIN_NAV, accountLinks, type HeaderUser } from "./nav";
 
-const linkClasses = "flex min-h-control items-center rounded-md px-3 text-body text-ink hover:bg-mint-50";
+const linkClasses = "flex min-h-control items-center rounded-md px-3 text-small font-medium text-ink transition-colors hover:bg-mint-50";
+const activeLinkClasses = "bg-mint-50 font-semibold text-emerald-700";
 
 /**
- * Full-width sheet below `md`, built on <dialog>: showModal() traps focus and makes the page
+ * Slide-out drawer below `md` (17.5rem, pinned left), built on <dialog>: showModal() traps focus and makes the page
  * inert, Esc closes it and focus returns to the trigger. It also closes on navigation.
  */
 export function MobileMenu({ user }: { user: HeaderUser | null }) {
@@ -40,7 +42,7 @@ export function MobileMenu({ user }: { user: HeaderUser | null }) {
         aria-controls={dialogId}
         className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50"
       >
-        <Menu aria-hidden="true" className="size-6" />
+        <Menu aria-hidden="true" className="size-5" />
         <span className="sr-only">Open menu</span>
       </button>
       <dialog
@@ -48,36 +50,36 @@ export function MobileMenu({ user }: { user: HeaderUser | null }) {
         id={dialogId}
         aria-label="Menu"
         onClose={() => setOpen(false)}
-        className="m-0 h-dvh max-h-none w-full max-w-none bg-white p-0 backdrop:bg-ink/40"
+        className="m-0 h-dvh max-h-none w-sidebar max-w-[85vw] border-r border-line bg-white p-0 backdrop:bg-ink/40"
       >
-        <div className="flex h-header items-center justify-between border-b border-line px-4">
+        <div className="flex h-[66px] items-center justify-between border-b border-line px-4">
           <Logo />
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
             className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50"
           >
-            <X aria-hidden="true" className="size-6" />
+            <X aria-hidden="true" className="size-5" />
             <span className="sr-only">Close menu</span>
           </button>
         </div>
-        <nav aria-label="Main" className="flex flex-col gap-1 p-4">
+        <nav aria-label="Main" className="flex flex-col gap-0.5 p-3">
           {MAIN_NAV.map((item) => (
-            <Link key={item.href} href={item.href} className={linkClasses}>
+            <NavLink key={item.href} href={item.href} className={linkClasses} activeClassName={activeLinkClasses}>
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
-        <div className="border-t border-line p-4">
+        <div className="border-t border-line p-3">
           {user ? (
             <>
-              <p className="px-3 pb-2 text-caption text-slate-600">Signed in as {user.name}</p>
+              <p className="px-3 pb-2 text-micro text-slate-600">Signed in as {user.name}</p>
               <ul className="flex flex-col gap-1">
                 {accountLinks(user).map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className={linkClasses}>
+                    <NavLink href={link.href} className={linkClasses} activeClassName={activeLinkClasses}>
                       {link.label}
-                    </Link>
+                    </NavLink>
                   </li>
                 ))}
               </ul>

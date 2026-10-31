@@ -44,13 +44,13 @@ export function ListerProfileForm({
         <SegmentedControl
           key={listerType}
           legend="I list property as"
-          legendClassName="mb-2 text-body-sm font-medium text-ink"
+          legendClassName="mb-2 text-small font-medium text-ink"
           name="listerType"
           defaultValue={listerType}
           options={TYPE_OPTIONS}
         />
         {state.fieldErrors?.listerType && (
-          <p className="text-caption font-medium text-danger">{state.fieldErrors.listerType}</p>
+          <p className="text-micro font-medium text-danger">{state.fieldErrors.listerType}</p>
         )}
       </div>
       <Field

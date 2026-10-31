@@ -31,12 +31,12 @@ export function SignUpForm({ next, defaultIntent = "find" }: { next?: string; de
         <SegmentedControl
           key={intent}
           legend="What brings you here?"
-          legendClassName="mb-2 text-body-sm font-medium text-ink"
+          legendClassName="mb-2 text-small font-medium text-ink"
           name="intent"
           defaultValue={intent}
           options={INTENTS}
         />
-        {state.fieldErrors?.intent && <p className="text-caption font-medium text-danger">{state.fieldErrors.intent}</p>}
+        {state.fieldErrors?.intent && <p className="text-micro font-medium text-danger">{state.fieldErrors.intent}</p>}
       </div>
       <Field id="name" label="Full name" error={state.fieldErrors?.name} required>
         {(control) => <Input {...control} name="name" autoComplete="name" defaultValue={state.values?.name} />}
@@ -62,7 +62,7 @@ export function SignUpForm({ next, defaultIntent = "find" }: { next?: string; de
       >
         {(control) => <PasswordInput {...control} name="password" autoComplete="new-password" />}
       </Field>
-      <p className="text-caption text-slate-600">
+      <p className="text-micro text-slate-600">
         By creating an account you agree to use VerifiedPropertiesKE honestly. Our terms and privacy notice will be
         published before launch.
       </p>

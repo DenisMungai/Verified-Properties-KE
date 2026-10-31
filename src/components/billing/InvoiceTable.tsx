@@ -25,7 +25,7 @@ function ReceiptLink({ row }: { row: InvoiceRow }) {
   return (
     <Link
       href={receiptPath(row.invoiceNumber)}
-      className="inline-flex min-h-control items-center font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+      className="inline-flex min-h-control items-center font-medium text-emerald-700 underline underline-offset-4 hover:text-ink"
     >
       Receipt<span className="sr-only"> for {row.invoiceNumber}</span>
     </Link>
@@ -38,8 +38,8 @@ function ReceiptLink({ row }: { row: InvoiceRow }) {
  */
 export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAmounts: boolean }) {
   return (
-    <section aria-labelledby="invoices-heading" className="rounded-xl border border-line bg-white p-4 md:p-6">
-      <h2 id="invoices-heading" className="mb-2 text-h3">
+    <section aria-labelledby="invoices-heading" className="rounded-lg border border-line bg-white p-4 md:p-5">
+      <h2 id="invoices-heading" className="mb-2 text-title">
         Invoices &amp; receipts
       </h2>
       {rows.length === 0 ? (
@@ -51,16 +51,16 @@ export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAm
         />
       ) : (
         <>
-          <table className="hidden w-full border-separate border-spacing-y-2 text-body-sm md:table">
+          <table className="hidden w-full border-separate border-spacing-y-2 text-small md:table">
             <caption className="sr-only">Invoices and receipts, newest first</caption>
             <thead>
-              <tr className="text-left text-caption font-medium text-slate-600">
-                <th scope="col" className="px-4 pb-1 font-medium">Invoice</th>
-                <th scope="col" className="px-4 pb-1 font-medium">Billing period</th>
-                <th scope="col" className="px-4 pb-1 font-medium">Date</th>
-                {showAmounts && <th scope="col" className="px-4 pb-1 font-medium">Amount</th>}
-                <th scope="col" className="px-4 pb-1 font-medium">Status</th>
-                <th scope="col" className="px-4 pb-1 font-medium"><span className="sr-only">Receipt</span></th>
+              <tr className="text-left text-micro font-medium text-slate-600">
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Invoice</th>
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Billing period</th>
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Date</th>
+                {showAmounts && <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Amount</th>}
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Status</th>
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide"><span className="sr-only">Receipt</span></th>
               </tr>
             </thead>
             <tbody>
@@ -85,7 +85,7 @@ export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAm
           </table>
           <ul className="flex flex-col gap-3 md:hidden">
             {rows.map((row) => (
-              <li key={row.invoiceNumber} className="flex flex-col gap-1 rounded-lg bg-canvas p-4 text-body-sm">
+              <li key={row.invoiceNumber} className="flex flex-col gap-1 rounded-lg bg-canvas p-4 text-small">
                 <div className="flex items-start justify-between gap-3">
                   <span className="font-medium tabular">{row.invoiceNumber}</span>
                   <span className={cn("font-medium", STATUS[row.status].className)}>{STATUS[row.status].label}</span>

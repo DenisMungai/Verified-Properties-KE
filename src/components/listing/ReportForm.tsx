@@ -22,7 +22,7 @@ export function ReportForm({ listingId }: { listingId: string }) {
 
   return (
     <details className="group w-full rounded-lg border border-line bg-white open:p-4 sm:w-auto">
-      <summary className="inline-flex min-h-control cursor-pointer list-none items-center gap-2 rounded-md px-3 text-button text-slate-700 hover:text-ink group-open:mb-2 group-open:px-0 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-control cursor-pointer list-none items-center gap-2 rounded-md px-3 text-small font-semibold text-slate-700 hover:text-ink group-open:mb-2 group-open:px-0 [&::-webkit-details-marker]:hidden">
         <Flag aria-hidden="true" className="size-4" />
         Report listing
       </summary>

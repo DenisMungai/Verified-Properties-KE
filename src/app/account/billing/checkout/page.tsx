@@ -85,7 +85,7 @@ async function Checkout({ searchParams }: { searchParams: SearchParams }) {
         cardsEnabled={cardsEnabled}
         paybill={mpesa?.shortcode ?? null}
       />
-      <Link href="/pricing" className="inline-flex min-h-control items-center self-start text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink">
+      <Link href="/pricing" className="inline-flex min-h-control items-center self-start text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink">
         Compare plans
       </Link>
     </div>
@@ -94,11 +94,11 @@ async function Checkout({ searchParams }: { searchParams: SearchParams }) {
 
 function CheckoutSkeleton() {
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-line bg-white p-6" aria-busy="true">
+    <div className="flex flex-col gap-6 rounded-lg border border-line bg-white p-5" aria-busy="true">
       <span className="sr-only">Loading plans</span>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="h-40 rounded-xl" />
-        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-40 rounded-lg" />
+        <Skeleton className="h-40 rounded-lg" />
       </div>
       <Skeleton className="h-control w-full max-w-sm" />
       <Skeleton className="h-control-lg w-56" />

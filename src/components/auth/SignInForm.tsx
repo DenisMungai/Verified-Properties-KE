@@ -39,7 +39,7 @@ export function SignInForm({ next, notice }: { next?: string; notice?: string })
       </Field>
       <Link
         href="/forgot-password"
-        className="-mt-2 self-end rounded-sm py-1 text-body-sm font-medium text-emerald-700 underline-offset-4 hover:underline"
+        className="-mt-2 self-end rounded-sm py-1 text-small font-medium text-emerald-700 underline-offset-4 hover:underline"
       >
         Forgot password?
       </Link>

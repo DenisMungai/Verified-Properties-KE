@@ -34,11 +34,11 @@ function ScheduledNotice({ overview }: { overview: BillingOverview }) {
   if (!scheduledPlan || !subscription?.scheduledChangeAt || !plan) return null;
   const date = formatNairobiDate(subscription.scheduledChangeAt);
   return (
-    <section aria-labelledby="scheduled-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-white p-4 md:p-6">
-      <h2 id="scheduled-heading" className="text-h4">
+    <section aria-labelledby="scheduled-heading" className="flex flex-col gap-3 rounded-lg border border-line bg-white p-4 md:p-5">
+      <h2 id="scheduled-heading" className="text-title">
         {scheduledPlan.name} starts on {date}
       </h2>
-      <p className="text-body-sm text-slate-700">
+      <p className="text-small text-slate-700">
         From {date} you can keep {scheduledPlan.listingLimit} listings live. You&rsquo;ll choose which ones then; until
         then all of them stay live.
       </p>
@@ -61,12 +61,12 @@ async function KeepChoice({ overview, now }: { overview: BillingOverview; now: D
   const changeAt = overview.subscription?.scheduledChangeAt;
   const deadline = changeAt && changeAt.getTime() <= now.getTime() ? new Date(changeAt.getTime() + GRACE_DAYS * DAY_MS) : null;
   return (
-    <section aria-labelledby="keep-heading" className="flex flex-col gap-4 rounded-xl border border-warning bg-white p-4 md:p-6">
+    <section aria-labelledby="keep-heading" className="flex flex-col gap-4 rounded-lg border border-warning bg-white p-4 md:p-5">
       <div className="flex flex-col gap-1">
-        <h2 id="keep-heading" className="text-h4">
+        <h2 id="keep-heading" className="text-title">
           Choose which listings stay live
         </h2>
-        <p className="text-body-sm text-slate-700">
+        <p className="text-small text-slate-700">
           Your {overview.effectivePlan?.name} plan allows {limit} live listings and you have {overview.activeListingCount}.
           The ones you don&rsquo;t keep are paused, or go back to draft if they&rsquo;re waiting for review.
           {deadline && ` If you don't choose by ${formatNairobiDate(deadline)}, we'll keep the newest ${limit}.`}
@@ -97,7 +97,7 @@ async function Billing({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="flex flex-col gap-6">
       {flash && <FormAlert state={flash} />}
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <CurrentPlanCard overview={overview} now={now} />
         </div>
@@ -122,11 +122,11 @@ function BillingSkeleton() {
   return (
     <div className="flex flex-col gap-6" aria-busy="true">
       <span className="sr-only">Loading your billing</span>
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Skeleton className="h-72 rounded-xl xl:col-span-2" />
-        <Skeleton className="h-72 rounded-xl" />
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Skeleton className="h-72 rounded-lg xl:col-span-2" />
+        <Skeleton className="h-72 rounded-lg" />
       </div>
-      <Skeleton className="h-64 rounded-xl" />
+      <Skeleton className="h-64 rounded-lg" />
     </div>
   );
 }

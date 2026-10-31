@@ -50,11 +50,11 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen(!open)}
-        className="inline-flex h-control items-center gap-2 rounded-md border border-line bg-white pl-1.5 pr-3 text-button text-ink hover:bg-canvas"
+        className="inline-flex h-control items-center gap-2 rounded-full border border-line bg-white pl-0.5 pr-3 text-small font-semibold text-ink transition-colors hover:bg-canvas"
       >
         <span
           aria-hidden="true"
-          className="inline-flex size-8 items-center justify-center rounded-pill bg-mint-50 text-caption font-semibold text-emerald-700"
+          className="inline-flex size-[38px] items-center justify-center rounded-full bg-mint-50 text-small font-semibold text-emerald-700"
         >
           {initials(user.name)}
         </span>
@@ -64,14 +64,14 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
       <div
         id={panelId}
         hidden={!open}
-        className="absolute right-0 top-full z-50 mt-2 w-60 rounded-lg border border-line bg-white p-2 shadow-popover"
+        className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-white p-2"
       >
         <ul className="flex flex-col">
           {accountLinks(user).map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="flex min-h-control items-center rounded-md px-3 text-body-sm text-ink hover:bg-mint-50"
+                className="flex min-h-control items-center rounded-md px-3 text-small text-ink hover:bg-mint-50"
               >
                 {link.label}
               </Link>
@@ -81,7 +81,7 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
         <form action={signOutAction} className="mt-1 border-t border-line pt-1">
           <button
             type="submit"
-            className="flex min-h-control w-full items-center gap-2 rounded-md px-3 text-left text-body-sm text-ink hover:bg-mint-50"
+            className="flex min-h-control w-full items-center gap-2 rounded-md px-3 text-left text-small text-ink hover:bg-mint-50"
           >
             <LogOut aria-hidden="true" className="size-4 text-slate-600" />
             Sign out

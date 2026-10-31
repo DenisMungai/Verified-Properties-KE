@@ -42,7 +42,7 @@ export default function CardReturnPage({ searchParams }: { searchParams: SearchP
   return (
     <>
       <PageHeading title="Card payment" />
-      <Suspense fallback={<Skeleton className="h-48 rounded-xl" />}>
+      <Suspense fallback={<Skeleton className="h-48 rounded-lg" />}>
         <CardReturn searchParams={searchParams} />
       </Suspense>
     </>

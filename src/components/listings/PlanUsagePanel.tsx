@@ -41,14 +41,14 @@ export function PlanUsagePanel({ usage, tips = TIPS }: { usage: ListingPlanUsage
   const { headline, detail } = planUsageSummary(usage);
   const percent = usage.limit ? Math.min(100, Math.round((usage.activeListingCount / usage.limit) * 100)) : 0;
   return (
-    <aside aria-labelledby="listing-tips-heading" className="flex flex-col gap-8 rounded-xl bg-mint-50 p-6">
+    <aside aria-labelledby="listing-tips-heading" className="flex flex-col gap-6 rounded-lg bg-mint-50 p-5">
       <div className="flex flex-col gap-4">
-        <h2 id="listing-tips-heading" className="text-h4 text-emerald-700">
+        <h2 id="listing-tips-heading" className="text-title text-emerald-700">
           A stronger listing
         </h2>
         <ul className="flex flex-col gap-3">
           {tips.map((tip) => (
-            <li key={tip} className="flex items-start gap-2 text-body-sm text-emerald-700">
+            <li key={tip} className="flex items-start gap-2 text-small text-emerald-700">
               <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               {tip}
             </li>
@@ -56,8 +56,8 @@ export function PlanUsagePanel({ usage, tips = TIPS }: { usage: ListingPlanUsage
         </ul>
       </div>
       <div className="flex flex-col gap-2">
-        <h3 className="text-body-sm font-semibold text-ink">Your current plan</h3>
-        <p className="text-caption text-slate-700">{headline}</p>
+        <h3 className="text-small font-semibold text-ink">Your current plan</h3>
+        <p className="text-micro text-slate-700">{headline}</p>
         {usage.limit !== null && (
           <div
             role="progressbar"
@@ -65,15 +65,15 @@ export function PlanUsagePanel({ usage, tips = TIPS }: { usage: ListingPlanUsage
             aria-valuemin={0}
             aria-valuemax={usage.limit}
             aria-valuenow={Math.min(usage.activeListingCount, usage.limit)}
-            className="h-2 overflow-hidden rounded-pill bg-line"
+            className="h-2 overflow-hidden rounded-full bg-line"
           >
-            <div className="h-full rounded-pill bg-emerald-600" style={{ width: `${percent}%` }} />
+            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${percent}%` }} />
           </div>
         )}
-        {detail && <p className="text-caption text-slate-700">{detail}</p>}
+        {detail && <p className="text-micro text-slate-700">{detail}</p>}
         <Link
           href={usage.limit === null ? "/account/billing/checkout" : "/account/billing"}
-          className="inline-flex min-h-control items-center self-start text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+          className="inline-flex min-h-control items-center self-start text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink"
         >
           {usage.limit === null ? "Choose a plan" : "Manage plan"}
         </Link>

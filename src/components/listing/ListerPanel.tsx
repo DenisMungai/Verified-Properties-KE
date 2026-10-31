@@ -20,13 +20,13 @@ const PRICE_LABEL = { sale: "Sale price", rent: "Rent" } as const;
 function ContactDetails({ contact, visibility, viewer }: { contact: ListerContact; visibility: ContactVisibility; viewer: Viewer }) {
   const shown = [
     contact.phone && (
-      <a key="phone" href={`tel:${contact.phone}`} className="inline-flex min-h-control items-center gap-2 text-body font-semibold text-emerald-700 hover:underline">
+      <a key="phone" href={`tel:${contact.phone}`} className="inline-flex min-h-control items-center gap-2 text-body font-semibold text-emerald-700 underline-offset-4 hover:underline">
         <Phone aria-hidden="true" className="size-4" />
         {displayKenyanPhone(contact.phone)}
       </a>
     ),
     contact.email && (
-      <a key="email" href={`mailto:${contact.email}`} className="inline-flex min-h-control items-center gap-2 break-all text-body-sm text-emerald-700 hover:underline">
+      <a key="email" href={`mailto:${contact.email}`} className="inline-flex min-h-control items-center gap-2 break-all text-small text-emerald-700 hover:underline">
         <Mail aria-hidden="true" className="size-4 shrink-0" />
         {contact.email}
       </a>
@@ -35,10 +35,10 @@ function ContactDetails({ contact, visibility, viewer }: { contact: ListerContac
 
   if (shown.length > 0) return <div className="flex flex-col">{shown}</div>;
   if (visibility === "hidden" && viewer.kind !== "own") {
-    return <p className="text-body-sm text-slate-600">The lister&apos;s phone number appears here after you send them a message.</p>;
+    return <p className="text-small text-slate-600">The lister&apos;s phone number appears here after you send them a message.</p>;
   }
   if (visibility === "after_inquiry") {
-    return <p className="text-body-sm text-slate-600">This lister hasn&apos;t added a phone number. They&apos;ll reply to the details you sent.</p>;
+    return <p className="text-small text-slate-600">This lister hasn&apos;t added a phone number. They&apos;ll reply to the details you sent.</p>;
   }
   return null;
 }
@@ -56,21 +56,21 @@ export function ListerPanel({
   viewer: Viewer;
 }) {
   return (
-    <div id="contact" className="flex scroll-mt-24 flex-col gap-5 rounded-xl border border-line bg-white p-5 shadow-card md:p-6">
+    <div id="contact" className="flex scroll-mt-24 flex-col gap-5 rounded-lg border border-line bg-white p-5 md:p-6">
       <div className="flex flex-col gap-1 border-b border-line pb-5">
-        <p className="text-h1-sm font-bold text-ink md:text-h1">
+        <p className="tabular text-display-sm text-ink">
           {formatKes(listing.priceKes)}
-          {listing.rentPeriod && <span className="text-h3 font-semibold"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
+          {listing.rentPeriod && <span className="text-title font-semibold tracking-normal"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
         </p>
-        <p className="text-caption text-slate-600">{PRICE_LABEL[listing.listingType]} · Ask about viewing availability</p>
+        <p className="text-micro text-slate-600">{PRICE_LABEL[listing.listingType]} · Ask about viewing availability</p>
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-h4">{listing.listerName ?? "Lister"}</h2>
+        <h2 className="text-title">{listing.listerName ?? "Lister"}</h2>
         {listing.verified ? (
           <VerifiedBadge className="self-start" />
         ) : (
-          listing.listerType && <p className="text-caption text-slate-600">{LISTER_TYPE_LABELS[listing.listerType]}</p>
+          listing.listerType && <p className="text-micro text-slate-600">{LISTER_TYPE_LABELS[listing.listerType]}</p>
         )}
         <ContactDetails contact={contact} visibility={visibility} viewer={viewer} />
       </div>
@@ -81,11 +81,11 @@ export function ListerPanel({
           <Link href={viewer.signInHref} className={buttonClasses({ size: "lg", className: "w-full" })}>
             Sign in to contact this lister
           </Link>
-          <p className="text-caption text-slate-600">It&apos;s free. You&apos;ll come straight back to this listing.</p>
+          <p className="text-micro text-slate-600">It&apos;s free. You&apos;ll come straight back to this listing.</p>
         </div>
       )}
       {viewer.kind === "own" && (
-        <p className="rounded-md bg-mint-50 px-4 py-3 text-body-sm text-emerald-700">
+        <p className="rounded-md bg-mint-50 px-4 py-3 text-small text-emerald-700">
           This is your listing. Buyers&apos; messages appear in{" "}
           <Link href="/account/inquiries" className="font-semibold underline">
             Inquiries

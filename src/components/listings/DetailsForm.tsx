@@ -34,8 +34,8 @@ const LAND_UNIT_OPTIONS = LAND_UNITS.map((value) => ({ value, label: LAND_UNIT_L
 const SUBTYPE_OPTIONS = COMMERCIAL_SUBTYPES.map((value) => ({ value, label: value }));
 
 const checkboxRow =
-  "flex min-h-control cursor-pointer items-center gap-3 rounded-md px-2 text-body-sm text-ink hover:bg-canvas";
-const checkboxInput = "size-5 shrink-0 cursor-pointer rounded-sm accent-emerald-600";
+  "flex min-h-control cursor-pointer items-center gap-3 rounded-md px-2 text-small text-ink hover:bg-canvas";
+const checkboxInput = "size-4 shrink-0 cursor-pointer rounded-sm accent-emerald-600";
 
 /** Step 2, "Property details". Which fields show depends on the category saved in Basics. */
 export function DetailsForm({
@@ -59,7 +59,7 @@ export function DetailsForm({
 
   return (
     <form ref={formRef} action={action} noValidate className="flex flex-col gap-6">
-      <h2 className="text-h3">Property details</h2>
+      <h2 className="text-title">Property details</h2>
       <FormAlert state={state} />
       <input type="hidden" name="listingId" value={listingId} />
 
@@ -162,7 +162,7 @@ export function DetailsForm({
             Furnished
           </label>
           <fieldset className="flex flex-col gap-2" aria-describedby={errors.amenities ? "amenities-error" : undefined}>
-            <legend className="mb-2 text-body-sm font-medium text-ink">
+            <legend className="mb-2 text-small font-medium text-ink">
               Amenities <span className="font-normal text-slate-600">(optional)</span>
             </legend>
             <div className="grid grid-cols-2 gap-x-3 md:grid-cols-3">
@@ -180,7 +180,7 @@ export function DetailsForm({
               ))}
             </div>
             {errors.amenities && (
-              <p id="amenities-error" className="text-caption font-medium text-danger">
+              <p id="amenities-error" className="text-micro font-medium text-danger">
                 {errors.amenities}
               </p>
             )}

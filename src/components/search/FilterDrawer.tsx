@@ -7,16 +7,16 @@ import { buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { FILTERS_PANEL_ID, SEARCH_FORM_ID } from "./ids";
 
-const DESKTOP_QUERY = "(min-width: 1024px)";
+const DESKTOP_QUERY = "(min-width: 768px)";
 
 function hidePanel(panel: HTMLElement | null) {
   if (panel?.matches(":popover-open")) panel.hidePopover();
 }
 
 /**
- * The filter sidebar on `lg`, and below it a full-screen drawer behind "Filters (n)" (prompt S7
+ * The filter sidebar from `md`, and below it a full-screen drawer behind "Filters (n)" (prompt S7
  * decision 6). The drawer is an HTML popover, so it opens, closes and closes on Escape without
- * JavaScript; scripts only close it after Apply or Reset and when the window grows to `lg`.
+ * JavaScript; scripts only close it after Apply or Reset and when the window grows to `md`.
  */
 export function FilterDrawer({
   activeCount,
@@ -41,13 +41,13 @@ export function FilterDrawer({
   }, []);
 
   return (
-    <div className="lg:self-start">
+    <div className="md:self-start">
       <button
         type="button"
         popoverTarget={FILTERS_PANEL_ID}
-        className={buttonClasses({ variant: "secondary", className: "w-full lg:hidden" })}
+        className={buttonClasses({ variant: "secondary", className: "w-full md:hidden" })}
       >
-        <SlidersHorizontal aria-hidden="true" className="size-5" />
+        <SlidersHorizontal aria-hidden="true" className="size-4" />
         Filters{activeCount > 0 ? ` (${activeCount})` : ""}
       </button>
       <aside
@@ -56,20 +56,20 @@ export function FilterDrawer({
         popover="auto"
         aria-labelledby="filters-heading"
         className={cn(
-          // Below lg: a full-screen popover sheet (hidden by the browser until opened).
+          // Below md: a full-screen popover sheet (hidden by the browser until opened).
           "fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none flex-col overflow-hidden border-0 bg-white p-0 text-ink",
           "backdrop:bg-ink/40 [&:popover-open]:flex",
-          // lg and up: a static sidebar card, always shown.
-          "lg:static lg:flex lg:h-auto lg:w-auto lg:overflow-visible lg:rounded-xl lg:border lg:border-line lg:p-6 lg:shadow-card",
+          // md and up: a compact sticky sidebar card, always shown.
+          "md:sticky md:top-[82px] md:flex md:h-auto md:w-auto md:overflow-visible md:rounded-lg md:border md:border-line md:p-4",
         )}
       >
-        <div className="flex h-header shrink-0 items-center justify-between border-b border-line px-4 lg:h-auto lg:px-0 lg:pb-4">
-          <h2 id="filters-heading" className="text-h4">
+        <div className="flex h-[66px] shrink-0 items-center justify-between border-b border-line px-4 md:h-auto md:px-0 md:pb-3">
+          <h2 id="filters-heading" className="text-title">
             Filters
           </h2>
           <Link
             href={clearHref}
-            className="hidden min-h-control items-center rounded-md px-2 text-body-sm font-semibold text-emerald-700 hover:bg-mint-50 lg:inline-flex"
+            className="hidden min-h-control items-center rounded-md px-2 text-small font-semibold text-emerald-700 hover:bg-mint-50 md:inline-flex"
           >
             Clear all
           </Link>
@@ -77,15 +77,15 @@ export function FilterDrawer({
             type="button"
             popoverTarget={FILTERS_PANEL_ID}
             popoverTargetAction="hide"
-            className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50 lg:hidden"
+            className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50 md:hidden"
           >
-            <X aria-hidden="true" className="size-6" />
+            <X aria-hidden="true" className="size-5" />
             <span className="sr-only">Close filters</span>
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:overflow-visible lg:p-0 lg:pt-6">{children}</div>
-        <div className="flex shrink-0 gap-3 border-t border-line p-4 lg:border-0 lg:p-0 lg:pt-8">
-          <Link href={clearHref} onClick={hide} className={buttonClasses({ variant: "secondary", className: "flex-1 lg:hidden" })}>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 md:overflow-visible md:p-0 md:pt-4">{children}</div>
+        <div className="flex shrink-0 gap-3 border-t border-line p-4 md:border-0 md:p-0 md:pt-5">
+          <Link href={clearHref} onClick={hide} className={buttonClasses({ variant: "secondary", className: "flex-1 md:hidden" })}>
             Reset
           </Link>
           <button type="submit" form={SEARCH_FORM_ID} onClick={hide} className={buttonClasses({ className: "flex-1" })}>

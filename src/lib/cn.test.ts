@@ -3,11 +3,15 @@ import { cn } from "./cn";
 
 describe("cn", () => {
   it("keeps a custom font size alongside a text colour", () => {
-    expect(cn("text-h1 text-ink")).toBe("text-h1 text-ink");
+    expect(cn("text-small text-ink")).toBe("text-small text-ink");
   });
 
   it("lets a later font size override an earlier one", () => {
-    expect(cn("text-body", "text-h2")).toBe("text-h2");
+    expect(cn("text-body", "text-title")).toBe("text-title");
+  });
+
+  it("lets a narrower height override the 44px control height", () => {
+    expect(cn("h-control w-full", "h-8")).toBe("w-full h-8");
   });
 
   it("lets a later colour override an earlier one", () => {

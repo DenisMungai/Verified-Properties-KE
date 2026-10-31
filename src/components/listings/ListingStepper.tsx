@@ -16,7 +16,7 @@ const STEPS: { key: ListingStepKey; label: string }[] = [
  */
 export function ListingStepper({ listingId, current }: { listingId?: string; current: ListingStepKey }) {
   return (
-    <nav aria-label="Listing steps" className="rounded-xl border border-line bg-white px-2 py-3 sm:px-6">
+    <nav aria-label="Listing steps" className="rounded-lg border border-line bg-white px-2 py-2 sm:px-4">
       <ol className="flex items-center gap-1 sm:gap-6">
         {STEPS.map((step, index) => {
           const isCurrent = step.key === current;
@@ -28,7 +28,7 @@ export function ListingStepper({ listingId, current }: { listingId?: string; cur
           );
           const classes = cn(
             // Four steps fit one row at 390px with caption-size labels; body-sm from sm up.
-            "flex min-h-control items-center gap-1 rounded-md px-1 text-caption sm:gap-2 sm:px-2 sm:text-body-sm",
+            "flex min-h-control items-center gap-1 rounded-md px-1 text-micro sm:gap-2 sm:px-2 sm:text-small",
             isCurrent ? "font-semibold text-emerald-700" : "font-medium text-slate-600",
           );
           return (

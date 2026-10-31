@@ -36,11 +36,11 @@ async function Receipt({ params }: { params: Promise<{ invoiceNumber: string }> 
   ] as const;
 
   return (
-    <article aria-labelledby="receipt-heading" className="mx-auto flex w-full max-w-[40rem] flex-col gap-6 rounded-xl border border-line bg-white p-4 md:p-8 print:border-0 print:p-0">
+    <article aria-labelledby="receipt-heading" className="mx-auto flex w-full max-w-[40rem] flex-col gap-6 rounded-lg border border-line bg-white p-4 md:p-8 print:border-0 print:p-0">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-body font-bold text-emerald-700">{BRAND.name}</p>
-          <h1 id="receipt-heading" className="text-h2">
+          <h1 id="receipt-heading" className="text-title">
             Payment receipt
           </h1>
         </div>
@@ -49,16 +49,16 @@ async function Receipt({ params }: { params: Promise<{ invoiceNumber: string }> 
       <dl className="flex flex-col divide-y divide-line border-y border-line">
         {rows.map(([label, value]) => (
           <div key={label} className="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between sm:gap-6">
-            <dt className="text-body-sm text-slate-600">{label}</dt>
-            <dd className="break-all text-body-sm font-medium text-ink tabular sm:text-right">{value}</dd>
+            <dt className="text-small text-slate-600">{label}</dt>
+            <dd className="break-all text-small font-medium text-ink tabular sm:text-right">{value}</dd>
           </div>
         ))}
       </dl>
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-h4">Amount paid</p>
-        <p className="text-h2 tabular">{formatKes(receipt.amountKes)}</p>
+        <p className="text-title">Amount paid</p>
+        <p className="text-title tabular">{formatKes(receipt.amountKes)}</p>
       </div>
-      <p className="text-caption text-slate-600">
+      <p className="text-micro text-slate-600">
         This is a payment receipt for your {BRAND.name} listing plan. Amounts are in Kenyan shillings.
       </p>
       <Link href="/account/billing" className={buttonClasses({ variant: "quiet", className: "self-start print:hidden" })}>
@@ -70,7 +70,7 @@ async function Receipt({ params }: { params: Promise<{ invoiceNumber: string }> 
 
 export default function ReceiptPage({ params }: { params: Promise<{ invoiceNumber: string }> }) {
   return (
-    <Suspense fallback={<Skeleton className="mx-auto h-96 max-w-[40rem] rounded-xl" />}>
+    <Suspense fallback={<Skeleton className="mx-auto h-96 max-w-[40rem] rounded-lg" />}>
       <Receipt params={params} />
     </Suspense>
   );

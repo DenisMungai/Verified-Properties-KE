@@ -5,14 +5,14 @@ import { PropertyGridSkeleton } from "./PropertyCard";
 /** The /properties layout while the search streams in. */
 export function SearchPageSkeleton() {
   return (
-    <PageContainer className="py-8 lg:py-10">
-      <div aria-busy="true" className="flex flex-col gap-6">
+    <PageContainer className="pb-8 pt-6">
+      <div aria-busy="true" className="flex flex-col gap-5">
         <span className="sr-only">Loading properties…</span>
         <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-10 w-80 max-w-full" />
-        <Skeleton className="h-16 w-full rounded-xl" />
-        <div className="grid gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-8">
-          <Skeleton className="h-control w-full rounded-md lg:h-[36rem] lg:rounded-xl" />
+        <Skeleton className="h-9 w-80 max-w-full" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+        <div className="grid gap-gutter md:grid-cols-[176px_minmax(0,1fr)]">
+          <Skeleton className="h-control w-full rounded-lg md:h-[32rem]" />
           <PropertyGridSkeleton />
         </div>
       </div>

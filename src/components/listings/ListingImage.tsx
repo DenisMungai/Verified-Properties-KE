@@ -1,10 +1,9 @@
 "use client";
 
 import Image, { type ImageLoader } from "next/image";
+import { House } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { variantFor, variantSuffix } from "@/lib/storage/limits";
-
-export const LISTING_FALLBACK_SRC = "/images/listing-fallback.svg";
 
 /** Maps the width next/image asks for to the smallest stored WebP variant that covers it. */
 const variantLoader: ImageLoader = ({ src, width }) => `${src}${variantSuffix(variantFor(width))}`;
@@ -12,7 +11,7 @@ const variantLoader: ImageLoader = ({ src, width }) => `${src}${variantSuffix(va
 /**
  * A listing photo in a 4:3 frame (prompt S4 decision 9). `baseUrl` is the photo's public URL
  * without its variant suffix; the loader picks 480, 960 or 1600 per `sizes`, so there is no
- * runtime image optimisation. Without a photo it shows the branded fallback.
+ * runtime image optimisation. Without a photo it shows a thin house icon on the placeholder tint.
  */
 export function ListingImage({
   baseUrl,
@@ -43,7 +42,9 @@ export function ListingImage({
           className={fit === "contain" ? "object-contain" : "object-cover"}
         />
       ) : (
-        <Image src={LISTING_FALLBACK_SRC} alt={alt} fill unoptimized className="object-cover" />
+        <div role="img" aria-label={alt || undefined} aria-hidden={alt ? undefined : true} className="flex size-full items-center justify-center">
+          <House aria-hidden="true" className="size-1/5 max-h-16 max-w-16 text-slate-500 [stroke-width:1]" />
+        </div>
       )}
     </div>
   );

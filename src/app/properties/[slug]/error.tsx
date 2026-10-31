@@ -7,7 +7,7 @@ import { Button, EmptyState } from "@/components/ui";
 /** The listing failed to load (usually the database). Nothing about the error is shown. */
 export default function ListingError({ retry }: { error: unknown; retry: () => void }) {
   return (
-    <PageContainer className="py-12">
+    <PageContainer className="py-10">
       <EmptyState
         title="We couldn't load this listing"
         description="Something went wrong on our side. Please try again in a moment."

@@ -58,12 +58,12 @@ function StatusForm({
 function ConfirmStatusForm({ listingId, intent, label }: { listingId: string; intent: keyof typeof CONSEQUENCES; label: string }) {
   return (
     <details className="group rounded-md">
-      <summary className="flex min-h-control cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-body-sm font-medium text-ink hover:bg-canvas [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-control cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-small font-medium text-ink hover:bg-canvas [&::-webkit-details-marker]:hidden">
         {label}
         <ChevronDown aria-hidden="true" className="size-4 text-slate-600 transition-transform group-open:rotate-180" />
       </summary>
       <div className="flex flex-col gap-2 px-3 pb-3 pt-1">
-        <p className="text-caption text-slate-700">{CONSEQUENCES[intent]}</p>
+        <p className="text-micro text-slate-700">{CONSEQUENCES[intent]}</p>
         <StatusForm
           listingId={listingId}
           intent={intent}
@@ -121,7 +121,7 @@ export function MoreListingActions({ listing, align = "end" }: { listing: Action
       </summary>
       <div
         className={cn(
-          "z-10 mt-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-lg border border-line bg-white p-2 shadow-popover md:absolute",
+          "z-10 mt-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-lg border border-line bg-white p-2 md:absolute",
           align === "end" ? "md:right-0" : "md:left-0",
         )}
       >

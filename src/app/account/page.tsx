@@ -24,25 +24,25 @@ function ActiveListingsCard({ usage }: { usage: ListingPlanUsage }) {
   const { headline, detail } = planUsageSummary(usage);
   const hasPlan = usage.limit !== null;
   return (
-    <section aria-labelledby="active-listings-heading" className="flex flex-col gap-2 rounded-xl border border-line bg-white p-6">
-      <h2 id="active-listings-heading" className="text-body-sm font-medium text-slate-700">
+    <section aria-labelledby="active-listings-heading" className="flex flex-col gap-2 rounded-lg border border-line bg-white p-5">
+      <h2 id="active-listings-heading" className="text-small font-medium text-slate-700">
         Active listings
       </h2>
-      <p className="text-h1 tabular">
+      <p className="text-display-sm tabular">
         {hasPlan ? `${usage.activeListingCount} / ${usage.limit}` : usage.activeListingCount}
       </p>
-      <p className="text-body-sm text-emerald-700">
+      <p className="text-small text-emerald-700">
         {hasPlan && usage.phase === "active"
           ? `${remainingSlots(usage.limit ?? 0, usage.activeListingCount)} slots available`
           : detail || headline}
       </p>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-        <Link href="/account/listings" className="inline-flex min-h-control items-center text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink">
+        <Link href="/account/listings" className="inline-flex min-h-control items-center text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink">
           View my listings
         </Link>
         <Link
           href={hasPlan ? "/account/billing" : "/account/billing/checkout"}
-          className="inline-flex min-h-control items-center text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink"
+          className="inline-flex min-h-control items-center text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink"
         >
           {hasPlan ? "Manage plan" : "Choose a plan"}
         </Link>
@@ -80,25 +80,25 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
         />
       )}
       {usage && (
-        <div className="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <ActiveListingsCard usage={usage} />
         </div>
       )}
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         {profile ? (
-          <section aria-labelledby="profile-heading" className="flex flex-col gap-4 rounded-xl border border-line bg-white p-6">
+          <section aria-labelledby="profile-heading" className="flex flex-col gap-4 rounded-lg border border-line bg-white p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <h2 id="profile-heading" className="text-h4">
+                <h2 id="profile-heading" className="text-title">
                   {profile.displayName}
                 </h2>
-                <p className="text-body-sm text-slate-600">{LISTER_TYPE_LABELS[profile.listerType]}</p>
+                <p className="text-small text-slate-600">{LISTER_TYPE_LABELS[profile.listerType]}</p>
               </div>
               {/* The badge is derived from review + subscriptions (S2); nobody is verified yet. */}
               <Badge>Not verified</Badge>
             </div>
             {profile.phone && (
-              <p className="flex items-center gap-2 text-body-sm text-ink">
+              <p className="flex items-center gap-2 text-small text-ink">
                 <Phone aria-hidden="true" className="size-4 text-slate-600" />
                 <span className="tabular">{displayKenyanPhone(profile.phone)}</span>
               </p>
@@ -108,14 +108,14 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
             </Link>
           </section>
         ) : (
-          <section aria-labelledby="start-listing-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-white p-6">
-            <span aria-hidden="true" className="inline-flex size-10 items-center justify-center rounded-pill bg-mint-50 text-emerald-700">
+          <section aria-labelledby="start-listing-heading" className="flex flex-col gap-3 rounded-lg border border-line bg-white p-5">
+            <span aria-hidden="true" className="inline-flex size-10 items-center justify-center rounded-full bg-mint-50 text-emerald-700">
               <UserRound className="size-5" />
             </span>
-            <h2 id="start-listing-heading" className="text-h4">
+            <h2 id="start-listing-heading" className="text-title">
               {isLister ? "Finish your listing profile" : "Want to list property?"}
             </h2>
-            <p className="text-body-sm text-slate-600">
+            <p className="text-small text-slate-600">
               Tell buyers who you are and how to reach you. You can list as an agent, a private owner or a developer.
             </p>
             <Link href="/account/onboarding" className={buttonClasses({ variant: "quiet", className: "self-start" })}>
@@ -143,7 +143,7 @@ function OverviewSkeleton() {
     <div className="flex flex-col gap-6" aria-busy="true">
       <span className="sr-only">Loading your account</span>
       <Skeleton className="h-10 w-80 max-w-full" />
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <Skeleton className="h-48" />
         <Skeleton className="h-48" />
       </div>

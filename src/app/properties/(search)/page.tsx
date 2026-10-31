@@ -7,7 +7,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { FilterDrawer } from "@/components/search/FilterDrawer";
 import { FilterPanel } from "@/components/search/FilterPanel";
 import { Pagination } from "@/components/search/Pagination";
-import { PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
+import { CARD_GRID, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { ResultsHeader } from "@/components/search/ResultsHeader";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchPageSkeleton } from "@/components/search/SearchPageSkeleton";
@@ -101,7 +101,7 @@ async function Results({ href, filters }: { href: string; filters: SearchFilters
         <h2 id="results-heading" className="sr-only">
           Results, page {result.page} of {result.pageCount}
         </h2>
-        <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className={CARD_GRID}>
           {toCardData(result.items).map((listing) => (
             <li key={listing.id} className="flex">
               <PropertyCard listing={listing} save={saveFor(listing.id)} />
@@ -120,10 +120,10 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const href = searchHref(filters);
   const priceInput = errors.price ? { min: first(raw.minPrice), max: first(raw.maxPrice) } : undefined;
   return (
-    <PageContainer className="flex flex-col gap-6 py-8 lg:py-10">
-      <div className="flex flex-col gap-3">
+    <PageContainer className="flex flex-col gap-5 pb-8 pt-6">
+      <div className="flex flex-col gap-2">
         <nav aria-label="Breadcrumb">
-          <ol className="flex flex-wrap items-center gap-2 text-caption text-slate-600">
+          <ol className="flex flex-wrap items-center gap-2 text-small text-slate-600">
             <li>
               <Link href="/" className="-my-3.5 inline-flex min-h-control items-center hover:text-ink hover:underline">
                 Home
@@ -134,27 +134,30 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
           </ol>
         </nav>
         <div>
-          <h1 className="text-h1-sm md:text-h1">{MODE_TITLES[filters.mode]}</h1>
-          <p className="mt-1 text-body-sm text-slate-600">
-            <span role="status">
-              <Suspense key={href} fallback="Counting listings…">
-                <ResultCount href={href} />
-              </Suspense>
-            </span>{" "}
-            · Browse homes, apartments, land and commercial property
-          </p>
+          <h1 className="text-display-sm">{MODE_TITLES[filters.mode]}</h1>
+          <p className="mt-2 max-w-2xl text-body text-slate-600">Browse homes, apartments, land and commercial property</p>
         </div>
       </div>
 
       {/* Keyed by the URL so the inputs reset after a chip, Clear all or pagination link. */}
       <SearchBar key={`bar:${href}`} filters={filters} />
 
-      <div className="grid gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-8">
+      <div className="grid gap-gutter md:grid-cols-[176px_minmax(0,1fr)]">
         <FilterDrawer key={`filters:${href}`} activeCount={activeFilters(filters).length} clearHref={clearFiltersHref(filters)}>
           <FilterPanel filters={filters} priceError={errors.price} priceInput={priceInput} />
         </FilterDrawer>
-        <div className="flex min-w-0 flex-col gap-6">
-          <ResultsHeader key={`header:${href}`} filters={filters} />
+        <div className="flex min-w-0 flex-col gap-4">
+          <ResultsHeader
+            key={`header:${href}`}
+            filters={filters}
+            count={
+              <span role="status">
+                <Suspense key={href} fallback="Counting listings…">
+                  <ResultCount href={href} />
+                </Suspense>
+              </span>
+            }
+          />
           <Suspense key={href} fallback={<PropertyGridSkeleton />}>
             <Results href={href} filters={filters} />
           </Suspense>

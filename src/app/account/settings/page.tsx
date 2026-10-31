@@ -12,12 +12,12 @@ export const metadata: Metadata = { title: "Settings" };
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   const id = `settings-${title.toLowerCase().replace(/\W+/g, "-")}`;
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-4 rounded-xl border border-line bg-white p-6">
+    <section aria-labelledby={id} className="flex flex-col gap-4 rounded-lg border border-line bg-white p-5">
       <div className="flex flex-col gap-1">
-        <h2 id={id} className="text-h4">
+        <h2 id={id} className="text-title">
           {title}
         </h2>
-        {description && <p className="text-body-sm text-slate-600">{description}</p>}
+        {description && <p className="text-small text-slate-600">{description}</p>}
       </div>
       {children}
     </section>
@@ -31,9 +31,9 @@ async function Settings() {
       <Card title="Profile">
         <NameForm name={user.name} />
         <div className="flex flex-col gap-1 border-t border-line pt-4">
-          <p className="text-body-sm font-medium text-ink">Email address</p>
+          <p className="text-small font-medium text-ink">Email address</p>
           <p className="text-body text-ink">{user.email}</p>
-          <p className="flex items-center gap-1.5 text-caption font-medium text-success">
+          <p className="flex items-center gap-1.5 text-micro font-medium text-success">
             <CircleCheck aria-hidden="true" className="size-4" />
             Verified
           </p>

@@ -64,21 +64,21 @@ function Thumb({ row }: { row: ListingRow }) {
 
 function OwnerNote({ row, userId }: { row: ListingRow; userId: string }) {
   if (row.ownerUserId === userId) return null;
-  return <span className="block text-caption text-slate-600">Listed by {row.ownerName}</span>;
+  return <span className="block text-micro text-slate-600">Listed by {row.ownerName}</span>;
 }
 
 function ListingsTable({ rows, userId }: { rows: ListingRow[]; userId: string }) {
   const cell = "bg-canvas px-4 py-3 align-middle first:rounded-l-lg last:rounded-r-lg";
   return (
-    <table className="hidden w-full border-separate border-spacing-y-2 text-body-sm md:table">
+    <table className="hidden w-full border-separate border-spacing-y-2 text-small md:table">
       <caption className="sr-only">Your listings</caption>
       <thead>
-        <tr className="text-left text-caption font-medium text-slate-600">
-          <th scope="col" className="px-4 pb-1 font-medium">Property</th>
-          <th scope="col" className="px-4 pb-1 font-medium">Location</th>
-          <th scope="col" className="px-4 pb-1 font-medium">Status</th>
-          <th scope="col" className="px-4 pb-1 font-medium">Updated</th>
-          <th scope="col" className="px-4 pb-1 font-medium">Action</th>
+        <tr className="text-left text-micro font-medium text-slate-600">
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Property</th>
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Location</th>
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Status</th>
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Updated</th>
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Action</th>
         </tr>
       </thead>
       <tbody>
@@ -93,7 +93,7 @@ function ListingsTable({ rows, userId }: { rows: ListingRow[]; userId: string })
                   </Link>
                   <OwnerNote row={row} userId={userId} />
                   {row.status === "rejected" && row.rejectionReason && (
-                    <span className="mt-1 block text-caption text-danger">Needs changes: {row.rejectionReason}</span>
+                    <span className="mt-1 block text-micro text-danger">Needs changes: {row.rejectionReason}</span>
                   )}
                 </div>
               </div>
@@ -128,14 +128,14 @@ function ListingCards({ rows, userId }: { rows: ListingRow[]; userId: string }) 
                 <span className="break-words">{row.title}</span>
               </Link>
               <OwnerNote row={row} userId={userId} />
-              <span className="block text-caption text-slate-600">
+              <span className="block text-micro text-slate-600">
                 {location(row)} · Updated {formatNairobiDate(row.updatedAt)}
               </span>
             </div>
             <ListingStatusBadge status={row.status} />
           </div>
           {row.status === "rejected" && row.rejectionReason && (
-            <p className="text-caption text-danger">Needs changes: {row.rejectionReason}</p>
+            <p className="text-micro text-danger">Needs changes: {row.rejectionReason}</p>
           )}
           <div className="flex flex-wrap items-start gap-2">
             <PrimaryListingAction listing={row} />
@@ -179,8 +179,8 @@ async function Listings({ searchParams }: { searchParams: SearchParams }) {
           action={addButton}
         />
       ) : (
-        <section aria-labelledby="your-listings-heading" className="rounded-xl border border-line bg-white p-4 md:p-6">
-          <h2 id="your-listings-heading" className="mb-2 text-h3">
+        <section aria-labelledby="your-listings-heading" className="rounded-lg border border-line bg-white p-4 md:p-5">
+          <h2 id="your-listings-heading" className="mb-2 text-title">
             Your listings
           </h2>
           <ListingsTable rows={rows} userId={user.id} />
@@ -193,7 +193,7 @@ async function Listings({ searchParams }: { searchParams: SearchParams }) {
 
 function ListingsSkeleton() {
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-line bg-white p-6" aria-busy="true">
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-white p-5" aria-busy="true">
       <span className="sr-only">Loading your listings</span>
       {Array.from({ length: 4 }, (_, i) => (
         <Skeleton key={i} className="h-14 w-full rounded-lg" />

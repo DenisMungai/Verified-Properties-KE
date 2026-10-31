@@ -19,7 +19,7 @@ const BUDGETS: Record<SearchMode, readonly number[]> = {
   land: [1_000_000, 3_000_000, 5_000_000, 10_000_000, 50_000_000],
 };
 
-const label = "text-label uppercase text-slate-600";
+const label = "text-micro tracking-wide font-semibold uppercase text-slate-600";
 
 /**
  * Home search control (design "01 — Homepage" and "06 — Mobile Homepage"; prompt S7 decision 6).
@@ -31,21 +31,21 @@ export function HomeSearch() {
   return (
     <SearchForm
       ariaLabel="Find a property"
-      className="flex flex-col gap-4 rounded-xl border border-line bg-white p-4 shadow-card md:p-6 lg:flex-row lg:items-end lg:gap-6"
+      className="flex flex-col gap-4 rounded-xl border border-line bg-white p-4 sm:p-5 lg:flex-row lg:items-end lg:gap-5"
     >
-      <div className="flex flex-col gap-3">
-        <p className="text-body font-semibold text-ink">
+      <div className="flex flex-col gap-2">
+        <p className="text-small font-semibold text-ink">
           What are you looking for?
         </p>
         <SegmentedControl legend="Buy, rent or land" name="mode" idPrefix="home-mode" options={MODE_OPTIONS} value={mode} onValueChange={setMode} />
       </div>
       <div className="grid flex-1 gap-4 md:grid-cols-3 lg:gap-0 lg:divide-x lg:divide-line">
-        <div className="flex flex-col gap-2 lg:px-4">
+        <div className="flex flex-col gap-1.5 lg:px-4">
           <label htmlFor="home-q" className={label}>
             Location
           </label>
           <div className="relative">
-            <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-600" />
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
             <Input
               id="home-q"
               name="q"
@@ -53,11 +53,11 @@ export function HomeSearch() {
               placeholder="County, town or area"
               maxLength={Q_MAX}
               autoComplete="off"
-              className="pl-11"
+              className="pl-9"
             />
           </div>
         </div>
-        <div className="flex flex-col gap-2 lg:px-4">
+        <div className="flex flex-col gap-1.5 lg:px-4">
           <label htmlFor="home-type" className={label}>
             Property type
           </label>
@@ -67,7 +67,7 @@ export function HomeSearch() {
             <Select id="home-type" name="type" options={TYPE_OPTIONS} placeholder="Any property" defaultValue="" />
           )}
         </div>
-        <div className="flex flex-col gap-2 lg:px-4">
+        <div className="flex flex-col gap-1.5 lg:px-4">
           <label htmlFor="home-budget" className={label}>
             Price range
           </label>
@@ -81,9 +81,9 @@ export function HomeSearch() {
           />
         </div>
       </div>
-      <Button type="submit" size="lg" className="lg:min-w-52">
+      <Button type="submit" size="lg" className="lg:min-w-44">
         Search properties
-        <ArrowRight aria-hidden="true" className="size-5" />
+        <ArrowRight aria-hidden="true" className="size-4" />
       </Button>
     </SearchForm>
   );

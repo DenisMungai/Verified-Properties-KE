@@ -30,8 +30,8 @@ export function Field({ id, label, hint, error, required, className, children }:
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={id} className="text-body-sm font-medium text-ink">
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={id} className="text-small font-medium text-ink">
         {label}
         {required && (
           <span className="text-danger" aria-hidden="true">
@@ -48,13 +48,13 @@ export function Field({ id, label, hint, error, required, className, children }:
         "aria-describedby": describedBy,
       })}
       {hint && (
-        <p id={hintId} className="text-caption text-slate-600">
+        <p id={hintId} className="text-micro text-slate-600">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} className="flex items-start gap-1.5 text-caption font-medium text-danger">
-          <CircleAlert aria-hidden="true" className="mt-px size-4 shrink-0" />
+        <p id={errorId} className="flex items-start gap-1.5 text-micro font-medium text-danger">
+          <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
           {error}
         </p>
       )}
@@ -64,7 +64,7 @@ export function Field({ id, label, hint, error, required, className, children }:
 
 /** Shared control styling for Input, Select and Textarea. */
 export const controlClasses =
-  "w-full rounded-md border border-line-strong bg-white px-4 text-body text-ink transition-colors " +
+  "w-full rounded border border-line-strong bg-white px-4 text-small text-ink transition-colors " +
   "hover:border-ink focus-visible:border-emerald-600 " +
   "disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-muted disabled:text-slate-600 " +
   "aria-[invalid=true]:border-danger";

@@ -131,7 +131,7 @@ export function PaymentStatusPanel(props: PaymentStatusPanelProps) {
       </Link>
     ) : null;
 
-  let icon = <Spinner className="size-6 text-emerald-600" />;
+  let icon = <Spinner className="size-5 text-emerald-600" />;
   let title = method === "card" ? "Confirming your card payment" : "Check your phone";
   let body =
     method === "card"
@@ -143,33 +143,33 @@ export function PaymentStatusPanel(props: PaymentStatusPanelProps) {
     body = copy.body(props, view);
     icon =
       shown === "confirmed" ? (
-        <CircleCheck className="size-6 text-emerald-600" />
+        <CircleCheck className="size-5 text-emerald-600" />
       ) : shown === "timed_out" ? (
-        <Clock className="size-6 text-warning-text" />
+        <Clock className="size-5 text-warning-text" />
       ) : (
-        <CircleAlert className="size-6 text-danger" />
+        <CircleAlert className="size-5 text-danger" />
       );
   } else if (method === "mpesa") {
-    icon = <Smartphone className="size-6 text-emerald-600" />;
+    icon = <Smartphone className="size-5 text-emerald-600" />;
   }
 
   return (
-    <section aria-labelledby="payment-status-heading" className="flex flex-col gap-6 rounded-xl border border-line bg-white p-4 md:p-6">
+    <section aria-labelledby="payment-status-heading" className="flex flex-col gap-6 rounded-lg border border-line bg-white p-4 md:p-5">
       <div className="flex items-start gap-4">
-        <span aria-hidden="true" className="inline-flex size-12 shrink-0 items-center justify-center rounded-pill bg-mint-50">
+        <span aria-hidden="true" className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-mint-50">
           {icon}
         </span>
         <div aria-live="polite" className="flex min-w-0 flex-col gap-1">
-          <h2 id="payment-status-heading" ref={headingRef} tabIndex={-1} className="text-h3 focus:outline-none">
+          <h2 id="payment-status-heading" ref={headingRef} tabIndex={-1} className="text-title focus:outline-none">
             {title}
           </h2>
           <p className="text-body text-slate-700">{body}</p>
-          <p className="text-body-sm text-slate-600 tabular">Invoice {invoiceNumber}</p>
+          <p className="text-small text-slate-600 tabular">Invoice {invoiceNumber}</p>
         </div>
       </div>
 
       {shown === "waiting" && method === "mpesa" && (
-        <p className="flex items-center gap-2 text-body-sm text-slate-600">
+        <p className="flex items-center gap-2 text-small text-slate-600">
           <Spinner />
           Waiting for M-Pesa to confirm…
         </p>

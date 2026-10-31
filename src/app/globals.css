@@ -23,12 +23,10 @@
   --vp-error: #b42318;
 
   --vp-font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --vp-shadow-card: 0 8px 24px rgb(23 35 29 / 6%);
-  --vp-shadow-popover: 0 16px 40px rgb(23 35 29 / 14%);
   --vp-shadow-focus: 0 0 0 3px rgb(20 131 59 / 22%);
 
-  --vp-container: 80rem;
-  --vp-header-height: 72px;
+  --vp-page: 1440px;
+  --vp-header-height: 66px;
   --vp-control-height: 44px;
   --vp-control-height-lg: 48px;
 }
@@ -39,12 +37,31 @@
      * Design: "CSS root: 90%" (14.4px body at a 16px browser default). A percentage keeps the
      * user's own browser font-size setting in effect. Touch targets are px-based (≥44px).
      */
+    font-family: var(--vp-font-sans);
     font-size: 90%;
+    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-canvas font-sans text-body text-ink antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Lucide icons: thinner default stroke (decorative icons override per use). */
+  svg.lucide {
+    stroke-width: 1.75;
   }
 
   h1,
@@ -67,7 +84,50 @@
   }
 }
 
+/*
+ * Compact component classes from the design system, built on the existing colour tokens.
+ * React components use Tailwind utilities / buttonClasses(); these keep the token set complete.
+ */
+@layer components {
+  .card {
+    @apply rounded-lg border border-line bg-white;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-control items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-small font-semibold text-white transition-colors duration-200 hover:bg-emerald-700;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-control items-center justify-center gap-2 rounded-lg border border-line-strong bg-white px-5 py-3 text-small font-semibold text-ink transition-colors duration-200 hover:border-ink hover:bg-canvas;
+  }
+
+  .market-card {
+    @apply relative flex flex-col overflow-hidden rounded-sm border border-line bg-white transition-shadow duration-200 hover:shadow-sm;
+  }
+
+  .market-image {
+    @apply relative aspect-square overflow-hidden border-b border-line bg-mint-100;
+  }
+
+  .market-info {
+    @apply flex min-h-32 flex-1 flex-col p-3;
+  }
+
+  .market-quick {
+    @apply mt-auto min-h-9 w-full rounded border border-line bg-mint-50 py-2 text-small font-medium text-emerald-700 transition-colors duration-200 hover:bg-mint-100;
+  }
+}
+
 @layer utilities {
+  /* Horizontal rails scroll without a visible scrollbar. */
+  .hide-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Prices, areas and comparison figures. */
   .tabular {
     font-variant-numeric: tabular-nums;
@@ -82,5 +142,24 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  body > header,
+  body > footer {
+    display: none !important;
+  }
+
+  .card {
+    border-color: #ddd;
   }
 }

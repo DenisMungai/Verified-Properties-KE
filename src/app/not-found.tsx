@@ -5,7 +5,7 @@ import { EmptyState, buttonClasses } from "@/components/ui";
 
 export default function NotFound() {
   return (
-    <PageContainer className="py-16">
+    <PageContainer className="py-10">
       <EmptyState
         icon={<SearchX />}
         title="Page not found"

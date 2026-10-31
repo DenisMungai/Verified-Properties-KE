@@ -17,7 +17,7 @@ export function PasswordInput(props: Omit<ComponentProps<"input">, "type">) {
         aria-controls={props.id}
         className="absolute right-0 top-0 inline-flex size-control items-center justify-center rounded-md text-slate-600 hover:text-ink"
       >
-        {visible ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
+        {visible ? <EyeOff aria-hidden="true" className="size-4" /> : <Eye aria-hidden="true" className="size-4" />}
         <span className="sr-only">{visible ? "Hide password" : "Show password"}</span>
       </button>
     </div>

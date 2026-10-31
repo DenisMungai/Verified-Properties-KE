@@ -33,39 +33,27 @@ const config = {
       fontFamily: {
         sans: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      /*
+       * Compact scale: ~90% of the UI is `small` / `micro`; only headlines are large. At the 90% root:
+       * display ≈ 50px, display-sm ≈ 32px, title ≈ 16px, body ≈ 12.6px, small ≈ 10.8px, micro ≈ 9px.
+       */
       fontSize: {
-        display: ["2.5rem", { lineHeight: "3rem", letterSpacing: "-0.035em", fontWeight: "700" }],
-        "display-sm": ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.035em", fontWeight: "700" }],
-        h1: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.025em", fontWeight: "700" }],
-        "h1-sm": ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.025em", fontWeight: "700" }],
-        h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em", fontWeight: "700" }],
-        h3: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em", fontWeight: "600" }],
-        h4: ["1.125rem", { lineHeight: "1.625rem", fontWeight: "600" }],
-        "body-lg": ["1.125rem", { lineHeight: "1.8125rem" }],
-        body: ["1rem", { lineHeight: "1.5rem" }],
-        "body-sm": ["0.875rem", { lineHeight: "1.3125rem" }],
-        label: ["0.75rem", { lineHeight: "1.0625rem", letterSpacing: "0.06em", fontWeight: "600" }],
-        caption: ["0.75rem", { lineHeight: "1.125rem" }],
-        button: ["0.875rem", { lineHeight: "1.25rem", fontWeight: "600" }],
-        price: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.02em", fontWeight: "700" }],
+        display: ["3.5rem", { lineHeight: "1.02", letterSpacing: "-0.055em", fontWeight: "700" }],
+        "display-sm": ["2.25rem", { lineHeight: "1.05", letterSpacing: "-0.045em", fontWeight: "700" }],
+        title: ["1.125rem", { lineHeight: "1.5rem", fontWeight: "600" }],
+        body: ["0.875rem", { lineHeight: "1.5rem" }],
+        small: ["0.75rem", { lineHeight: "1.15rem" }],
+        micro: ["0.625rem", { lineHeight: "0.9rem", letterSpacing: "0.02em" }],
       },
-      borderRadius: {
-        sm: "0.5rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.25rem",
-        "2xl": "1.5rem",
-        pill: "9999px",
-      },
+      // Radius: Tailwind defaults (sm 2px, DEFAULT 4px, md 6px, lg 8px, xl 12px, full).
+      // Borders separate surfaces; the only drop shadow is `shadow-sm` on card hover.
       boxShadow: {
-        card: "0 8px 24px rgb(23 35 29 / 6%)",
-        popover: "0 16px 40px rgb(23 35 29 / 14%)",
         focus: "0 0 0 3px rgb(20 131 59 / 22%)",
       },
       // Touch targets in px so the 90% root never shrinks them below 44px. On the spacing scale
       // so h-, w-, size- and min-w- utilities all accept them.
-      spacing: { control: "44px", "control-lg": "48px", header: "72px" },
-      maxWidth: { container: "80rem", prose: "65ch", modal: "35rem" },
+      spacing: { control: "44px", "control-lg": "48px", gutter: "1rem", sidebar: "17.5rem", "page-x": "4vw" },
+      maxWidth: { page: "1440px", text: "1160px", prose: "65ch", modal: "35rem" },
     },
   },
   plugins: [],

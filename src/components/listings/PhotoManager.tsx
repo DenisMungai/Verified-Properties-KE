@@ -241,10 +241,10 @@ export function PhotoManager({
   const ids = (photoId: string) => ({ listingId, photoId });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h2 className="text-h3">Property photos</h2>
-        <p className="text-body-sm text-slate-700">
+        <h2 className="text-title">Property photos</h2>
+        <p className="text-small text-slate-700">
           {photos.length} of {MAX_PHOTOS_PER_LISTING} photos. The cover photo is shown first in search.
         </p>
       </div>
@@ -259,7 +259,7 @@ export function PhotoManager({
           <h3 id="add-photos-heading" className="sr-only">
             Add photos
           </h3>
-          {reviewWarning && <p className="rounded-md bg-warning-tint px-4 py-3 text-body-sm text-warning-text">{reviewWarning}</p>}
+          {reviewWarning && <p className="rounded-md bg-warning-tint px-4 py-3 text-small text-warning-text">{reviewWarning}</p>}
           <div
             onDragOver={(event) => {
               event.preventDefault();
@@ -272,7 +272,7 @@ export function PhotoManager({
               addFiles(event.dataTransfer.files);
             }}
             className={cn(
-              "flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center",
+              "flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-4 py-6 text-center",
               dragging ? "border-emerald-600 bg-mint-50" : "border-line-strong bg-canvas",
             )}
           >
@@ -283,13 +283,13 @@ export function PhotoManager({
                 type="button"
                 onClick={() => input.current?.click()}
                 disabled={slotsLeft <= 0}
-                className="inline-flex min-h-control items-center font-semibold text-emerald-700 underline underline-offset-2 hover:text-ink disabled:text-slate-600 disabled:no-underline"
+                className="inline-flex min-h-control items-center font-semibold text-emerald-700 underline underline-offset-4 hover:text-ink disabled:text-slate-600 disabled:no-underline"
                 aria-describedby="photo-hint"
               >
                 choose files
               </button>
             </p>
-            <p id="photo-hint" className="text-caption text-slate-600">
+            <p id="photo-hint" className="text-micro text-slate-600">
               {HINT}
             </p>
             <input
@@ -330,7 +330,7 @@ export function PhotoManager({
                     : "Upload photos"}
                 </Button>
                 {!uploading && needDescription > 0 && (
-                  <p className="text-caption text-slate-600">
+                  <p className="text-micro text-slate-600">
                     {needDescription} photo{needDescription === 1 ? " needs a description" : "s need descriptions"} of at least{" "}
                     {PHOTO_ALT_MIN} characters before {needDescription === 1 ? "it" : "they"} can upload.
                   </p>
@@ -340,7 +340,7 @@ export function PhotoManager({
           )}
         </section>
       ) : (
-        <p className="rounded-md bg-canvas px-4 py-3 text-body-sm text-slate-700">
+        <p className="rounded-md bg-canvas px-4 py-3 text-small text-slate-700">
           Photos can&apos;t be changed on this listing.
         </p>
       )}
@@ -365,7 +365,7 @@ export function PhotoManager({
           ))}
         </ol>
       ) : (
-        <p className="text-body-sm text-slate-600">No photos yet. Add at least one to submit the listing.</p>
+        <p className="text-small text-slate-600">No photos yet. Add at least one to submit the listing.</p>
       )}
 
       <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -374,7 +374,7 @@ export function PhotoManager({
         </Link>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
           {!uploading && notUploaded > 0 && (
-            <p className="text-caption font-medium text-warning-text">
+            <p className="text-micro font-medium text-warning-text">
               {notUploaded} photo{notUploaded === 1 ? " isn't" : "s aren't"} uploaded yet. Describe {notUploaded === 1 ? "it" : "each one"} and
               press Upload, or {notUploaded === 1 ? "it" : "they"} won&apos;t be saved.
             </p>
@@ -385,7 +385,7 @@ export function PhotoManager({
                 Continue
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Button>
-              <p id="continue-wait" className="text-caption text-slate-600">
+              <p id="continue-wait" className="text-micro text-slate-600">
                 Wait for uploads to finish.
               </p>
             </>
@@ -424,7 +424,7 @@ function StagedRow({
       <img src={item.preview} alt="" className="aspect-[4/3] w-24 shrink-0 self-start rounded-md object-cover sm:w-32" />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {item.state === "invalid" ? (
-          <p className="break-words text-body-sm font-medium text-ink">{item.file.name}</p>
+          <p className="break-words text-small font-medium text-ink">{item.file.name}</p>
         ) : (
           <Field
             id={fieldId}
@@ -455,12 +455,12 @@ function StagedRow({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={item.progress}
-            className="h-2 overflow-hidden rounded-pill bg-line"
+            className="h-2 overflow-hidden rounded-full bg-line"
           >
-            <div className="h-full rounded-pill bg-emerald-600 transition-[width]" style={{ width: `${item.progress}%` }} />
+            <div className="h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${item.progress}%` }} />
           </div>
         )}
-        <p className={cn("text-caption", failed ? "font-medium text-danger" : "text-slate-600")}>{stateText(item)}</p>
+        <p className={cn("text-micro", failed ? "font-medium text-danger" : "text-slate-600")}>{stateText(item)}</p>
         {!active && (
           <div className="flex flex-wrap gap-2">
             {item.state === "failed" && onRetry && (
@@ -515,7 +515,7 @@ function PhotoRow({
       />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-caption font-medium text-slate-600">Photo {position}</span>
+          <span className="text-micro font-medium text-slate-600">Photo {position}</span>
           {photo.isCover && (
             <Badge tone="verified" icon={<Star aria-hidden="true" className="size-3" />}>
               Cover
@@ -559,13 +559,13 @@ function PhotoRow({
           </form>
         ) : (
           <div className="flex flex-col items-start">
-            <p className="break-words text-body-sm text-ink">{photo.altText}</p>
+            <p className="break-words text-small text-ink">{photo.altText}</p>
             <button
               type="button"
               disabled={disabled}
               onClick={() => setEditing(true)}
               aria-label={`Edit description of photo ${position}`}
-              className="inline-flex min-h-control items-center text-body-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-ink disabled:text-slate-600"
+              className="inline-flex min-h-control items-center text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink disabled:text-slate-600"
             >
               Edit description
             </button>
@@ -598,10 +598,10 @@ function PhotoRow({
                 disabled && "pointer-events-none text-slate-500",
               )}
             >
-              <Trash2 aria-hidden="true" className="size-5" />
+              <Trash2 aria-hidden="true" className="size-4" />
             </summary>
-            <div className="mt-2 flex flex-col gap-2 rounded-md border border-line bg-white p-3 sm:absolute sm:right-0 sm:z-10 sm:w-64 sm:shadow-popover">
-              <p className="text-body-sm text-ink">Delete this photo? This can&apos;t be undone.</p>
+            <div className="mt-2 flex flex-col gap-2 rounded-md border border-line bg-white p-3 sm:absolute sm:right-0 sm:z-10 sm:w-64">
+              <p className="text-small text-ink">Delete this photo? This can&apos;t be undone.</p>
               <Button variant="danger" disabled={disabled} onClick={onDelete}>
                 Delete photo {position}
               </Button>

@@ -30,7 +30,7 @@ async function Plans() {
     return <p className="text-body text-slate-600">Plans will be listed here soon.</p>;
   }
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {visible.map((plan) => {
         const destination = checkoutPath(plan.code);
         const href = user?.emailVerified ? destination : signInPath(destination);
@@ -57,10 +57,10 @@ async function Plans() {
 
 function PlansSkeleton() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
       <span className="sr-only">Loading plans</span>
       {Array.from({ length: 3 }, (_, i) => (
-        <Skeleton key={i} className="h-96 rounded-xl" />
+        <Skeleton key={i} className="h-96 rounded-lg" />
       ))}
     </div>
   );
@@ -68,22 +68,22 @@ function PlansSkeleton() {
 
 export default function PricingPage() {
   return (
-    <PageContainer className="flex flex-col gap-10 py-12 lg:py-16">
+    <PageContainer className="flex flex-col gap-8 pb-8 pt-6">
       <div className="flex max-w-prose flex-col gap-3">
-        <h1 className="text-h1-sm md:text-h1">Listing plans</h1>
-        <p className="text-body-lg text-slate-600">Drafts are free. Choose a plan when you&rsquo;re ready to publish.</p>
+        <h1 className="text-display-sm">Listing plans</h1>
+        <p className="text-body text-slate-600">Drafts are free. Choose a plan when you&rsquo;re ready to publish.</p>
       </div>
       <Suspense fallback={<PlansSkeleton />}>
         <Plans />
       </Suspense>
-      <section aria-labelledby="verification-addon-heading" className="flex flex-col gap-3 rounded-xl bg-mint-50 p-4 md:p-6">
+      <section aria-labelledby="verification-addon-heading" className="flex flex-col gap-3 rounded-lg bg-mint-50 p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="verification-addon-heading" className="text-h4 text-emerald-700">
+          <h2 id="verification-addon-heading" className="text-title text-emerald-700">
             Verification add-on
           </h2>
           <Badge>Coming soon</Badge>
         </div>
-        <p className="max-w-prose text-body-sm text-ink">
+        <p className="max-w-prose text-small text-ink">
           A monthly add-on on top of any plan. After an admin review passes, your listings show &ldquo;Profile
           verified&rdquo;. Paying alone never makes anyone verified.
         </p>

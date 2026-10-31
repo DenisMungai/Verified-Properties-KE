@@ -48,17 +48,17 @@ export function KeepListingsForm({ listings, limit }: { listings: KeepCandidateR
               value={listing.id}
               checked={kept.has(listing.id)}
               onChange={(event) => toggle(listing.id, event.target.checked)}
-              className="size-5 shrink-0 accent-emerald-600"
+              className="size-4 shrink-0 accent-emerald-600"
             />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-body-sm font-medium text-ink">{listing.title}</span>
-              <span className="text-caption text-slate-600">{listing.location}</span>
+              <span className="truncate text-small font-medium text-ink">{listing.title}</span>
+              <span className="text-micro text-slate-600">{listing.location}</span>
             </span>
             <ListingStatusBadge status={listing.status} />
           </label>
         ))}
       </fieldset>
-      <p aria-live="polite" className={over ? "text-body-sm font-medium text-danger" : "text-body-sm text-slate-700"}>
+      <p aria-live="polite" className={over ? "text-small font-medium text-danger" : "text-small text-slate-700"}>
         {kept.size} of {limit} selected{over ? `. Untick ${kept.size - limit} to continue.` : ""}
       </p>
       <Button type="submit" size="lg" loading={pending} disabled={over} className="w-full sm:w-auto sm:self-start">

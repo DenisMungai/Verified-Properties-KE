@@ -23,7 +23,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-control shrink-0 items-center justify-center rounded-md text-ink transition-colors",
+        "inline-flex size-control shrink-0 items-center justify-center rounded-full text-ink transition-colors",
         "disabled:cursor-not-allowed disabled:text-slate-500",
         variant === "ghost" && "hover:bg-mint-50 active:bg-mint-100",
         variant === "secondary" &&
@@ -32,7 +32,7 @@ export function IconButton({
       )}
       {...props}
     >
-      <span aria-hidden="true" className="inline-flex [&>svg]:size-5">
+      <span aria-hidden="true" className="inline-flex [&>svg]:size-4">
         {icon}
       </span>
     </button>

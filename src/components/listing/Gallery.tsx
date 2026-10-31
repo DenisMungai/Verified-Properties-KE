@@ -45,7 +45,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
   }, [index]);
 
   if (count === 0) {
-    return <ListingImage baseUrl={null} alt={`No photos yet for ${title}`} sizes="100vw" className="rounded-xl lg:aspect-[16/7]" />;
+    return <ListingImage baseUrl={null} alt={`No photos yet for ${title}`} sizes="100vw" className="rounded-xl border border-line lg:aspect-[16/7]" />;
   }
 
   const go = (next: number) => setIndex(((next % count) + count) % count);
@@ -83,14 +83,14 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
           icon={<ChevronLeft />}
           onClick={() => go(index - 1)}
           variant="secondary"
-          className={cn("absolute left-3 top-1/2 -translate-y-1/2", tone === "light" && "bg-white/90 shadow-md")}
+          className={cn("absolute left-3 top-1/2 -translate-y-1/2", tone === "light" && "bg-white/90")}
         />
         <IconButton
           label="Next photo"
           icon={<ChevronRight />}
           onClick={() => go(index + 1)}
           variant="secondary"
-          className={cn("absolute right-3 top-1/2 -translate-y-1/2", tone === "light" && "bg-white/90 shadow-md")}
+          className={cn("absolute right-3 top-1/2 -translate-y-1/2", tone === "light" && "bg-white/90")}
         />
       </>
     );
@@ -106,7 +106,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
           type="button"
           onClick={openViewer}
           aria-label={`Open photo ${index + 1} of ${count} full screen: ${current.alt}`}
-          className={cn("block w-full overflow-hidden rounded-xl", FOCUS_RING)}
+          className={cn("block w-full overflow-hidden rounded-xl border border-line", FOCUS_RING)}
         >
           <ListingImage
             key={index}
@@ -118,7 +118,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
           />
         </button>
         {arrows("light")}
-        <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-ink/75 px-3 py-1 text-caption font-medium text-white">
+        <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-ink/75 px-3 py-1 text-micro font-medium text-white">
           {position}
         </span>
         <IconButton
@@ -126,7 +126,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
           icon={<Maximize2 />}
           onClick={openViewer}
           variant="secondary"
-          className="absolute right-3 top-3 bg-white/90 shadow-md"
+          className="absolute right-3 top-3 bg-white/90"
         />
       </div>
 
@@ -165,14 +165,14 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
         className="m-0 h-dvh max-h-none w-full max-w-none bg-ink p-0 text-white backdrop:bg-ink/80"
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-header shrink-0 items-center justify-between px-4">
-            <p className="text-body-sm font-medium">{position}</p>
+          <div className="flex h-[66px] shrink-0 items-center justify-between px-4">
+            <p className="text-small font-medium">{position}</p>
             <button
               type="button"
               onClick={() => dialogRef.current?.close()}
               className="inline-flex size-control items-center justify-center rounded-md text-white hover:bg-white/10"
             >
-              <X aria-hidden="true" className="size-6" />
+              <X aria-hidden="true" className="size-5" />
               <span className="sr-only">Close photos</span>
             </button>
           </div>
@@ -187,7 +187,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
             />
             {arrows("dark")}
           </div>
-          <p className="shrink-0 px-4 py-3 text-center text-body-sm text-white/80">{current.alt}</p>
+          <p className="shrink-0 px-4 py-3 text-center text-small text-white/80">{current.alt}</p>
         </div>
       </dialog>
     </section>

@@ -51,7 +51,7 @@ export function BasicsForm({ listingId, defaults }: { listingId?: string; defaul
 
   return (
     <form ref={formRef} action={action} noValidate className="flex flex-col gap-6">
-      <h2 className="text-h3">Property basics</h2>
+      <h2 className="text-title">Property basics</h2>
       <FormAlert state={state} />
       {listingId && <input type="hidden" name="listingId" value={listingId} />}
 
@@ -70,14 +70,14 @@ export function BasicsForm({ listingId, defaults }: { listingId?: string; defaul
       <div className="flex flex-col gap-2">
         <SegmentedControl
           legend="Listing type"
-          legendClassName="mb-2 text-body-sm font-medium text-ink"
+          legendClassName="mb-2 text-small font-medium text-ink"
           name="listingType"
           variant="outline"
           options={TYPE_OPTIONS}
           value={listingType}
           onValueChange={setListingType}
         />
-        {errors.listingType && <p className="text-caption font-medium text-danger">{errors.listingType}</p>}
+        {errors.listingType && <p className="text-micro font-medium text-danger">{errors.listingType}</p>}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

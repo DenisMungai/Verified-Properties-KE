@@ -41,27 +41,25 @@ const COLOURS: Array<{ name: string; hex: string; swatch: string; note?: string 
   { name: "info", hex: "#175CD3", swatch: "bg-info" },
 ];
 
+/** Rendered px at the 90% root (1rem = 14.4px). */
 const TYPE_SCALE: Array<{ name: string; className: string; spec: string }> = [
-  { name: "Display", className: "text-display", spec: "40/48 · 700" },
-  { name: "H1", className: "text-h1", spec: "32/40 · 700" },
-  { name: "H2", className: "text-h2", spec: "24/32 · 700" },
-  { name: "H3", className: "text-h3", spec: "20/28 · 600" },
-  { name: "H4", className: "text-h4", spec: "18/26 · 600" },
-  { name: "Body large", className: "text-body-lg", spec: "18/29 · 400" },
-  { name: "Body", className: "text-body", spec: "16/24 · 400" },
-  { name: "Body small", className: "text-body-sm", spec: "14/21 · 400" },
-  { name: "Label", className: "text-label uppercase", spec: "12/17 · 600 · 0.06em" },
-  { name: "Caption", className: "text-caption", spec: "12/18 · 400" },
-  { name: "Price", className: "text-price tabular", spec: "20/28 · 700 · tabular" },
+  { name: "Display", className: "text-display", spec: "3.5rem ≈ 50px · 700 · -0.055em" },
+  { name: "Display small", className: "text-display-sm", spec: "2.25rem ≈ 32px · 700 · -0.045em" },
+  { name: "Title", className: "text-title", spec: "1.125rem ≈ 16px · 600" },
+  { name: "Body", className: "text-body", spec: "0.875rem ≈ 12.6px · 400" },
+  { name: "Small (most UI)", className: "text-small", spec: "0.75rem ≈ 10.8px · 400" },
+  { name: "Micro (meta, badges)", className: "text-micro", spec: "0.625rem ≈ 9px · 0.02em" },
+  { name: "Eyebrow", className: "text-micro font-semibold uppercase tracking-wide", spec: "micro · 600 · caps" },
+  { name: "Price", className: "text-display-sm tabular", spec: "display-sm · tabular" },
 ];
 
 const RADII = [
-  { name: "sm · 8px", className: "rounded-sm" },
-  { name: "md · 12px", className: "rounded-md" },
-  { name: "lg · 16px", className: "rounded-lg" },
-  { name: "xl · 20px", className: "rounded-xl" },
-  { name: "2xl · 24px", className: "rounded-2xl" },
-  { name: "pill", className: "rounded-pill" },
+  { name: "sm · 2px · cards", className: "rounded-sm" },
+  { name: "4px · inputs", className: "rounded" },
+  { name: "md · 6px · menu items", className: "rounded-md" },
+  { name: "lg · 8px · buttons, panels", className: "rounded-lg" },
+  { name: "xl · 12px · hero, popovers", className: "rounded-xl" },
+  { name: "full · pills", className: "rounded-full" },
 ];
 
 const COUNTY_OPTIONS = [
@@ -73,7 +71,7 @@ const COUNTY_OPTIONS = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-6 border-t border-line py-10">
-      <h2 className="text-h2">{title}</h2>
+      <h2 className="text-title">{title}</h2>
       {children}
     </section>
   );
@@ -82,7 +80,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-label uppercase text-slate-600">{label}</h3>
+      <h3 className="text-micro tracking-wide font-semibold uppercase text-slate-600">{label}</h3>
       <div className="flex flex-wrap items-center gap-3">{children}</div>
     </div>
   );
@@ -92,8 +90,8 @@ export default function StyleguidePage() {
   return (
     <PageContainer className="py-10">
       <header className="flex flex-col gap-2 pb-6">
-        <p className="text-label uppercase text-emerald-700">VerifiedPropertiesKE design system</p>
-        <h1 className="text-h1-sm md:text-h1">Style guide</h1>
+        <p className="text-micro tracking-wide font-semibold uppercase text-emerald-700">VerifiedPropertiesKE design system</p>
+        <h1 className="text-display-sm">Style guide</h1>
         <p className="max-w-prose text-body text-slate-600">
           Tokens and base components. CSS root is 90%: body text is 14.4px at a 16px browser default, controls stay 44px. Tab through the page to check focus states.
         </p>
@@ -105,9 +103,9 @@ export default function StyleguidePage() {
             <li key={colour.name} className="overflow-hidden rounded-md border border-line bg-white">
               <div className={`h-16 border-b border-line ${colour.swatch}`} />
               <div className="flex flex-col p-3">
-                <span className="text-body-sm font-medium">{colour.name}</span>
-                <span className="text-caption tabular text-slate-600">{colour.hex}</span>
-                {colour.note && <span className="text-caption text-slate-600">{colour.note}</span>}
+                <span className="text-small font-medium">{colour.name}</span>
+                <span className="text-micro tabular text-slate-600">{colour.hex}</span>
+                {colour.note && <span className="text-micro text-slate-600">{colour.note}</span>}
               </div>
             </li>
           ))}
@@ -121,7 +119,7 @@ export default function StyleguidePage() {
               key={style.name}
               className="flex flex-col gap-1 border-b border-line pb-4 last:border-0 sm:flex-row sm:items-baseline sm:gap-6"
             >
-              <span className="w-32 shrink-0 text-caption text-slate-600">
+              <span className="w-32 shrink-0 text-micro text-slate-600">
                 {style.name} · {style.spec}
               </span>
               <span className={`${style.className} min-w-0 break-words text-ink`}>
@@ -131,9 +129,9 @@ export default function StyleguidePage() {
           ))}
         </ul>
         <Row label="Formatting">
-          <span className="text-price tabular">{formatKes(45_000_000)}</span>
-          <span className="text-body-sm tabular text-slate-600">{formatKesCompact(12_500_000)}</span>
-          <span className="text-body-sm text-slate-600">{formatLandSize(0.5, "acre")}</span>
+          <span className="text-display-sm tabular">{formatKes(45_000_000)}</span>
+          <span className="text-small tabular text-slate-600">{formatKesCompact(12_500_000)}</span>
+          <span className="text-small text-slate-600">{formatLandSize(0.5, "acre")}</span>
         </Row>
       </Section>
 
@@ -142,16 +140,16 @@ export default function StyleguidePage() {
           {RADII.map((radius) => (
             <div
               key={radius.name}
-              className={`flex size-24 items-end border border-line-strong bg-white p-2 text-caption text-slate-600 ${radius.className}`}
+              className={`flex size-24 items-end border border-line-strong bg-white p-2 text-micro text-slate-600 ${radius.className}`}
             >
               {radius.name}
             </div>
           ))}
         </div>
         <div className="flex flex-wrap gap-6">
-          <div className="rounded-lg border border-line bg-white p-6 shadow-card">Card shadow</div>
-          <div className="rounded-lg border border-line bg-white p-6 shadow-popover">Popover shadow</div>
-          <div className="rounded-lg border border-line bg-white p-6 shadow-focus">Focus ring</div>
+          <div className="rounded-lg border border-line bg-white p-5">Borders separate surfaces</div>
+          <div className="rounded-sm border border-line bg-white p-5 transition-shadow hover:shadow-sm">Card hover: shadow-sm only</div>
+          <div className="rounded-lg border border-line bg-white p-5 shadow-focus">Focus ring</div>
         </div>
       </Section>
 
