@@ -40,7 +40,7 @@ export function MobileMenu({ user }: { user: HeaderUser | null }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={dialogId}
-        className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50"
+        className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50 group-has-[[data-header-overlay]]/header:text-white group-has-[[data-header-overlay]]/header:hover:bg-white/10"
       >
         <Menu aria-hidden="true" className="size-5" />
         <span className="sr-only">Open menu</span>

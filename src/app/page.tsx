@@ -1,7 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowRight, House } from "lucide-react";
+import heroImage from "@/assets/images/home-hero.jpg";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { HomeSearch } from "@/components/search/HomeSearch";
 import { LocationTiles } from "@/components/search/LocationTiles";
@@ -96,33 +98,44 @@ export default function HomePage() {
     <>
       <section
         aria-labelledby="hero-heading"
-        className="grid min-h-[400px] w-full border-b border-line bg-white sm:min-h-[520px] lg:grid-cols-[52fr_48fr]"
+        className="relative isolate -mt-[67px] flex min-h-[467px] w-full items-center overflow-hidden border-b border-line bg-ink pt-[67px] sm:min-h-[587px]"
       >
+        {/* Slides up 67px (66px bar + 1px border) behind the sticky header. Decorative: the H1 carries the meaning; phones crop towards the house. */}
+        <Image
+          src={heroImage}
+          alt=""
+          fill
+          preload
+          placeholder="blur"
+          sizes="100vw"
+          className="-z-20 object-cover object-[70%_center] lg:object-center"
+        />
+        {/* Charcoal wash keeps white text readable; from lg it fades out so the house stays bright. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-ink/55 lg:bg-transparent lg:bg-gradient-to-r lg:from-ink/80 lg:via-ink/45 lg:to-transparent"
+        />
+        {/* Top fade: the header is clear over the hero, so its white links need a darker band behind them. */}
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
         {/* Side padding matches PageContainer; past 1440px it grows so the text lines up with the page below. */}
-        <div className="flex flex-col items-start justify-center px-4 py-10 sm:px-5 sm:py-14 md:px-page-x lg:py-16 lg:pl-[max(4vw,calc(50vw-720px+4vw))] lg:pr-12">
-          <p className="inline-flex rounded-sm bg-mint-50 px-2 py-1 text-micro font-medium uppercase tracking-wide text-emerald-700">
-            Kenya property marketplace
-          </p>
-          <h1
-            id="hero-heading"
-            className="mt-5 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.055em] text-ink sm:text-[clamp(2.6rem,5.8vw,4.75rem)]"
-          >
-            Find a place to call your own.
-          </h1>
-          <p className="mt-4 max-w-md text-body text-slate-600">
-            Discover homes, apartments and land from property professionals you can trust.
-          </p>
-          <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-7" })}>
-            Browse all properties
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
-        </div>
-        <div aria-hidden="true" className="hidden items-end justify-center bg-mint-50 px-10 pt-12 lg:flex">
-          <div className="relative flex h-4/5 w-full max-w-sm items-end justify-center rounded-t-lg bg-[#C9DDCF]">
-            <div className="absolute inset-x-8 bottom-0 top-10 rounded-t-md bg-canvas" />
-            <div className="absolute left-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
-            <div className="absolute right-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
-            <div className="relative h-28 w-16 rounded-t-sm bg-emerald-700" />
+        <div className="flex w-full flex-col items-start justify-center px-4 py-10 sm:px-5 sm:py-14 md:px-page-x lg:py-16 lg:pl-[max(4vw,calc(50vw-720px+4vw))] lg:pr-12">
+          <div className="flex max-w-xl flex-col items-start">
+            <p className="inline-flex rounded-sm bg-mint-50 px-2 py-1 text-micro font-medium uppercase tracking-wide text-emerald-700">
+              Kenya property marketplace
+            </p>
+            <h1
+              id="hero-heading"
+              className="mt-5 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.055em] text-white sm:text-[clamp(2.6rem,5.8vw,4.75rem)]"
+            >
+              Find a place to call your own.
+            </h1>
+            <p className="mt-4 max-w-md text-body text-white/90">
+              Discover homes, apartments and land from property professionals you can trust.
+            </p>
+            <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-7" })}>
+              Browse all properties
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
           </div>
         </div>
       </section>
