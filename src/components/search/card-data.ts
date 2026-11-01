@@ -8,9 +8,13 @@ import { publicImageBaseUrl } from "@/lib/storage";
 import type { SaveButtonProps } from "@/components/listing/SaveButton";
 import type { PropertyCardData } from "./PropertyCard";
 
-/** Resolves each cover to its public URL; the storage key itself is not sent to the browser. */
+/** Resolves each cover and avatar to its public URL; storage keys are not sent to the browser. */
 export function toCardData(cards: PublicListingCard[]): PropertyCardData[] {
-  return cards.map(({ coverKey, ...card }) => ({ ...card, coverUrl: publicImageBaseUrl(coverKey) }));
+  return cards.map(({ coverKey, listerAvatarKey, ...card }) => ({
+    ...card,
+    coverUrl: publicImageBaseUrl(coverKey),
+    listerAvatarUrl: publicImageBaseUrl(listerAvatarKey),
+  }));
 }
 
 /** How hearts render for this viewer: saved state when signed in, a sign-in link otherwise. */

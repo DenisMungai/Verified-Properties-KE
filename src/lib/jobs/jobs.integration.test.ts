@@ -518,7 +518,7 @@ describe.skipIf(!url)("Background jobs (integration)", { timeout: 60_000 }, () =
     store.objects.set(`uploads/u/${randomUUID()}/a`, { body: Buffer.from("x"), contentType: "image/jpeg", lastModified: old });
     store.objects.set(`uploads/u/${randomUUID()}/b`, { body: Buffer.from("x"), contentType: "image/jpeg", lastModified: clock });
     const result = await runStorageCleanup(deps);
-    expect(result.counts).toEqual({ uploadsDeleted: 1, imagesDeleted: 0 });
+    expect(result.counts).toEqual({ uploadsDeleted: 1, imagesDeleted: 0, avatarsDeleted: 0 });
     expect(store.objects.size).toBe(1);
   });
 });

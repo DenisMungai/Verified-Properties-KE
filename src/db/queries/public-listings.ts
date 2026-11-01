@@ -46,6 +46,8 @@ export interface PublicListingCard {
   neighbourhood: string | null;
   /** The agency's name, or the lister's public display name. */
   listerName: string | null;
+  /** Avatar base key matching `listerName`: the agency's logo or the lister's profile photo. */
+  listerAvatarKey: string | null;
   coverKey: string | null;
   coverAlt: string | null;
   /** From `lister_verified_now`, never from the request. */
@@ -71,6 +73,7 @@ const CARD_COLUMNS = [
   "town",
   "neighbourhood",
   "listerName",
+  "listerAvatarKey",
   "coverKey",
   "coverAlt",
   "verified",
@@ -79,6 +82,12 @@ const CARD_COLUMNS = [
 const cardSelect = sql.raw(CARD_COLUMNS.map((column) => `"${column}"`).join(", "));
 
 export const publishedOnly: SQL = eq(p.status, "published");
+
+/**
+ * The avatar that goes with the card's lister name (prompt lister-avatars decision 4): an agency
+ * listing shows the agency's logo, any other listing the lister's profile photo.
+ */
+export const listerAvatarKeySql = sql<string | null>`case when ${p.agencyId} is not null then ${agencies.logoKey} else ${listerProfiles.avatarKey} end`;
 
 /** Filter SQL from parsed filters only (decisions 4–5). Always includes `publishedOnly`. */
 export function filterConditions(filters: SearchFilters): SQL {
@@ -126,6 +135,7 @@ function matchedSql(where: SQL, q: string | null, now: Date): SQL {
       ${p.town} as "town",
       ${p.neighbourhood} as "neighbourhood",
       coalesce(${agencies.name}, ${listerProfiles.displayName}) as "listerName",
+      ${listerAvatarKeySql} as "listerAvatarKey",
       cover.storage_key as "coverKey",
       cover.alt_text as "coverAlt",
       lister_verified_now(${p.ownerUserId}) as "verified",

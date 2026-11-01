@@ -2,8 +2,8 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { createMemoryStore } from "@/test/memory-store";
 import { REJECT_MESSAGES } from "./image-processing";
-import { deleteImageObjects, ingestUpload, UploadError } from "./ingest";
-import { newUploadKey, variantKeys } from "./keys";
+import { deleteAvatarObjects, deleteImageObjects, ingestAvatarUpload, ingestUpload, UploadError } from "./ingest";
+import { avatarVariantKeys, newAvatarUploadKey, newUploadKey, variantKeys } from "./keys";
 
 const listingId = "6e3207db-4285-46de-bc83-152f69563115";
 
@@ -67,6 +67,45 @@ describe("ingestUpload", () => {
     const { privateStore, publicStore, uploadKey } = await setup(await photo());
     const { baseKey } = await ingestUpload({ privateStore, publicStore, userId: "u_owner", listingId, uploadKey });
     await deleteImageObjects(publicStore, baseKey);
+    expect(publicStore.objects.size).toBe(0);
+  });
+});
+
+describe("ingestAvatarUpload", () => {
+  async function avatarSetup(body: Buffer, owner = "u_owner") {
+    const privateStore = createMemoryStore();
+    const publicStore = createMemoryStore();
+    const uploadKey = newAvatarUploadKey(owner);
+    await privateStore.put(uploadKey, body, "image/jpeg");
+    return { privateStore, publicStore, uploadKey };
+  }
+
+  it("writes the square variants under the user's avatars and deletes the upload", async () => {
+    const { privateStore, publicStore, uploadKey } = await avatarSetup(await photo());
+    const baseKey = await ingestAvatarUpload({ privateStore, publicStore, userId: "u_owner", uploadKey });
+    expect(baseKey).toMatch(/^avatars\/u_owner\//);
+    expect([...publicStore.objects.keys()].sort()).toEqual(avatarVariantKeys(baseKey).sort());
+    expect(privateStore.objects.size).toBe(0);
+    await deleteAvatarObjects(publicStore, baseKey);
+    expect(publicStore.objects.size).toBe(0);
+  });
+
+  it("refuses another user's key and listing upload keys", async () => {
+    const { privateStore, publicStore, uploadKey } = await avatarSetup(await photo());
+    await expect(ingestAvatarUpload({ privateStore, publicStore, userId: "u_stranger", uploadKey })).rejects.toBeInstanceOf(UploadError);
+    const listingKey = newUploadKey("u_owner", listingId);
+    await expect(ingestAvatarUpload({ privateStore, publicStore, userId: "u_owner", uploadKey: listingKey })).rejects.toBeInstanceOf(UploadError);
+    expect(privateStore.objects.has(uploadKey)).toBe(true);
+    expect(publicStore.objects.size).toBe(0);
+  });
+
+  it("deletes the upload when the image is too small", async () => {
+    const small = await sharp({ create: { width: 120, height: 120, channels: 3, background: "#14833B" } }).png().toBuffer();
+    const { privateStore, publicStore, uploadKey } = await avatarSetup(small);
+    await expect(ingestAvatarUpload({ privateStore, publicStore, userId: "u_owner", uploadKey })).rejects.toEqual(
+      new UploadError(REJECT_MESSAGES.avatarDimensions),
+    );
+    expect(privateStore.objects.size).toBe(0);
     expect(publicStore.objects.size).toBe(0);
   });
 });

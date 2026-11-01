@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
-import { VerifiedBadge, buttonClasses } from "@/components/ui";
+import { Avatar, VerifiedBadge, buttonClasses } from "@/components/ui";
 import type { PublicListingDetail } from "@/db/queries/listing-detail";
 import { formatKes } from "@/lib/format";
 import { displayKenyanPhone } from "@/lib/kenya";
@@ -46,17 +46,20 @@ function ContactDetails({ contact, visibility, viewer }: { contact: ListerContac
 /** Price, lister identity, contact rule and the inquiry form (the design's sticky right card). */
 export function ListerPanel({
   listing,
+  avatarUrl,
   contact,
   visibility,
   viewer,
 }: {
   listing: PublicListingDetail;
+  /** The lister's avatar URL (resolved on the server; the storage key is not passed down). */
+  avatarUrl: string | null;
   contact: ListerContact;
   visibility: ContactVisibility;
   viewer: Viewer;
 }) {
   return (
-    <div id="contact" className="flex scroll-mt-24 flex-col gap-5 rounded-lg border border-line bg-white p-5 md:p-6">
+    <div id="contact" className="flex scroll-mt-24 flex-col gap-5 rounded-xl border border-line bg-white p-5 md:p-6">
       <div className="flex flex-col gap-1 border-b border-line pb-5">
         <p className="tabular text-display-sm text-ink">
           {formatKes(listing.priceKes)}
@@ -66,12 +69,17 @@ export function ListerPanel({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-title">{listing.listerName ?? "Lister"}</h2>
-        {listing.verified ? (
-          <VerifiedBadge className="self-start" />
-        ) : (
-          listing.listerType && <p className="text-micro text-slate-600">{LISTER_TYPE_LABELS[listing.listerType]}</p>
-        )}
+        <div className="flex items-center gap-3">
+          <Avatar name={listing.listerName ?? "Lister"} baseUrl={avatarUrl} size="md" />
+          <div className="flex min-w-0 flex-col">
+            <h2 className="text-title">{listing.listerName ?? "Lister"}</h2>
+            {listing.verified ? (
+              <VerifiedBadge className="self-start bg-transparent px-0 py-0 text-emerald-700" />
+            ) : (
+              listing.listerType && <p className="text-micro text-slate-600">{LISTER_TYPE_LABELS[listing.listerType]}</p>
+            )}
+          </div>
+        </div>
         <ContactDetails contact={contact} visibility={visibility} viewer={viewer} />
       </div>
 

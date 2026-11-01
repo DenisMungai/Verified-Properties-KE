@@ -30,6 +30,16 @@ export function variantFor(width: number): VariantWidth {
 }
 
 /** File name suffix of a variant, appended to an image's base key or base URL. */
-export function variantSuffix(width: VariantWidth): string {
+export function variantSuffix(width: VariantWidth | AvatarSize): string {
   return `-${width}.webp`;
+}
+
+/** Lister profile photos (prompt lister-avatars decision 3): square WebP variants, smallest first. */
+export const AVATAR_SIZES = [128, 384] as const;
+export type AvatarSize = (typeof AVATAR_SIZES)[number];
+export const MIN_AVATAR_SIDE = 200;
+
+/** The smallest stored avatar variant that covers `width`, capped at the largest. */
+export function avatarVariantFor(width: number): AvatarSize {
+  return AVATAR_SIZES.find((size) => size >= width) ?? AVATAR_SIZES[AVATAR_SIZES.length - 1];
 }

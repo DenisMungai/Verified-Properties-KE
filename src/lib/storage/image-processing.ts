@@ -1,10 +1,13 @@
 import "server-only";
 import sharp from "sharp";
 import {
+  AVATAR_SIZES,
   MAX_INPUT_PIXELS,
+  MIN_AVATAR_SIDE,
   MIN_PHOTO_HEIGHT,
   MIN_PHOTO_WIDTH,
   VARIANT_WIDTHS,
+  type AvatarSize,
   type VariantWidth,
 } from "./limits";
 
@@ -32,6 +35,7 @@ export const REJECT_MESSAGES = {
   size: "Photos must be 8 MB or smaller.",
   dimensions: `Photos must be at least ${MIN_PHOTO_WIDTH} × ${MIN_PHOTO_HEIGHT} pixels.`,
   unreadable: "That image could not be read. Try exporting it as a JPEG.",
+  avatarDimensions: `Profile photos must be at least ${MIN_AVATAR_SIDE} × ${MIN_AVATAR_SIDE} pixels.`,
 } as const;
 
 export interface ProcessedVariant {
@@ -76,6 +80,41 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
     }
     const largest = variants[variants.length - 1];
     return { variants, width: largest.pixelWidth, height: largest.pixelHeight };
+  } catch (error) {
+    if (error instanceof ImageRejectedError) throw error;
+    throw new ImageRejectedError(REJECT_MESSAGES.unreadable);
+  }
+}
+
+export interface ProcessedAvatarVariant {
+  size: AvatarSize;
+  body: Buffer;
+}
+
+/**
+ * A lister's profile photo (prompt lister-avatars decision 3): the same type check, decode limits
+ * and EXIF orientation as listing photos, then centre-cropped WebP squares. Re-encoding drops all
+ * metadata.
+ */
+export async function processAvatar(input: Uint8Array): Promise<ProcessedAvatarVariant[]> {
+  if (!detectImageType(input)) throw new ImageRejectedError(REJECT_MESSAGES.type);
+  try {
+    const source = sharp(input, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS }).rotate();
+    const meta = await source.metadata();
+    if (!meta.width || !meta.height) throw new ImageRejectedError(REJECT_MESSAGES.unreadable);
+    // Orientation only swaps the sides, so the shorter side is the same either way.
+    if (Math.min(meta.width, meta.height) < MIN_AVATAR_SIDE) throw new ImageRejectedError(REJECT_MESSAGES.avatarDimensions);
+
+    const variants: ProcessedAvatarVariant[] = [];
+    for (const size of AVATAR_SIZES) {
+      const body = await source
+        .clone()
+        .resize({ width: size, height: size, fit: "cover", position: "centre" })
+        .webp({ quality: 80 })
+        .toBuffer();
+      variants.push({ size, body });
+    }
+    return variants;
   } catch (error) {
     if (error instanceof ImageRejectedError) throw error;
     throw new ImageRejectedError(REJECT_MESSAGES.unreadable);

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, cache } from "react";
-import { MapPin } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Description } from "@/components/listing/Description";
 import { FactsList } from "@/components/listing/FactsList";
@@ -94,7 +93,7 @@ async function SimilarListings({ listing }: { listing: PublicListingDetail }) {
     <CardRail headingId="similar-heading" heading="Similar listings">
       {toCardData(similar).map((card) => (
         <li key={card.id}>
-          <PropertyCard listing={card} save={saveProps(context, card.id)} sizes="256px" />
+          <PropertyCard listing={card} save={saveProps(context, card.id)} sizes="320px" />
         </li>
       ))}
     </CardRail>
@@ -134,27 +133,26 @@ async function ListingDetail({ params }: { params: Params }) {
 
   return (
     <>
-      <PageContainer className="flex flex-col gap-6 pb-28 pt-6 lg:gap-8 lg:pb-8">
-        <div className="flex flex-col gap-2">
+      <PageContainer className="flex flex-col gap-6 pb-28 pt-6 lg:gap-10 lg:pb-8">
+        <div className="flex flex-col gap-3">
           <Breadcrumbs listing={listing} />
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-display-sm">{listing.title}</h1>
             {!mine && <SaveButton {...saveProps(saveContext, listing.id)} />}
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-small text-slate-600">
-            {listing.verified && <VerifiedBadge />}
-            <span className="flex items-center gap-1.5">
-              <MapPin aria-hidden="true" className="size-3.5" />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {listing.verified && <VerifiedBadge className="py-1.5" />}
+            <p className="text-small text-slate-600">
               {listingLocation(listing)}
-            </span>
-            {listing.publishedAt && <span>Listed {formatNairobiDate(listing.publishedAt)}</span>}
+              {listing.publishedAt && <> · Listed {formatNairobiDate(listing.publishedAt)}</>}
+            </p>
           </div>
         </div>
 
         <Gallery photos={photos} title={listing.title} />
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
-          <div className="flex min-w-0 flex-col gap-6">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-16 xl:grid-cols-[minmax(0,1fr)_480px]">
+          <div className="flex min-w-0 max-w-3xl flex-col gap-8">
             <section aria-labelledby="about-heading" className="flex flex-col gap-3">
               <h2 id="about-heading" className="text-title">
                 About this property
@@ -173,7 +171,13 @@ async function ListingDetail({ params }: { params: Params }) {
             </div>
           </div>
           <aside aria-label="Price and contact" className="lg:sticky lg:top-24 lg:self-start">
-            <ListerPanel listing={listing} contact={contact} visibility={visibility} viewer={viewer} />
+            <ListerPanel
+              listing={listing}
+              avatarUrl={publicImageBaseUrl(listing.listerAvatarKey)}
+              contact={contact}
+              visibility={visibility}
+              viewer={viewer}
+            />
           </aside>
         </div>
 

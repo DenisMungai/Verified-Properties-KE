@@ -16,6 +16,7 @@ import { FormAlert } from "@/components/forms/FormAlert";
 import { Badge, Button, Field, IconButton, Input, buttonClasses } from "@/components/ui";
 import type { ActionState } from "@/lib/action-state";
 import { cn } from "@/lib/cn";
+import { putFile } from "@/lib/storage/put-file";
 import {
   IMAGE_MIME_TYPES,
   MAX_PHOTOS_PER_LISTING,
@@ -52,22 +53,6 @@ const HINT = `JPEG, PNG or WebP · up to 8 MB · at least ${MIN_PHOTO_WIDTH} × 
 
 const altReady = (alt: string) => alt.trim().length >= PHOTO_ALT_MIN;
 const isActive = (state: StagedState) => state === "waiting" || state === "uploading" || state === "processing";
-
-/** PUTs the file to the presigned URL, reporting progress. Resolves false on any failure. */
-function putFile(url: string, file: File, onProgress: (percent: number) => void): Promise<boolean> {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", file.type);
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
-    };
-    xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300);
-    xhr.onerror = () => resolve(false);
-    xhr.onabort = () => resolve(false);
-    xhr.send(file);
-  });
-}
 
 function stateText(item: Staged): string {
   switch (item.state) {

@@ -9,7 +9,7 @@ const arrowClasses =
   "disabled:cursor-not-allowed disabled:opacity-40";
 
 /**
- * A horizontal snap rail of `w-64` cards with square previous / next buttons. The buttons only
+ * A horizontal snap rail of `w-72 sm:w-80` cards with square previous / next buttons. The buttons only
  * scroll the list; without JavaScript the rail still scrolls by touch or trackpad.
  */
 export function CardRail({
@@ -19,7 +19,7 @@ export function CardRail({
 }: {
   headingId: string;
   heading: ReactNode;
-  /** `<li>` items; each is sized to `w-64` by the rail. */
+  /** `<li>` items; each is sized to `w-72 sm:w-80` by the rail. */
   children: ReactNode;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
@@ -59,7 +59,7 @@ export function CardRail({
       </div>
       <ul
         ref={listRef}
-        className="hide-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-4 sm:px-0 [&>li]:flex [&>li]:w-64 [&>li]:shrink-0 [&>li]:snap-start"
+        className="hide-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-4 sm:px-0 [&>li]:flex [&>li]:w-72 sm:[&>li]:w-80 [&>li]:shrink-0 [&>li]:snap-start"
       >
         {children}
       </ul>

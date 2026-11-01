@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { baseKeyOfVariant, isOwnUploadKey, newImageBaseKey, newUploadKey, uploadKeyPrefix, variantKeys } from "./keys";
-import { variantFor, VARIANT_WIDTHS } from "./limits";
+import {
+  avatarVariantKeys,
+  baseKeyOfAvatarVariant,
+  baseKeyOfVariant,
+  isOwnAvatarUploadKey,
+  isOwnUploadKey,
+  newAvatarBaseKey,
+  newAvatarUploadKey,
+  newImageBaseKey,
+  newUploadKey,
+  uploadKeyPrefix,
+  variantKeys,
+} from "./keys";
+import { avatarVariantFor, variantFor, VARIANT_WIDTHS } from "./limits";
 
 const listing = "6e3207db-4285-46de-bc83-152f69563115";
 const otherListing = "b09ad41b-6d59-4120-a640-1a10676b6006";
@@ -47,5 +59,36 @@ describe("variantFor", () => {
     expect(variantFor(960)).toBe(960);
     expect(variantFor(1200)).toBe(1600);
     expect(variantFor(3840)).toBe(1600);
+  });
+});
+
+describe("avatar keys", () => {
+  it("scope uploads to the user and never pass the listing upload check", () => {
+    const key = newAvatarUploadKey("u_owner");
+    expect(key).toMatch(/^uploads\/u_owner\/avatar\/[0-9a-f-]{36}$/);
+    expect(isOwnAvatarUploadKey(key, "u_owner")).toBe(true);
+    expect(isOwnAvatarUploadKey(key, "u_stranger")).toBe(false);
+    expect(isOwnAvatarUploadKey(newUploadKey("u_owner", listing), "u_owner")).toBe(false);
+    expect(isOwnAvatarUploadKey("uploads/u_owner/avatar/../../x", "u_owner")).toBe(false);
+    expect(isOwnAvatarUploadKey(key, "../")).toBe(false);
+    expect(() => newAvatarUploadKey("../admin")).toThrow();
+  });
+
+  it("have a 128 and a 384 variant that map back to their base key", () => {
+    const base = newAvatarBaseKey("u_owner");
+    expect(base).toMatch(/^avatars\/u_owner\/[0-9a-f-]{36}$/);
+    const keys = avatarVariantKeys(base);
+    expect(keys).toEqual([`${base}-128.webp`, `${base}-384.webp`]);
+    for (const key of keys) expect(baseKeyOfAvatarVariant(key)).toBe(base);
+    expect(baseKeyOfAvatarVariant(`${base}-480.webp`)).toBeNull();
+    expect(baseKeyOfAvatarVariant(`listings/${listing}/${listing}-480.webp`)).toBeNull();
+    expect(() => newAvatarBaseKey("a/b")).toThrow();
+  });
+
+  it("avatarVariantFor picks 128 up to 128px and 384 above", () => {
+    expect(avatarVariantFor(20)).toBe(128);
+    expect(avatarVariantFor(128)).toBe(128);
+    expect(avatarVariantFor(129)).toBe(384);
+    expect(avatarVariantFor(2000)).toBe(384);
   });
 });

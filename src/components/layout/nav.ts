@@ -7,6 +7,7 @@ export interface HeaderUser {
 
 /** Public navigation. Only pages that exist are listed (no dead links, plan §12). */
 export const MAIN_NAV = [
+  { href: "/", label: "Home" },
   { href: "/properties", label: "Explore" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },

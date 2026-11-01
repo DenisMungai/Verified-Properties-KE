@@ -5,7 +5,7 @@ import { ArrowRight, House } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { HomeSearch } from "@/components/search/HomeSearch";
 import { LocationTiles } from "@/components/search/LocationTiles";
-import { CARD_GRID, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
+import { HOME_CARD_GRID, HOME_CARD_IMAGE_SIZES, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { HOW_RANKING_WORKS_HREF } from "@/components/search/ResultsHeader";
 import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
@@ -65,15 +65,15 @@ async function HomeListings() {
           <ArrowRight aria-hidden="true" className="size-4" />
         </Link>
       </div>
-      <ul className={CARD_GRID}>
+      <ul className={HOME_CARD_GRID}>
         {toCardData(featured).map((listing) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} featured save={saveProps(saveContext, listing.id)} />
+            <PropertyCard listing={listing} featured save={saveProps(saveContext, listing.id)} sizes={HOME_CARD_IMAGE_SIZES} />
           </li>
         ))}
         {toCardData(newest).map((listing) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} save={saveProps(saveContext, listing.id)} />
+            <PropertyCard listing={listing} save={saveProps(saveContext, listing.id)} sizes={HOME_CARD_IMAGE_SIZES} />
           </li>
         ))}
       </ul>
@@ -85,65 +85,67 @@ function HomeListingsSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <Skeleton className="h-6 w-72 max-w-full" />
-      <PropertyGridSkeleton count={4} />
+      <PropertyGridSkeleton count={4} grid={HOME_CARD_GRID} />
     </div>
   );
 }
 
-/** Compact editorial homepage: bordered hero card, search card, location rail, listings. */
+/** Compact editorial homepage: full-bleed hero under the header, then search card, location rail, listings. */
 export default function HomePage() {
   return (
-    <PageContainer className="flex flex-col gap-16 pb-8 pt-6">
-      <div className="flex flex-col gap-4">
-        <section
-          aria-labelledby="hero-heading"
-          className="grid min-h-[400px] overflow-hidden rounded-xl border border-line bg-white sm:min-h-[520px] lg:grid-cols-[52fr_48fr]"
-        >
-          <div className="flex flex-col items-start justify-center p-7 sm:p-10 lg:p-12">
-            <p className="inline-flex rounded-sm bg-mint-50 px-2 py-1 text-micro font-medium uppercase tracking-wide text-emerald-700">
-              Kenya property marketplace
-            </p>
-            <h1
-              id="hero-heading"
-              className="mt-5 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.055em] text-ink sm:text-[clamp(2.6rem,5.8vw,4.75rem)]"
-            >
-              Find a place to call your own.
-            </h1>
-            <p className="mt-4 max-w-md text-body text-slate-600">
-              Discover homes, apartments and land from property professionals you can trust.
-            </p>
-            <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-7" })}>
-              Browse all properties
-              <ArrowRight aria-hidden="true" className="size-4" />
-            </Link>
-          </div>
-          <div aria-hidden="true" className="hidden items-end justify-center bg-mint-50 px-10 pt-12 lg:flex">
-            <div className="relative flex h-4/5 w-full max-w-sm items-end justify-center rounded-t-lg bg-[#C9DDCF]">
-              <div className="absolute inset-x-8 bottom-0 top-10 rounded-t-md bg-canvas" />
-              <div className="absolute left-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
-              <div className="absolute right-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
-              <div className="relative h-28 w-16 rounded-t-sm bg-emerald-700" />
-            </div>
-          </div>
-        </section>
-        <HomeSearch />
-      </div>
-
-      <section aria-labelledby="locations-heading">
-        <div className="mb-4 flex flex-col gap-1">
-          <h2 id="locations-heading" className="text-title">
-            Explore popular locations
-          </h2>
-          <p className="text-small text-slate-600">Start with a county you love.</p>
+    <>
+      <section
+        aria-labelledby="hero-heading"
+        className="grid min-h-[400px] w-full border-b border-line bg-white sm:min-h-[520px] lg:grid-cols-[52fr_48fr]"
+      >
+        {/* Side padding matches PageContainer; past 1440px it grows so the text lines up with the page below. */}
+        <div className="flex flex-col items-start justify-center px-4 py-10 sm:px-5 sm:py-14 md:px-page-x lg:py-16 lg:pl-[max(4vw,calc(50vw-720px+4vw))] lg:pr-12">
+          <p className="inline-flex rounded-sm bg-mint-50 px-2 py-1 text-micro font-medium uppercase tracking-wide text-emerald-700">
+            Kenya property marketplace
+          </p>
+          <h1
+            id="hero-heading"
+            className="mt-5 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.055em] text-ink sm:text-[clamp(2.6rem,5.8vw,4.75rem)]"
+          >
+            Find a place to call your own.
+          </h1>
+          <p className="mt-4 max-w-md text-body text-slate-600">
+            Discover homes, apartments and land from property professionals you can trust.
+          </p>
+          <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-7" })}>
+            Browse all properties
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
         </div>
-        <LocationTiles />
+        <div aria-hidden="true" className="hidden items-end justify-center bg-mint-50 px-10 pt-12 lg:flex">
+          <div className="relative flex h-4/5 w-full max-w-sm items-end justify-center rounded-t-lg bg-[#C9DDCF]">
+            <div className="absolute inset-x-8 bottom-0 top-10 rounded-t-md bg-canvas" />
+            <div className="absolute left-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
+            <div className="absolute right-14 top-16 size-12 rounded-sm bg-[#B7D2BF]" />
+            <div className="relative h-28 w-16 rounded-t-sm bg-emerald-700" />
+          </div>
+        </div>
       </section>
 
-      <section aria-label="Listings">
-        <Suspense fallback={<HomeListingsSkeleton />}>
-          <HomeListings />
-        </Suspense>
-      </section>
-    </PageContainer>
+      <PageContainer className="flex flex-col gap-16 pb-8 pt-6">
+        <HomeSearch />
+
+        <section aria-labelledby="locations-heading">
+          <div className="mb-4 flex flex-col gap-1">
+            <h2 id="locations-heading" className="text-title">
+              Explore popular locations
+            </h2>
+            <p className="text-small text-slate-600">Start with a county you love.</p>
+          </div>
+          <LocationTiles />
+        </section>
+
+        <section aria-label="Listings">
+          <Suspense fallback={<HomeListingsSkeleton />}>
+            <HomeListings />
+          </Suspense>
+        </section>
+      </PageContainer>
+    </>
   );
 }

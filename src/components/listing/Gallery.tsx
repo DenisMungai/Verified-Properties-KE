@@ -14,17 +14,26 @@ export interface GalleryPhoto {
 
 const SWIPE_PX = 50;
 
+/** Spans for photos 2–5 in the mosaic's right-hand 2×2 area, by how many there are. */
+const TILE_SPANS: Record<number, string[]> = {
+  1: ["col-span-2 row-span-2"],
+  2: ["col-span-2", "col-span-2"],
+  3: ["", "", "col-span-2"],
+  4: ["", "", "", ""],
+};
+
 const FOCUS_RING =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600";
 
 /**
- * Listing photos as a gallery, the same at every size:
- * - a large photo with previous/next buttons, swipe and a "2 / 5" counter
- * - a scrollable row of thumbnails underneath; the current one is outlined and kept in view, and
- *   arrow keys move along the row
- * - a full-screen viewer (a modal <dialog>) opened from the photo or the expand button. Escape
- *   closes it and focus returns to the opener (native <dialog> behaviour).
- * Every photo is reachable whatever the count, so nothing is hidden behind "View all".
+ * Listing photos (design "03 — Property Detail"; prompt ui-design-cards-detail decision 7).
+ * - From `lg`: a mosaic of one large photo and up to four tiles, with "View all N photos" on the
+ *   last tile. Every tile opens the full-screen viewer at its photo.
+ * - Below `lg`: a large photo with previous/next buttons, swipe and a "2 / 5" counter, and a
+ *   scrollable row of thumbnails; the current one is outlined and kept in view, and arrow keys
+ *   move along the row.
+ * - The full-screen viewer is a modal <dialog>. Escape closes it and focus returns to the opener
+ *   (native <dialog> behaviour).
  */
 export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: string }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -50,6 +59,10 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
 
   const go = (next: number) => setIndex(((next % count) + count) % count);
   const openViewer = () => dialogRef.current?.showModal();
+  const openViewerAt = (i: number) => {
+    setIndex(i);
+    openViewer();
+  };
   const onTouchStart = (event: TouchEvent) => {
     touchX.current = event.touches[0]?.clientX ?? null;
   };
@@ -96,12 +109,14 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
     );
 
   return (
-    <section aria-label="Photos" className="flex flex-col gap-3">
+    <section aria-label="Photos" className="flex flex-col gap-3 lg:gap-0">
       <p aria-live="polite" className="sr-only">
         Photo {index + 1} of {count}: {current.alt}
       </p>
 
-      <div className="relative" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <Mosaic photos={photos} onOpen={openViewerAt} />
+
+      <div className="relative lg:hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <button
           type="button"
           onClick={openViewer}
@@ -135,7 +150,7 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
           ref={thumbsRef}
           aria-label={`All ${count} photos`}
           onKeyDown={onThumbKeys}
-          className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-1 motion-safe:scroll-smooth"
+          className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 py-1 motion-safe:scroll-smooth lg:hidden"
         >
           {photos.map((photo, i) => (
             <li key={i} className="shrink-0 snap-start">
@@ -191,5 +206,56 @@ export function Gallery({ photos, title }: { photos: GalleryPhoto[]; title: stri
         </div>
       </dialog>
     </section>
+  );
+}
+
+/** Desktop mosaic: photo 1 large on the left, photos 2–5 in a 2×2 area on the right. */
+function Mosaic({ photos, onOpen }: { photos: GalleryPhoto[]; onOpen: (index: number) => void }) {
+  const count = photos.length;
+  const tiles = photos.slice(1, 5);
+  const spans = TILE_SPANS[tiles.length] ?? [];
+  const tileClasses = cn("relative block overflow-hidden rounded-xl", FOCUS_RING);
+  const tileLabel = (i: number) => `Open photo ${i + 1} of ${count} full screen: ${photos[i]!.alt}`;
+
+  return (
+    <div className="hidden h-[27rem] grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)] grid-rows-2 gap-4 lg:grid">
+      <button
+        type="button"
+        onClick={() => onOpen(0)}
+        aria-label={tileLabel(0)}
+        className={cn(tileClasses, "row-span-2", tiles.length === 0 && "col-span-3")}
+      >
+        <ListingImage
+          baseUrl={photos[0]!.baseUrl}
+          alt={photos[0]!.alt}
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          preload
+          className="aspect-auto h-full"
+        />
+      </button>
+      {tiles.map((photo, t) => {
+        const i = t + 1;
+        const last = t === tiles.length - 1;
+        return (
+          <div key={i} className={cn("relative min-h-0", spans[t])}>
+            <button type="button" onClick={() => onOpen(i)} aria-label={tileLabel(i)} className={cn(tileClasses, "size-full")}>
+              <ListingImage baseUrl={photo.baseUrl} alt={photo.alt} sizes="(min-width: 1024px) 20vw, 50vw" className="aspect-auto h-full" />
+            </button>
+            {last && (
+              <button
+                type="button"
+                onClick={() => onOpen(0)}
+                className={cn(
+                  "absolute bottom-4 right-4 inline-flex min-h-8 items-center rounded-lg bg-white px-4 text-small font-medium text-ink hover:bg-mint-50",
+                  FOCUS_RING,
+                )}
+              >
+                View all {count} photos
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

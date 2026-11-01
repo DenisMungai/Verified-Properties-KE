@@ -1,3 +1,4 @@
+export { Avatar, type AvatarSize } from "./Avatar";
 export { Badge, VerifiedBadge, type BadgeTone } from "./Badge";
 export { Button, buttonClasses, type ButtonProps, type ButtonVariant } from "./Button";
 export { Chip } from "./Chip";

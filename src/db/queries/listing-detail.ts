@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { agencies, listerProfiles, properties, propertyImages } from "@/db/schema";
-import { publishedOnly } from "./public-listings";
+import { listerAvatarKeySql, publishedOnly } from "./public-listings";
 
 /**
  * The public listing detail page (prompt S8 decision 7). Published rows only. Coordinates, review
@@ -37,6 +37,7 @@ const detailColumns = {
   neighbourhood: p.neighbourhood,
   publishedAt: p.publishedAt,
   listerName: sql<string | null>`coalesce(${agencies.name}, ${listerProfiles.displayName})`,
+  listerAvatarKey: listerAvatarKeySql,
   listerType: listerProfiles.listerType,
   verified: sql<boolean>`lister_verified_now(${p.ownerUserId})`,
 };

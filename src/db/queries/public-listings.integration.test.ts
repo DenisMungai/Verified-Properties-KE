@@ -28,6 +28,7 @@ const CARD_KEYS = [
   "id",
   "landSize",
   "landSizeUnit",
+  "listerAvatarKey",
   "listerName",
   "listingType",
   "neighbourhood",
@@ -217,6 +218,24 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     await insertLister("s7_agent", { agencyId });
     await insertListing({ owner: "s7_agent", agencyId });
     expect((await search()).items[0].listerName).toBe("Agency t-s7-name");
+  });
+
+  it("pairs the avatar with the lister name: profile photo, or the agency's logo", async () => {
+    await insertLister("s7_avatar");
+    await client.query(`update lister_profiles set avatar_key = 'avatars/s7_avatar/a' where user_id = 's7_avatar'`);
+    const own = await insertListing({ owner: "s7_avatar" });
+    const agencyId = await insertAgency("t-s7-logo");
+    await client.query(`update agencies set logo_key = 'agencies/t-s7-logo/logo' where id = $1`, [agencyId]);
+    await insertLister("s7_agency_member", { agencyId });
+    await client.query(`update lister_profiles set avatar_key = 'avatars/s7_agency_member/b' where user_id = 's7_agency_member'`);
+    const agencyListing = await insertListing({ owner: "s7_agency_member", agencyId });
+    await insertLister("s7_no_avatar");
+    const plain = await insertListing({ owner: "s7_no_avatar" });
+
+    const byId = new Map((await search()).items.map((card) => [card.id, card.listerAvatarKey]));
+    expect(byId.get(own)).toBe("avatars/s7_avatar/a");
+    expect(byId.get(agencyListing)).toBe("agencies/t-s7-logo/logo");
+    expect(byId.get(plain)).toBeNull();
   });
 
   /* ---------------------------------------------------------------------- */

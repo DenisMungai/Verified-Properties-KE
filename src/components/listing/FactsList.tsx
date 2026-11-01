@@ -21,7 +21,7 @@ export function FactsList({ listing }: { listing: PublicListingDetail }) {
         </h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {facts.map((fact) => (
-            <li key={fact} className="rounded-md border border-line bg-white px-3 py-2.5 text-small text-ink">
+            <li key={fact} className="rounded-lg border border-line bg-white px-3 py-2.5 text-small text-ink">
               {fact}
             </li>
           ))}
@@ -38,10 +38,10 @@ export function FactsList({ listing }: { listing: PublicListingDetail }) {
           <h2 id="amenities-heading" className="text-title">
             Amenities
           </h2>
-          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1">
             {listing.amenities.map((amenity) => (
-              <li key={amenity} className="flex items-center gap-1.5 text-small text-slate-700">
-                <Check aria-hidden="true" className="size-4 text-emerald-600" />
+              <li key={amenity} className="flex items-center gap-1 text-small text-slate-600">
+                <Check aria-hidden="true" className="size-3.5 text-slate-600" />
                 {amenity}
               </li>
             ))}

@@ -55,6 +55,8 @@ Design rules that are easy to break:
 
 - Compact system (`prompts/ui-compact-design-system.md`) overrides the design folder for type,
   spacing, radius, shadows and layout; colours still come from the design folder's tokens.
+  Exception (`prompts/ui-design-cards-detail.md`): property cards and the listing detail page
+  follow the design folder's card and `03 — Property Detail` (mosaic gallery from `lg`).
 - `html { font-size: 90% }`: rem sizes render at 0.9×. Six font sizes only: `display`,
   `display-sm` (page H1s, big prices), `title` (section headings), `body` (paragraphs), `small`
   (most UI: labels, buttons, links, inputs, table cells) and `micro` (meta, hints, badges). Never
@@ -62,11 +64,13 @@ Design rules that are easy to break:
 - Touch targets are px: buttons, inputs, selects, nav and menu items `h-control` 44px
   (`h-control-lg` 48px); secondary controls (pagination, toolbar selects, card heart, chip remove)
   may be 32px, with a 44px hit area where neighbours allow.
-- Tailwind default radii: cards `rounded-sm`, inputs `rounded`, buttons / panels `rounded-lg`,
-  hero / popovers `rounded-xl`, pills `rounded-full`; no `rounded-2xl`+. No drop shadows except
+- Tailwind default radii: property cards `rounded-xl`, other cards `rounded-sm`, inputs `rounded`, buttons / panels `rounded-lg`,
+  popovers `rounded-xl` (the home hero is full-bleed with square corners), pills `rounded-full`; no `rounded-2xl`+. No drop shadows except
   `hover:shadow-sm` on property cards; 1px `border-line` separates surfaces.
 - Layout: `PageContainer` is 1440px (`width="text"` 1160px); property grids use `CARD_GRID`
-  (2 / 3 / 4 columns, square images); card padding `p-3`, panels `p-5`/`p-6`.
+  (1 / 2 / 3 columns; home uses `HOME_CARD_GRID`, 1 / 2 / 4; 16:9 photo, price first, `p-4`;
+  lister avatar or initials in the footer); other card padding `p-3`, panels
+  `p-5`/`p-6`.
 - Colours come from `tailwind.config.ts` tokens: Forest `emerald-600`, Deep green `emerald-700`,
   Soft green `mint-50`, Charcoal `ink`, Muted `slate-600`, Border `line`. Form-control borders use
   `line-strong` (3:1). Warning text uses `warning-text`, never `warning`. No navy.

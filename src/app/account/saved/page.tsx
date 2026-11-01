@@ -58,7 +58,7 @@ export default function SavedPage() {
   return (
     <>
       <PageHeading title="Saved properties" description="Your shortlist, all in one place." />
-      <Suspense fallback={<PropertyGridSkeleton count={4} />}>
+      <Suspense fallback={<PropertyGridSkeleton count={3} />}>
         <SavedList />
       </Suspense>
     </>

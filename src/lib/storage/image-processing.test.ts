@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { detectImageType, ImageRejectedError, processImage, REJECT_MESSAGES } from "./image-processing";
+import { detectImageType, ImageRejectedError, processAvatar, processImage, REJECT_MESSAGES } from "./image-processing";
 
 function canvas(width: number, height: number) {
   return sharp({ create: { width, height, channels: 3, background: { r: 20, g: 131, b: 59 } } });
@@ -76,5 +76,30 @@ describe("processImage", () => {
     expect(await rejection(Buffer.from("not an image at all"))).toBe(REJECT_MESSAGES.type);
     const truncated = (await jpeg(1200, 900)).subarray(0, 200);
     expect(await rejection(truncated)).toBe(REJECT_MESSAGES.unreadable);
+  });
+});
+
+describe("processAvatar", () => {
+  it("writes 128 and 384 WebP squares, centre-cropped from a wide photo", async () => {
+    const variants = await processAvatar(await jpeg(1000, 600));
+    expect(variants.map((v) => v.size)).toEqual([128, 384]);
+    for (const variant of variants) {
+      expect(detectImageType(variant.body)).toBe("webp");
+      const meta = await sharp(variant.body).metadata();
+      expect({ width: meta.width, height: meta.height }).toEqual({ width: variant.size, height: variant.size });
+      expect(meta.exif).toBeUndefined();
+    }
+  });
+
+  it("rejects images under 200 × 200 on either side, the wrong type and corrupt files", async () => {
+    const avatarRejection = async (input: Uint8Array) => processAvatar(input).then(
+      () => "accepted",
+      (error: unknown) => (error instanceof ImageRejectedError ? error.reason : "other"),
+    );
+    expect(await avatarRejection(await png(150, 150))).toBe(REJECT_MESSAGES.avatarDimensions);
+    expect(await avatarRejection(await png(800, 199))).toBe(REJECT_MESSAGES.avatarDimensions);
+    expect(await avatarRejection(Buffer.from("%PDF-1.7\n"))).toBe(REJECT_MESSAGES.type);
+    expect(await avatarRejection((await jpeg(400, 400)).subarray(0, 200))).toBe(REJECT_MESSAGES.unreadable);
+    expect(await avatarRejection(await webp(200, 200))).toBe("accepted");
   });
 });
