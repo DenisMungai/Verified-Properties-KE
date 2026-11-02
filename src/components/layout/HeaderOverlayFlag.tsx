@@ -6,15 +6,8 @@ import { useEffect, useState } from "react";
 /** Scrolled less than this (px) counts as "at the top", where the header sits clear over the hero. */
 const CLEAR_SCROLL_LIMIT = 16;
 
-/** Pages whose photo runs up behind the header: the home hero and the AuthShell pages. */
-export const CLEAR_HEADER_PATHS: ReadonlySet<string> = new Set([
-  "/",
-  "/sign-in",
-  "/sign-up",
-  "/forgot-password",
-  "/reset-password",
-  "/check-email",
-]);
+/** Pages whose photo runs up behind the header: only the home hero (auth pages use the solid header). */
+export const CLEAR_HEADER_PATHS: ReadonlySet<string> = new Set(["/"]);
 
 /**
  * Renders a hidden marker inside the header while it should be clear: on a photo page, at the
