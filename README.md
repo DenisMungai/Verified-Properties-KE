@@ -5,7 +5,7 @@ a separate monthly fee for a "Profile verified" badge that ranks them first. Buy
 search, save and contact listers for free.
 
 Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind CSS v3 · Neon Postgres ·
-Drizzle · Zod 4 · Better Auth · M-Pesa Daraja · Cloudflare R2 · Upstash QStash and Redis · Resend.
+Drizzle · Zod 4 · Better Auth · M-Pesa Daraja · Neon Object Storage · Upstash QStash and Redis · Resend.
 
 - Scope and rules: [docs/implementation-plan-v2.md](docs/implementation-plan-v2.md)
 - How work is done here (agents and humans): [AGENTS.md](AGENTS.md)
@@ -80,26 +80,32 @@ PLANS_SEED_CONFIRM=yes npm run plans:seed
 
 Real prices are added later as a new plan version, never by editing these rows.
 
-### Photo storage (R2)
+### Photo storage (Neon Object Storage)
 
-Without R2 settings, development stores photos under `.data/storage/` (git-ignored) and serves
-them through dev-only routes under `/api/dev-storage/`, which return 404 in production or once R2
-is set. Production refuses uploads until R2 is configured. Before deploying, once:
+Photos live in S3-compatible object storage: Neon Object Storage on the database branch the app
+uses (the code also works with Cloudflare R2 by changing the `STORAGE_*` values). Without storage
+settings, development stores photos under `.data/storage/` (git-ignored) and serves them through
+dev-only routes under `/api/dev-storage/`, which return 404 in production or once storage is set.
+Production refuses uploads until storage is configured. Setup, once per branch:
 
-1. Create two R2 buckets: a **public** one for listing photos (connect a custom domain or enable
-   r2.dev) and a **private** one with no public access.
-2. Create an R2 API token with Object Read & Write on both, and set the six `R2_*` variables
-   (see `.env.example`) in Vercel and `.env.local`.
-3. Add a CORS rule on the **private** bucket so browsers can upload directly:
+1. On the Neon branch, create two buckets: `listing-photos` (**public_read**, processed photos)
+   and `private-uploads` (**private**, temporary uploads, later verification documents).
+2. Issue a Neon credential on that branch with `storage:read` and `storage:write`, and set the
+   `STORAGE_*` variables (see `.env.example`) in Vercel and `.env.local`. The public base URL is
+   `<branch storage endpoint>/listing-photos`.
+3. Add a CORS rule on both buckets so browsers can upload directly (S3 `PutBucketCors`):
 
    ```json
    [{ "AllowedOrigins": ["http://localhost:3000", "https://<your-domain>"],
-      "AllowedMethods": ["PUT"], "AllowedHeaders": ["content-type"], "MaxAgeSeconds": 3600 }]
+      "AllowedMethods": ["PUT", "GET", "HEAD"], "AllowedHeaders": ["content-type"], "MaxAgeSeconds": 3600 }]
    ```
 
-4. Add a lifecycle rule on the private bucket: delete objects with prefix `uploads/` after 1 day.
-   The orphan sweep (`src/lib/storage/cleanup.ts`, scheduled in S9) does the same, plus unused
-   public variants.
+4. Stale `uploads/` in the private bucket are removed by the orphan sweep
+   (`src/lib/storage/cleanup.ts`, scheduled in S9), along with unused public variants.
+
+Buckets are branch-scoped: they hold the files for that branch's rows. The live site currently
+uses the **dev** branch (database and photos); moving it to the `production` branch later means
+copying the photos there as well.
 
 ### M-Pesa (S5)
 
@@ -241,7 +247,7 @@ src/
   lib/billing/          constants, periods (30-day period, 3-day grace), entitlements (canPublish)
   lib/listings/         workflow (lister transitions, material edits, status labels), slug
   lib/search/           search params (parse, canonical URLs, chips), ranking constants, card facts
-  lib/storage/          ObjectStore (R2, dev disk), keys, limits, image processing (sharp),
+  lib/storage/          ObjectStore (S3-compatible, dev disk), keys, limits, image processing (sharp),
                         ingest, orphan cleanup
   lib/mpesa/            Daraja client (HTTP, dev simulator), callback guard, payloads, start,
                         settle (callback + STK Query), confirm (one transaction), C2B

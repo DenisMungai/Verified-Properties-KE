@@ -98,7 +98,7 @@ export default function HomePage() {
     <>
       <section
         aria-labelledby="hero-heading"
-        className="relative isolate -mt-[67px] flex min-h-[467px] w-full items-center overflow-hidden border-b border-line bg-ink pt-[67px] sm:min-h-[587px]"
+        className="relative isolate -mt-[67px] flex min-h-[360px] w-full items-center overflow-hidden border-b border-line bg-ink pt-[67px] sm:min-h-[400px] lg:min-h-[440px]"
       >
         {/* Slides up 67px (66px bar + 1px border) behind the sticky header. Decorative: the H1 carries the meaning; phones crop towards the house. */}
         <Image
@@ -118,21 +118,21 @@ export default function HomePage() {
         {/* Top fade: the header is clear over the hero, so its white links need a darker band behind them. */}
         <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
         {/* Side padding matches PageContainer; past 1440px it grows so the text lines up with the page below. */}
-        <div className="flex w-full flex-col items-start justify-center px-4 py-10 sm:px-5 sm:py-14 md:px-page-x lg:py-16 lg:pl-[max(4vw,calc(50vw-720px+4vw))] lg:pr-12">
+        <div className="flex w-full flex-col items-start justify-center px-4 py-8 sm:px-5 sm:py-10 md:px-page-x lg:py-12 lg:pl-[max(4vw,calc(50vw-720px+4vw))] lg:pr-12">
           <div className="flex max-w-xl flex-col items-start">
             <p className="inline-flex rounded-sm bg-mint-50 px-2 py-1 text-micro font-medium uppercase tracking-wide text-emerald-700">
               Kenya property marketplace
             </p>
             <h1
               id="hero-heading"
-              className="mt-5 text-[2.5rem] font-bold leading-[0.98] tracking-[-0.055em] text-white sm:text-[clamp(2.6rem,5.8vw,4.75rem)]"
+              className="mt-4 text-[2.25rem] font-bold leading-[0.98] tracking-[-0.055em] text-white sm:text-[clamp(2.4rem,4.4vw,3.5rem)]"
             >
               Find a place to call your own.
             </h1>
-            <p className="mt-4 max-w-md text-body text-white/90">
+            <p className="mt-3 max-w-md text-body text-white/90">
               Discover homes, apartments and land from property professionals you can trust.
             </p>
-            <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-7" })}>
+            <Link href={SEARCH_PATH} className={buttonClasses({ className: "mt-5" })}>
               Browse all properties
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>

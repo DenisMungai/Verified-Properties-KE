@@ -136,7 +136,8 @@ Use:
 - Zod v4, shared between forms and server handlers
 - Better Auth (email and password, email verification, reset)
 - M-Pesa Daraja API (STK Push, STK Query, C2B Paybill fallback)
-- Cloudflare R2 (public bucket for listing images, private bucket for verification documents)
+- Neon Object Storage, S3-compatible (public bucket for listing images, private bucket for
+  verification documents)
 - Upstash QStash (background jobs), Upstash Redis (rate limiting)
 - Resend (email); Africa's Talking (SMS, optional)
 - Vitest (unit and integration); Playwright (end-to-end, from Phase 4)
@@ -160,7 +161,7 @@ Keep these layers separate:
 - `src/db/` — schema, clients (`index.ts` HTTP, `tx.ts` WebSocket transactions), `queries/`
 - `src/lib/` — pure domain logic (formatting, validation, workflow, entitlements, ranking inputs)
 - `src/lib/mpesa/` — Daraja client and payment confirmation
-- `src/lib/storage/` — R2 and image processing
+- `src/lib/storage/` — object storage (S3-compatible) and image processing
 - `src/lib/jobs/` — QStash job handlers
 
 Every query is scoped by the session in the server-side data-access layer. UI never decides
@@ -215,7 +216,7 @@ entitlement, verification or ranking.
 
 # 8. Security
 
-- Privileged keys (database URLs, R2 secrets, Daraja consumer key/secret and passkey, QStash
+- Privileged keys (database URLs, storage credentials, Daraja consumer key/secret and passkey, QStash
   signing keys, Resend, SMS, map secrets) are server-only. Only `NEXT_PUBLIC_APP_URL` and a
   restricted public map token reach the browser.
 - Every Server Action and route validates input with Zod, checks session and permission, applies

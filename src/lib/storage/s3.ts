@@ -9,8 +9,11 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { readCapped, TooLargeError, type ObjectStore, type StoredObject } from "./object-store";
 
-export interface R2Config {
-  accountId: string;
+export interface S3StoreConfig {
+  /** e.g. a Neon branch storage endpoint, or `https://<account>.r2.cloudflarestorage.com`. */
+  endpoint: string;
+  /** `eu-central-1` for Neon in Frankfurt; `auto` for R2. */
+  region: string;
   accessKeyId: string;
   secretAccessKey: string;
   bucket: string;
@@ -18,12 +21,16 @@ export interface R2Config {
 
 const DELETE_BATCH = 1000;
 
-/** Cloudflare R2 through its S3-compatible API. Server-only: it holds secret credentials. */
-export function createR2Store(config: R2Config): ObjectStore {
+/**
+ * S3-compatible object storage (Neon Object Storage, Cloudflare R2). Path-style addressing,
+ * which Neon requires and R2 accepts. Server-only: it holds secret credentials.
+ */
+export function createS3Store(config: S3StoreConfig): ObjectStore {
   const { bucket } = config;
   const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+    region: config.region,
+    endpoint: config.endpoint,
+    forcePathStyle: true,
     credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
   });
 

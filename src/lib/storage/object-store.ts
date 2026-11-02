@@ -1,6 +1,6 @@
 /**
- * The object storage the app needs. R2 implements it in production, a local-disk store in
- * development without R2, and an in-memory store in tests.
+ * The object storage the app needs. An S3-compatible store (Neon Object Storage) implements it
+ * when configured, a local-disk store in development without it, and an in-memory store in tests.
  */
 export interface StoredObject {
   key: string;

@@ -12,9 +12,9 @@ describe("parseServerEnv", () => {
   });
 
   it("treats empty strings as unset", () => {
-    const env = parseServerEnv({ DATABASE_URL: DB, RESEND_API_KEY: "", R2_PUBLIC_BASE_URL: "" });
+    const env = parseServerEnv({ DATABASE_URL: DB, RESEND_API_KEY: "", STORAGE_PUBLIC_BASE_URL: "" });
     expect(env.RESEND_API_KEY).toBeUndefined();
-    expect(env.R2_PUBLIC_BASE_URL).toBeUndefined();
+    expect(env.STORAGE_PUBLIC_BASE_URL).toBeUndefined();
   });
 
   it("requires DATABASE_URL", () => {

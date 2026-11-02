@@ -2,26 +2,27 @@ import "server-only";
 import { getServerEnv, type ServerEnv } from "@/lib/env";
 import { createDevDiskStore, DEV_PUBLIC_PATH } from "./dev-disk";
 import { StorageNotConfiguredError, type ObjectStore } from "./object-store";
-import { createR2Store } from "./r2";
+import { createS3Store } from "./s3";
 
 /**
- * Which object storage this deployment uses (prompt S4 decision 2):
- * - `r2` when every R2 variable is set (both buckets and the public base URL)
- * - `dev-disk` outside production when R2 is not fully set
- * - `none` in production without R2: photo actions refuse with a clear message
+ * Which object storage this deployment uses (prompt S4 decision 2; prompt
+ * neon-storage-and-compact-hero decision 2):
+ * - `s3` when every STORAGE_* variable is set (region is optional)
+ * - `dev-disk` outside production when storage is not fully set
+ * - `none` in production without storage: photo actions refuse with a clear message
  */
-export type StorageMode = "r2" | "dev-disk" | "none";
+export type StorageMode = "s3" | "dev-disk" | "none";
 
 export function storageModeFor(env: ServerEnv, nodeEnv = process.env.NODE_ENV): StorageMode {
-  const r2Ready = Boolean(
-    env.R2_ACCOUNT_ID &&
-      env.R2_ACCESS_KEY_ID &&
-      env.R2_SECRET_ACCESS_KEY &&
-      env.R2_PUBLIC_BUCKET &&
-      env.R2_PRIVATE_BUCKET &&
-      env.R2_PUBLIC_BASE_URL,
+  const s3Ready = Boolean(
+    env.STORAGE_S3_ENDPOINT &&
+      env.STORAGE_ACCESS_KEY_ID &&
+      env.STORAGE_SECRET_ACCESS_KEY &&
+      env.STORAGE_PUBLIC_BUCKET &&
+      env.STORAGE_PRIVATE_BUCKET &&
+      env.STORAGE_PUBLIC_BASE_URL,
   );
-  if (r2Ready) return "r2";
+  if (s3Ready) return "s3";
   return nodeEnv === "production" ? "none" : "dev-disk";
 }
 
@@ -44,12 +45,13 @@ export function getDevStorageSecret(): string | null {
 function createStore(bucket: "public" | "private"): ObjectStore {
   const env = getServerEnv();
   switch (storageModeFor(env)) {
-    case "r2":
-      return createR2Store({
-        accountId: env.R2_ACCOUNT_ID!,
-        accessKeyId: env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
-        bucket: bucket === "public" ? env.R2_PUBLIC_BUCKET! : env.R2_PRIVATE_BUCKET!,
+    case "s3":
+      return createS3Store({
+        endpoint: env.STORAGE_S3_ENDPOINT!,
+        region: env.STORAGE_S3_REGION,
+        accessKeyId: env.STORAGE_ACCESS_KEY_ID!,
+        secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY!,
+        bucket: bucket === "public" ? env.STORAGE_PUBLIC_BUCKET! : env.STORAGE_PRIVATE_BUCKET!,
       });
     case "dev-disk":
       return createDevDiskStore(bucket, devSecret(env));
@@ -71,20 +73,24 @@ export function getPrivateStore(): ObjectStore {
   return (privateStore ??= createStore("private"));
 }
 
-/**
- * Public URL of a photo without its variant suffix, or null when photos can't be served.
- * `ListingImage` appends `-<width>.webp`.
- */
-export function publicImageBaseUrl(baseKey: string | null | undefined): string | null {
+/** Pure URL builder, exported for tests. */
+export function publicImageBaseUrlFor(env: ServerEnv, baseKey: string | null | undefined, nodeEnv = process.env.NODE_ENV): string | null {
   if (!baseKey) return null;
-  const env = getServerEnv();
   const path = baseKey.split("/").map(encodeURIComponent).join("/");
-  switch (storageModeFor(env)) {
-    case "r2":
-      return `${env.R2_PUBLIC_BASE_URL!.replace(/\/+$/, "")}/${path}`;
+  switch (storageModeFor(env, nodeEnv)) {
+    case "s3":
+      return `${env.STORAGE_PUBLIC_BASE_URL!.replace(/\/+$/, "")}/${path}`;
     case "dev-disk":
       return `${DEV_PUBLIC_PATH}/${path}`;
     case "none":
       return null;
   }
+}
+
+/**
+ * Public URL of a photo without its variant suffix, or null when photos can't be served.
+ * `ListingImage` appends `-<width>.webp`.
+ */
+export function publicImageBaseUrl(baseKey: string | null | undefined): string | null {
+  return publicImageBaseUrlFor(getServerEnv(), baseKey);
 }
