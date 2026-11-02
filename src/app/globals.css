@@ -193,6 +193,20 @@
   }
 }
 
+/*
+ * Phones: while the Explore filter sheet is open the page behind it doesn't scroll. Two rules, not
+ * one selector list, so a browser that doesn't know :popover-open still applies the data-open one.
+ */
+@media (max-width: 767.98px) {
+  html:has(#search-filters:popover-open) {
+    overflow: hidden;
+  }
+
+  html:has(#search-filters[data-open]) {
+    overflow: hidden;
+  }
+}
+
 /* A fixed bottom bar (listing page below lg) never covers the end of the page or the footer. */
 @media (max-width: 1023.98px) {
   body:has([data-mobile-bar]) {

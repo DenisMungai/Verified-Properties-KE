@@ -7,30 +7,33 @@ import { BRAND } from "@/lib/brand";
 const POINTS = ["Clear listings", "Reviewed listers", "Better decisions"] as const;
 
 /**
- * Design "04 — Sign In": deep-green story panel on the left (lg+) with a decorative living-room
- * photo, form on warm canvas on the right, under the solid header. Below lg the form stands alone.
+ * Design "04 — Sign In": story panel on the left (lg+) filled edge to edge by a decorative
+ * living-room photo, with the brand copy on top; form on warm canvas on the right, under the
+ * solid header. Below lg the form stands alone.
  */
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <div className="grid min-h-[calc(100dvh-67px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <aside className="hidden bg-emerald-700 px-10 py-14 text-white lg:flex xl:px-16">
-        <div className="flex w-full max-w-[34rem] flex-col gap-8">
-          <p className="text-title font-bold text-white">{BRAND.name}</p>
-          <div className="flex flex-col gap-4">
-            <p className="max-w-sm text-display-sm text-white">Your next chapter starts with a place.</p>
-            <p className="max-w-md text-body text-white/90">
-              Save homes you love, manage enquiries and connect with reviewed property professionals.
-            </p>
-          </div>
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-emerald-600">
-            <Image
-              src={livingRoomImage}
-              alt=""
-              fill
-              placeholder="blur"
-              sizes="(min-width: 1280px) 34rem, 45vw"
-              className="object-cover object-center"
-            />
+      <aside className="relative isolate hidden overflow-hidden bg-emerald-700 px-10 py-14 text-white lg:flex xl:px-16">
+        <Image
+          src={livingRoomImage}
+          alt=""
+          fill
+          placeholder="blur"
+          sizes="(min-width: 1024px) 48vw, 0px"
+          className="-z-20 object-cover object-center"
+        />
+        {/* Dark at the top and bottom behind the white text, lighter in the middle so the room shows. */}
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/85 via-ink/35 to-ink/85" />
+        <div className="flex w-full max-w-[34rem] flex-col justify-between gap-8">
+          <div className="flex flex-col gap-8">
+            <p className="text-title font-bold text-white">{BRAND.name}</p>
+            <div className="flex flex-col gap-4">
+              <p className="max-w-sm text-display-sm text-white">Your next chapter starts with a place.</p>
+              <p className="max-w-md text-body text-white/90">
+                Save homes you love, manage enquiries and connect with reviewed property professionals.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 text-body text-white/90">
             <Check aria-hidden="true" className="size-4 shrink-0 text-white" />
