@@ -1,23 +1,14 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { Check } from "lucide-react";
+import livingRoomImage from "@/assets/images/auth-living-room.jpg";
 import { BRAND } from "@/lib/brand";
 
 const POINTS = ["Clear listings", "Reviewed listers", "Better decisions"] as const;
 
-/** Decorative house from the design: Forest block, soft-mint house, deep-green door. */
-function HouseIllustration() {
-  return (
-    <div aria-hidden="true" className="flex aspect-[550/290] w-full items-center justify-center rounded-lg bg-emerald-600">
-      <div className="relative h-[65%] w-[60%] rounded-lg bg-mint-100">
-        <div className="absolute bottom-0 left-1/2 h-[45%] w-[16%] -translate-x-1/2 rounded-t-md bg-emerald-700" />
-      </div>
-    </div>
-  );
-}
-
 /**
- * Design "04 — Sign In": deep-green story panel on the left (lg+), form on warm canvas on the
- * right, under the solid header. Below lg the form stands alone.
+ * Design "04 — Sign In": deep-green story panel on the left (lg+) with a decorative living-room
+ * photo, form on warm canvas on the right, under the solid header. Below lg the form stands alone.
  */
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
@@ -31,7 +22,16 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
               Save homes you love, manage enquiries and connect with reviewed property professionals.
             </p>
           </div>
-          <HouseIllustration />
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-emerald-600">
+            <Image
+              src={livingRoomImage}
+              alt=""
+              fill
+              placeholder="blur"
+              sizes="(min-width: 1280px) 34rem, 45vw"
+              className="object-cover object-center"
+            />
+          </div>
           <div className="flex items-center gap-3 text-body text-white/90">
             <Check aria-hidden="true" className="size-4 shrink-0 text-white" />
             <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
