@@ -13,17 +13,29 @@ function hidePanel(panel: HTMLElement | null) {
   if (panel?.matches(":popover-open")) panel.hidePopover();
 }
 
+/** Opens the filter drawer below `md`; rendered in the search card next to Buy / Rent / Land. */
+export function FiltersButton({ activeCount, className }: { activeCount: number; className?: string }) {
+  return (
+    <button
+      type="button"
+      popoverTarget={FILTERS_PANEL_ID}
+      className={buttonClasses({ variant: "secondary", className: cn("px-4", className) })}
+    >
+      <SlidersHorizontal aria-hidden="true" className="size-4" />
+      Filters{activeCount > 0 ? ` (${activeCount})` : ""}
+    </button>
+  );
+}
+
 /**
- * The filter sidebar from `md`, and below it a full-screen drawer behind "Filters (n)" (prompt S7
- * decision 6). The drawer is an HTML popover, so it opens, closes and closes on Escape without
- * JavaScript; scripts only close it after Apply or Reset and when the window grows to `md`.
+ * The filter sidebar from `md`, and below it a full-screen drawer opened by `FiltersButton`
+ * (prompt S7 decision 6). The drawer is an HTML popover, so it opens, closes and closes on Escape
+ * without JavaScript; scripts only close it after Apply or Reset and when the window grows to `md`.
  */
 export function FilterDrawer({
-  activeCount,
   clearHref,
   children,
 }: {
-  activeCount: number;
   clearHref: string;
   children: ReactNode;
 }) {
@@ -41,15 +53,8 @@ export function FilterDrawer({
   }, []);
 
   return (
-    <div className="md:self-start">
-      <button
-        type="button"
-        popoverTarget={FILTERS_PANEL_ID}
-        className={buttonClasses({ variant: "secondary", className: "w-full md:hidden" })}
-      >
-        <SlidersHorizontal aria-hidden="true" className="size-4" />
-        Filters{activeCount > 0 ? ` (${activeCount})` : ""}
-      </button>
+    // Below md the wrapper adds no box (display: contents), so the closed drawer leaves no empty grid row.
+    <div className="max-md:contents md:self-start">
       <aside
         ref={panelRef}
         id={FILTERS_PANEL_ID}

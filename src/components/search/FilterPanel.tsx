@@ -9,6 +9,9 @@ import { SEARCH_FORM_ID } from "./ids";
 /** Design: section eyebrows in caption caps, Muted. */
 const eyebrow = "mb-1.5 text-micro tracking-wide font-semibold uppercase text-slate-600";
 
+/** Two columns in the phone drawer so the sheet fits; one column in the md+ sidebar. */
+const CHECKBOX_GRID = "grid grid-cols-2 gap-x-3 md:grid-cols-1";
+
 const ROOM_OPTIONS = [
   { value: "", label: "Any" },
   { value: "1", label: "1+" },
@@ -93,11 +96,13 @@ export function FilterPanel({
       {!land && (
         <fieldset>
           <legend className={eyebrow}>Property type</legend>
-          {CATEGORIES.map((category) => (
-            <Checkbox key={category} name="type" value={category} defaultChecked={filters.types.includes(category)}>
-              {CATEGORY_LABELS[category]}
-            </Checkbox>
-          ))}
+          <div className={CHECKBOX_GRID}>
+            {CATEGORIES.map((category) => (
+              <Checkbox key={category} name="type" value={category} defaultChecked={filters.types.includes(category)}>
+                {CATEGORY_LABELS[category]}
+              </Checkbox>
+            ))}
+          </div>
         </fieldset>
       )}
 
@@ -150,19 +155,21 @@ export function FilterPanel({
 
       <fieldset>
         <legend className={eyebrow}>More</legend>
-        {!land && (
-          <Checkbox name="furnished" defaultChecked={filters.furnished}>
-            Furnished
+        <div className={CHECKBOX_GRID}>
+          {!land && (
+            <Checkbox name="furnished" defaultChecked={filters.furnished}>
+              Furnished
+            </Checkbox>
+          )}
+          {!land && (
+            <Checkbox name="parking" defaultChecked={filters.parking}>
+              Parking
+            </Checkbox>
+          )}
+          <Checkbox name="verified" defaultChecked={filters.verified}>
+            Verified listers only
           </Checkbox>
-        )}
-        {!land && (
-          <Checkbox name="parking" defaultChecked={filters.parking}>
-            Parking
-          </Checkbox>
-        )}
-        <Checkbox name="verified" defaultChecked={filters.verified}>
-          Verified listers only
-        </Checkbox>
+        </div>
       </fieldset>
     </div>
   );

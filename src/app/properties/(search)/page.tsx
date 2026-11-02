@@ -120,9 +120,10 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const href = searchHref(filters);
   const priceInput = errors.price ? { min: first(raw.minPrice), max: first(raw.maxPrice) } : undefined;
   return (
-    <PageContainer className="flex flex-col gap-5 pb-8 pt-6">
+    <PageContainer className="flex flex-col gap-4 pb-8 pt-4 md:gap-5 md:pt-6">
+      {/* Phones: breadcrumb and subtitle hidden so results start on the first screen. */}
       <div className="flex flex-col gap-2">
-        <nav aria-label="Breadcrumb">
+        <nav aria-label="Breadcrumb" className="hidden md:block">
           <ol className="flex flex-wrap items-center gap-2 text-small text-slate-600">
             <li>
               <Link href="/" className="-my-3.5 inline-flex min-h-control items-center hover:text-ink hover:underline">
@@ -135,15 +136,15 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
         </nav>
         <div>
           <h1 className="text-display-sm">{MODE_TITLES[filters.mode]}</h1>
-          <p className="mt-2 max-w-2xl text-body text-slate-600">Browse homes, apartments, land and commercial property</p>
+          <p className="mt-2 hidden max-w-2xl text-body text-slate-600 md:block">Browse homes, apartments, land and commercial property</p>
         </div>
       </div>
 
       {/* Keyed by the URL so the inputs reset after a chip, Clear all or pagination link. */}
-      <SearchBar key={`bar:${href}`} filters={filters} />
+      <SearchBar key={`bar:${href}`} filters={filters} activeCount={activeFilters(filters).length} />
 
       <div className="grid gap-gutter md:grid-cols-[176px_minmax(0,1fr)]">
-        <FilterDrawer key={`filters:${href}`} activeCount={activeFilters(filters).length} clearHref={clearFiltersHref(filters)}>
+        <FilterDrawer key={`filters:${href}`} clearHref={clearFiltersHref(filters)}>
           <FilterPanel filters={filters} priceError={errors.price} priceInput={priceInput} />
         </FilterDrawer>
         <div className="flex min-w-0 flex-col gap-4">

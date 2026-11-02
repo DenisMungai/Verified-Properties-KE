@@ -9,7 +9,7 @@ export const HOW_RANKING_WORKS_HREF = "/how-it-works#ranking";
 /** The disclosure under every results header (plan v2.0 §5 "Disclosure"; prompt S7 decision 8). */
 export function RankingDisclosure() {
   return (
-    <p className="text-small text-slate-600">
+    <p className="text-micro text-slate-600 md:text-small">
       Verified listers appear first. Verification is a paid service that includes an identity and business check.{" "}
       <Link href={HOW_RANKING_WORKS_HREF} className="font-medium text-emerald-700 underline underline-offset-4 hover:text-ink">
         How ranking works

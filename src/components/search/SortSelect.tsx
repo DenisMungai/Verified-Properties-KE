@@ -10,7 +10,7 @@ const SORT_OPTIONS = SORTS.map((sort) => ({ value: sort, label: SORT_LABELS[sort
 export function SortSelect({ value }: { value: SearchSort }) {
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="search-sort" className="whitespace-nowrap text-small text-slate-600">
+      <label htmlFor="search-sort" className="whitespace-nowrap text-small text-slate-600 max-md:sr-only">
         Sort by
       </label>
       <Select
@@ -20,7 +20,7 @@ export function SortSelect({ value }: { value: SearchSort }) {
         defaultValue={value}
         options={SORT_OPTIONS}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="h-control-sm w-44 pl-3 pr-8"
+        className="h-control-sm w-40 pl-3 pr-8 md:w-44"
       />
       <button
         type="submit"
