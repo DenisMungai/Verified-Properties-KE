@@ -11,7 +11,7 @@ describe("cn", () => {
   });
 
   it("lets a narrower height override the 44px control height", () => {
-    expect(cn("h-control w-full", "h-8")).toBe("w-full h-8");
+    expect(cn("h-control w-full", "h-control-sm")).toBe("w-full h-control-sm");
   });
 
   it("lets a later colour override an earlier one", () => {

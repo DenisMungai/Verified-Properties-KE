@@ -61,6 +61,11 @@ Design rules that are easy to break:
   `display-sm` (page H1s, big prices), `title` (section headings), `body` (paragraphs), `small`
   (most UI: labels, buttons, links, inputs, table cells) and `micro` (meta, hints, badges). Never
   `text-base` / `text-lg` / `text-xl` for UI text. Teach `src/lib/cn.ts` any new size token.
+- Phones (< 640px, `prompts/ui-mobile-optimization.md`): the same six tokens read larger CSS
+  variables in `globals.css` (title ≈ 18px, body ≈ 14.4px, small ≈ 13px, micro ≈ 10.8px), and text
+  inputs, selects and textareas are 16px so iOS doesn't zoom on focus. Change sizes there, not per
+  component. 32px secondary controls use the px token `control-sm`, never rem `h-8` / `size-8`.
+  A fixed mobile bottom bar takes `data-mobile-bar` so the page is padded beneath it.
 - Touch targets are px: buttons, inputs, selects, nav and menu items `h-control` 44px
   (`h-control-lg` 48px); secondary controls (pagination, toolbar selects, card heart, chip remove)
   may be 32px, with a 44px hit area where neighbours allow.

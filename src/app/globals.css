@@ -29,6 +29,38 @@
   --vp-header-height: 66px;
   --vp-control-height: 44px;
   --vp-control-height-lg: 48px;
+  --vp-mobile-bar-height: 70px;
+
+  /*
+   * Type scale (tailwind.config.ts fontSize reads these). rem, so the 90% root and the user's own
+   * browser font-size setting both apply. Phones get larger body sizes below; headlines stay.
+   */
+  --vp-text-display: 3.5rem;
+  --vp-leading-display: 1.02;
+  --vp-text-display-sm: 2.25rem;
+  --vp-leading-display-sm: 1.05;
+  --vp-text-title: 1.125rem;
+  --vp-leading-title: 1.5rem;
+  --vp-text-body: 0.875rem;
+  --vp-leading-body: 1.5rem;
+  --vp-text-small: 0.75rem;
+  --vp-leading-small: 1.15rem;
+  --vp-text-micro: 0.625rem;
+  --vp-leading-micro: 0.9rem;
+}
+
+/* Phones (< sm): ≈18 / 14.4 / 13 / 10.8px instead of the compact 16.2 / 12.6 / 10.8 / 9px. */
+@media (max-width: 639.98px) {
+  :root {
+    --vp-text-title: 1.25rem;
+    --vp-leading-title: 1.65rem;
+    --vp-text-body: 1rem;
+    --vp-leading-body: 1.6rem;
+    --vp-text-small: 0.9rem;
+    --vp-leading-small: 1.35rem;
+    --vp-text-micro: 0.75rem;
+    --vp-leading-micro: 1rem;
+  }
 }
 
 @layer base {
@@ -146,6 +178,25 @@
 
   html {
     scroll-behavior: auto;
+  }
+}
+
+/*
+ * Phones: iOS Safari zooms into any focused field under 16px. A platform rule, not a type-scale
+ * size. Outside @layer and more specific than one utility class, so it beats `text-small`.
+ */
+@media (max-width: 639.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* A fixed bottom bar (listing page below lg) never covers the end of the page or the footer. */
+@media (max-width: 1023.98px) {
+  body:has([data-mobile-bar]) {
+    padding-bottom: var(--vp-mobile-bar-height);
   }
 }
 

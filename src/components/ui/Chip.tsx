@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const chipClasses =
-  "inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-white pl-4 text-small font-medium text-ink";
+  "inline-flex min-h-control-sm items-center gap-1 rounded-full border border-line bg-white pl-4 text-small font-medium text-ink";
 
 const removeClasses =
   "relative inline-flex size-7 items-center justify-center rounded-full text-slate-600 hover:bg-mint-50 hover:text-ink " +

@@ -186,9 +186,15 @@ async function ListingDetail({ params }: { params: Params }) {
         </Suspense>
       </PageContainer>
 
-      {/* Mobile: price and a jump to the contact card stay in reach. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white px-4 py-3 lg:hidden">
-        <div className="mx-auto flex max-w-page items-center justify-between gap-4">
+      {/*
+       * Mobile: price and a jump to the contact card stay in reach. data-mobile-bar makes globals.css
+       * pad the page by --vp-mobile-bar-height so the bar never covers the footer.
+       */}
+      <div
+        data-mobile-bar
+        className="fixed inset-x-0 bottom-0 z-30 flex h-[var(--vp-mobile-bar-height)] items-center border-t border-line bg-white px-4 lg:hidden"
+      >
+        <div className="mx-auto flex w-full max-w-page items-center justify-between gap-4">
           <p className="text-title font-bold text-ink">
             {formatKes(listing.priceKes)}
             {listing.rentPeriod && <span className="text-small font-normal text-slate-600"> {RENT_SUFFIX[listing.rentPeriod]}</span>}

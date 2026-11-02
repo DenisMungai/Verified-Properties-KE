@@ -17,7 +17,7 @@ const base =
 const sizes = {
   md: "size-control border border-line bg-white",
   sm:
-    "size-8 bg-white/90 after:absolute after:left-1/2 after:top-1/2 after:size-control " +
+    "size-control-sm bg-white/90 after:absolute after:left-1/2 after:top-1/2 after:size-control " +
     "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
 } as const;
 

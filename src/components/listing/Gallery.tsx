@@ -246,7 +246,7 @@ function Mosaic({ photos, onOpen }: { photos: GalleryPhoto[]; onOpen: (index: nu
                 type="button"
                 onClick={() => onOpen(0)}
                 className={cn(
-                  "absolute bottom-4 right-4 inline-flex min-h-8 items-center rounded-lg bg-white px-4 text-small font-medium text-ink hover:bg-mint-50",
+                  "absolute bottom-4 right-4 inline-flex min-h-control-sm items-center rounded-lg bg-white px-4 text-small font-medium text-ink hover:bg-mint-50",
                   FOCUS_RING,
                 )}
               >

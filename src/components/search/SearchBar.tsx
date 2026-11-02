@@ -24,7 +24,7 @@ export function SearchBar({ filters }: { filters: SearchFilters }) {
           name="q"
           type="search"
           defaultValue={filters.q ?? ""}
-          placeholder="County, town or neighbourhood"
+          placeholder="County, town or area"
           maxLength={Q_MAX}
           autoComplete="off"
           className="rounded-full pl-9"

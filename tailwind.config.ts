@@ -36,14 +36,16 @@ const config = {
       /*
        * Compact scale: ~90% of the UI is `small` / `micro`; only headlines are large. At the 90% root:
        * display ≈ 50px, display-sm ≈ 32px, title ≈ 16px, body ≈ 12.6px, small ≈ 10.8px, micro ≈ 9px.
+       * Phones (< 640px) read larger values from the same CSS variables (globals.css):
+       * title ≈ 18px, body ≈ 14.4px, small ≈ 13px, micro ≈ 10.8px; form controls 16px.
        */
       fontSize: {
-        display: ["3.5rem", { lineHeight: "1.02", letterSpacing: "-0.055em", fontWeight: "700" }],
-        "display-sm": ["2.25rem", { lineHeight: "1.05", letterSpacing: "-0.045em", fontWeight: "700" }],
-        title: ["1.125rem", { lineHeight: "1.5rem", fontWeight: "600" }],
-        body: ["0.875rem", { lineHeight: "1.5rem" }],
-        small: ["0.75rem", { lineHeight: "1.15rem" }],
-        micro: ["0.625rem", { lineHeight: "0.9rem", letterSpacing: "0.02em" }],
+        display: ["var(--vp-text-display)", { lineHeight: "var(--vp-leading-display)", letterSpacing: "-0.055em", fontWeight: "700" }],
+        "display-sm": ["var(--vp-text-display-sm)", { lineHeight: "var(--vp-leading-display-sm)", letterSpacing: "-0.045em", fontWeight: "700" }],
+        title: ["var(--vp-text-title)", { lineHeight: "var(--vp-leading-title)", fontWeight: "600" }],
+        body: ["var(--vp-text-body)", { lineHeight: "var(--vp-leading-body)" }],
+        small: ["var(--vp-text-small)", { lineHeight: "var(--vp-leading-small)" }],
+        micro: ["var(--vp-text-micro)", { lineHeight: "var(--vp-leading-micro)", letterSpacing: "0.02em" }],
       },
       // Radius: Tailwind defaults (sm 2px, DEFAULT 4px, md 6px, lg 8px, xl 12px, full).
       // Borders separate surfaces; the only drop shadow is `shadow-sm` on card hover.
@@ -52,7 +54,8 @@ const config = {
       },
       // Touch targets in px so the 90% root never shrinks them below 44px. On the spacing scale
       // so h-, w-, size- and min-w- utilities all accept them.
-      spacing: { control: "44px", "control-lg": "48px", gutter: "1rem", sidebar: "17.5rem", "page-x": "4vw" },
+      // `control-sm` is the 32px secondary-control size (pagination, toolbar selects, card heart).
+      spacing: { control: "44px", "control-lg": "48px", "control-sm": "32px", gutter: "1rem", sidebar: "17.5rem", "page-x": "4vw" },
       maxWidth: { page: "1440px", text: "1160px", prose: "65ch", modal: "35rem" },
     },
   },

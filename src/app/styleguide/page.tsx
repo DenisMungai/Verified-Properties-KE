@@ -41,14 +41,14 @@ const COLOURS: Array<{ name: string; hex: string; swatch: string; note?: string 
   { name: "info", hex: "#175CD3", swatch: "bg-info" },
 ];
 
-/** Rendered px at the 90% root (1rem = 14.4px). */
+/** Rendered px at the 90% root (1rem = 14.4px); phones (< 640px) in brackets. */
 const TYPE_SCALE: Array<{ name: string; className: string; spec: string }> = [
   { name: "Display", className: "text-display", spec: "3.5rem ≈ 50px · 700 · -0.055em" },
   { name: "Display small", className: "text-display-sm", spec: "2.25rem ≈ 32px · 700 · -0.045em" },
-  { name: "Title", className: "text-title", spec: "1.125rem ≈ 16px · 600" },
-  { name: "Body", className: "text-body", spec: "0.875rem ≈ 12.6px · 400" },
-  { name: "Small (most UI)", className: "text-small", spec: "0.75rem ≈ 10.8px · 400" },
-  { name: "Micro (meta, badges)", className: "text-micro", spec: "0.625rem ≈ 9px · 0.02em" },
+  { name: "Title", className: "text-title", spec: "1.125rem ≈ 16px (18px) · 600" },
+  { name: "Body", className: "text-body", spec: "0.875rem ≈ 12.6px (14.4px) · 400" },
+  { name: "Small (most UI)", className: "text-small", spec: "0.75rem ≈ 10.8px (13px) · 400" },
+  { name: "Micro (meta, badges)", className: "text-micro", spec: "0.625rem ≈ 9px (10.8px) · 0.02em" },
   { name: "Eyebrow", className: "text-micro font-semibold uppercase tracking-wide", spec: "micro · 600 · caps" },
   { name: "Price", className: "text-display-sm tabular", spec: "display-sm · tabular" },
 ];

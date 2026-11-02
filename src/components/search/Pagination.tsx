@@ -8,7 +8,7 @@ const WINDOW = 5;
 
 /** 32px squares: the design's floor for secondary controls (WCAG 2.2 AA 2.5.8 needs 24px). */
 const itemClasses =
-  "inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded border px-2 text-small font-semibold transition-colors";
+  "inline-flex h-control-sm min-w-control-sm items-center justify-center gap-1 rounded border px-2 text-small font-semibold transition-colors";
 
 /** Up to five numbered pages around the current one; the current page and dead ends aren't links. */
 export function pageWindow(page: number, pageCount: number): number[] {

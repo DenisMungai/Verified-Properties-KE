@@ -20,7 +20,7 @@ export function SortSelect({ value }: { value: SearchSort }) {
         defaultValue={value}
         options={SORT_OPTIONS}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="h-8 w-44 pl-3 pr-8"
+        className="h-control-sm w-44 pl-3 pr-8"
       />
       <button
         type="submit"

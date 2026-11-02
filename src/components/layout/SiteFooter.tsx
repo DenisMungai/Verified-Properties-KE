@@ -20,7 +20,8 @@ export function SiteFooter() {
           <p className="text-small text-white/80">{BRAND.description}</p>
         </div>
         <nav aria-label="Footer" className="md:justify-self-end">
-          <ul className="grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-x-1">
+          {/* -mx-2 cancels the links' px-2 hit padding so their text lines up with the brand. */}
+          <ul className="-mx-2 grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-x-1">
             {FOOTER_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
