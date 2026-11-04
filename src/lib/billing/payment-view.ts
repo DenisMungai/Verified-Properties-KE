@@ -6,7 +6,10 @@ import { formatNairobiDate } from "@/lib/format";
  * descriptions or raw callbacks. Client-safe.
  */
 
-export type PaymentState = "waiting" | "confirmed" | "failed" | "cancelled" | "flagged";
+export type PaymentState = "waiting" | "confirmed" | "failed" | "cancelled" | "flagged" | "refunded" | "credited";
+
+/** Every `payments.status` value; `refunded` and `credited` are admin resolutions (prompt S10). */
+export type PaymentRowStatus = "pending" | "confirmed" | "failed" | "cancelled" | "flagged" | "refunded" | "credited";
 
 export interface PaymentView {
   state: PaymentState;
@@ -20,7 +23,7 @@ export interface PaymentView {
 
 export function paymentView(row: {
   method: "stk_push" | "c2b_paybill" | "manual" | "card";
-  status: "pending" | "confirmed" | "failed" | "cancelled" | "flagged";
+  status: PaymentRowStatus;
   resultDesc: string | null;
   invoiceNumber: string;
   planName: string;

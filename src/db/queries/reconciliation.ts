@@ -88,13 +88,26 @@ export function paymentInvoiceNotPaid(db: DbExecutor, since: Date): Promise<Chec
   );
 }
 
+/**
+ * A `c2b_confirmation` event that matched no invoice and that no admin has resolved yet (prompt
+ * S10 decision 8): no payment holds its TransID, and no `admin_resolution` event names it.
+ */
+export function unresolvedPaybillEvent() {
+  return and(
+    eq(paymentEvents.eventType, "c2b_confirmation"),
+    isNull(paymentEvents.invoiceId),
+    sql`not exists (select 1 from ${payments} p where p.mpesa_receipt = ${paymentEvents.payload} ->> 'TransID')`,
+    sql`not exists (select 1 from ${paymentEvents} r where r.event_type = 'admin_resolution' and r.payload ->> 'sourceEventId' = ${paymentEvents.id}::text)`,
+  );
+}
+
 /** Paybill confirmations that matched no invoice: money in with nothing to apply it to. */
 export function unmatchedPaybill(db: DbExecutor, since: Date): Promise<CheckResult> {
   return check(
     db
       .select({ id: paymentEvents.id, total })
       .from(paymentEvents)
-      .where(and(eq(paymentEvents.eventType, "c2b_confirmation"), isNull(paymentEvents.invoiceId), gte(paymentEvents.createdAt, since)))
+      .where(and(unresolvedPaybillEvent(), gte(paymentEvents.createdAt, since)))
       .orderBy(paymentEvents.createdAt)
       .limit(RECONCILIATION_ID_LIMIT),
   );

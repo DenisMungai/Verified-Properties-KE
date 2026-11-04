@@ -6,6 +6,7 @@ import { PageHeading } from "@/components/account/PageHeading";
 import { StatCard } from "@/components/admin/StatCard";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
+import { billingAttentionCounts } from "@/db/queries/billing-admin";
 import { adminCounts } from "@/db/queries/moderation";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
@@ -15,18 +16,26 @@ export const metadata: Metadata = { title: "Admin console", robots: { index: fal
 const QUICK_ACTIONS = [
   { href: "/admin/listings", label: "Review listings awaiting moderation" },
   { href: "/admin/reports", label: "Review reported listings" },
+  { href: "/admin/billing", label: "Payments and refunds" },
 ] as const;
 
 /** Design "Platform overview". 404 for anyone without an admin role. */
 async function Overview() {
   const user = await requireRole(ADMIN_ROLES, "/admin");
   if (!user.roles.includes("platform_admin")) {
+    const billing = await billingAttentionCounts(getDb());
     return (
-      <EmptyState
-        icon={<ShieldCheck />}
-        title="Signed in as billing admin"
-        description="Payment search, refunds and manual activation arrive in S10. Listing moderation is for platform admins."
-      />
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StatCard label="Flagged payments" value={billing.flagged} note="Resolve in Billing" href="/admin/billing" />
+          <StatCard label="Unmatched Paybill" value={billing.unmatchedPaybill} note="Match or refund" href="/admin/billing" />
+        </div>
+        <EmptyState
+          icon={<ShieldCheck />}
+          title="Signed in as billing admin"
+          description="Billing covers payment search, refunds, credits and manual activation. Listing moderation is for platform admins."
+        />
+      </div>
     );
   }
   const counts = await adminCounts(getDb());

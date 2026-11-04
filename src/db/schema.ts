@@ -583,13 +583,19 @@ export const subscriptionStatus = pgEnum("subscription_status", [
 
 export const invoiceStatus = pgEnum("invoice_status", ["open", "paid", "void", "refunded"]);
 
-/** `flagged`: amount mismatch or other anomaly; never activates anything. */
+/**
+ * `flagged`: amount mismatch or other anomaly; never activates anything. `refunded` and
+ * `credited`: an admin resolved a flagged payment by returning the money or turning it into plan
+ * days (prompt S10 decision 4).
+ */
 export const paymentStatus = pgEnum("payment_status", [
   "pending",
   "confirmed",
   "failed",
   "cancelled",
   "flagged",
+  "refunded",
+  "credited",
 ]);
 
 /** `card`: Visa or Mastercard through Paystack's hosted checkout (prompt S6 decision 14). */
@@ -871,10 +877,16 @@ export const billingAuditLog = pgTable(
     paymentId: uuid("payment_id").references(() => payments.id),
     amountKes: integer("amount_kes"),
     reason: text("reason").notNull(),
+    /** Refund reference or M-Pesa receipt the action relied on (prompt S10 decision 10). */
+    reference: text("reference"),
+    /** Days added to a paid period by a credit. */
+    creditDays: integer("credit_days"),
     createdAt,
   },
   (t) => [
     check("billing_audit_log_amount_nonneg", sql`${t.amountKes} is null or ${t.amountKes} >= 0`),
+    check("billing_audit_log_reference_length", sql`${t.reference} is null or char_length(${t.reference}) <= 100`),
+    check("billing_audit_log_credit_days_range", sql`${t.creditDays} is null or ${t.creditDays} between 1 and 365`),
     check("billing_audit_log_reason_present", sql`char_length(trim(${t.reason})) > 0`),
     index("billing_audit_log_created_idx").on(t.createdAt.desc()),
   ],

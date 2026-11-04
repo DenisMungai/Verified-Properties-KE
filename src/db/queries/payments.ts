@@ -254,6 +254,22 @@ export async function insertC2bPayment(
   return row ?? null;
 }
 
+/**
+ * A payment an admin records after checking the M-Pesa statement (prompt S10 decisions 8 and 9);
+ * null when the receipt is already recorded. It is confirmed through `confirmPayment` like any other.
+ */
+export async function insertManualPayment(
+  tx: DbExecutor,
+  values: { invoiceId: string; phoneE164: string | null; mpesaReceipt: string; amountKes: number; paidAmountKes: number; rawCallback: unknown },
+): Promise<Payment | null> {
+  const [row] = await tx
+    .insert(payments)
+    .values({ ...values, method: "manual", status: "pending" })
+    .onConflictDoNothing({ target: payments.mpesaReceipt })
+    .returning();
+  return row ?? null;
+}
+
 /** A pending card payment; its reference is our own and unique (prompt S6 decision 16). */
 export async function insertCardPayment(
   db: DbExecutor,
@@ -362,7 +378,8 @@ export type PaymentEventType =
   | "card_init_failed"
   | "card_webhook"
   | "card_verify"
-  | "reconciliation";
+  | "reconciliation"
+  | "admin_resolution";
 
 export async function recordPaymentEvent(
   db: DbExecutor,

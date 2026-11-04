@@ -52,6 +52,14 @@ const COPY: Record<Exclude<Shown, "waiting">, Copy> = {
     title: "We received a payment we need to check",
     body: () => "Our team will review it and get back to you. You don't need to pay again.",
   },
+  refunded: {
+    title: "This payment was refunded",
+    body: () => "Our team checked it and sent the money back. Your plan didn't change.",
+  },
+  credited: {
+    title: "This payment was added to your plan",
+    body: () => "Our team checked it and added extra days to your plan instead. See your billing page for the new date.",
+  },
   timed_out: {
     title: (p) => (p.method === "card" ? "Still waiting for your bank" : "Still waiting for M-Pesa"),
     body: (p) =>
@@ -196,7 +204,7 @@ export function PaymentStatusPanel(props: PaymentStatusPanelProps) {
             Check again
           </Button>
         )}
-        {(shown === "flagged" || shown === "not_found") && (
+        {(shown === "flagged" || shown === "refunded" || shown === "credited" || shown === "not_found") && (
           <Link href="/account/billing" className={buttonClasses({ variant: "secondary", size: "lg", className: "w-full sm:w-auto" })}>
             View billing
           </Link>

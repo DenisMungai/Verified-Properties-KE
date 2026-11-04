@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, or } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { agencyMembers, invoices, payments, plans, subscriptions } from "@/db/schema";
 import { subscriptionPhase, type SubscriptionPhase } from "@/lib/billing/periods";
+import type { PaymentRowStatus } from "@/lib/billing/payment-view";
 import { countActiveListings, getListingPool, getListingSubscription, type ListingPool, type Plan, type Subscription } from "./billing";
 import { getPlan, isAgencyAdmin } from "./payments";
 
@@ -108,7 +109,7 @@ export function visibleToUser(db: DbExecutor, userId: string) {
 export interface PaymentStatusRow {
   id: string;
   method: "stk_push" | "c2b_paybill" | "manual" | "card";
-  status: "pending" | "confirmed" | "failed" | "cancelled" | "flagged";
+  status: PaymentRowStatus;
   /** Gateway status noted on a pending card payment ("failed", "abandoned", …). */
   resultDesc: string | null;
   hasCallback: boolean;
