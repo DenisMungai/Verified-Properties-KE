@@ -33,3 +33,6 @@ next-env.d.ts
 
 # local dev object storage (S4)
 .data/
+
+# Claude Code personal settings
+.claude/settings.local.json
