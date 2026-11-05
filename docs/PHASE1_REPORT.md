@@ -139,6 +139,9 @@ Follow-up: `prompts/s11-exit-fixes.md`.
   - *Fix:* Vercel production now has `MPESA_CALLBACK_ALLOWED_IPS =
     196.201.212.0/24,196.201.213.0/24,196.201.214.0/24` (plain, production only). It applies from
     the deploy of the fix commit.
+  - *Evidence:* after deploy `f327f5e`, a forged STK callback from this machine (`196.96.5.110`)
+    to the live callback URL got **403**. A `callback_rejected` event (`ip_not_allowed`) was
+    recorded at 16:37:52 UTC. A wrong token still gets 404.
 - **F4 (minor). The footer showed "Log in" and "Get started" to signed-in users. Fixed 5 Nov.**
   - *Fix:* `FooterAccount` reads the session behind `<Suspense>`, the same pattern as the header.
     Signed out, it shows Log in and Get started; signed in, it shows My account (`/account`).
@@ -154,9 +157,9 @@ Follow-up: `prompts/s11-exit-fixes.md`.
 
 ## Next steps for Phase 2
 
-- **S11 follow-up fixes** (`prompts/s11-exit-fixes.md`): F2–F4 are done. Still to confirm: one
-  real photo upload on the live site, and a forged callback getting 403 on the live site after
-  deploy. F1 stays a soft 404 with `noindex`.
+- **S11 follow-up fixes** (`prompts/s11-exit-fixes.md`): F2–F4 are done, and F3 is checked on the
+  live site. Still to confirm: one real photo upload on the live site. F1 stays a soft 404 with
+  `noindex`.
 - **Before real users:**
   - move the live site from the `dev` branch to `production`, copying users, listings and photos
     (buckets are branch-scoped)
