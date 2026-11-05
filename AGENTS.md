@@ -252,7 +252,11 @@ Database:
 - `npm run db:migrate` — apply migrations (uses `DATABASE_URL_UNPOOLED`, the direct host)
 - `npm run admin:create -- email [--role billing_admin]` — operator-only; needs
   `ADMIN_CREATE_CONFIRM=yes`
-- `npm run db:seed` — seed SAMPLE-labelled dev data (never production; arrives in S11)
+- `npm run db:seed -- --dry-run` — show the target endpoint and what a seed would add (writes nothing)
+- `npm run db:seed` — seed SAMPLE-labelled dev data (never production). Needs
+  `SEED_CONFIRM=<endpoint>`, the host's first label printed by a run without it; refuses on
+  `NODE_ENV=production`
+- `npm run db:seed -- --remove` — take the sample data down (same `SEED_CONFIRM` guard)
 
 Development:
 

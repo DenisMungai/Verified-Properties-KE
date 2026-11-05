@@ -11,23 +11,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../src/db/schema";
-
-type NewPlan = typeof schema.plans.$inferInsert;
-
-const SANDBOX_PLANS: NewPlan[] = [
-  { code: "starter", version: 1, kind: "listing", name: "Starter", priceKes: 1, listingLimit: 3 },
-  { code: "pro", version: 1, kind: "listing", name: "Pro", priceKes: 2, listingLimit: 20 },
-  {
-    code: "agency",
-    version: 1,
-    kind: "listing",
-    name: "Agency",
-    priceKes: 3,
-    listingLimit: 100,
-    isAgencyPlan: true,
-  },
-  { code: "verification", version: 1, kind: "verification", name: "Verification", priceKes: 1, listingLimit: null },
-];
+import { SANDBOX_PLANS } from "../src/db/seed/sandbox-plans";
 
 function hostOf(url: string): string {
   try {
