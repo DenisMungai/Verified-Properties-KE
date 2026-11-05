@@ -54,6 +54,19 @@ Fix the four problems the Phase 1 exit run found (`docs/PHASE1_REPORT.md`, findi
    - The session-dependent parts (contact panel, save state, similar listings) stay behind their
      `<Suspense>` boundaries, so only the existence check blocks.
    - Every other route is unchanged.
+   - **Outcome (5 Nov, user decision): dropped; the soft 404 stays.**
+     - Built and tested, this still returned 200.
+     - Next prerenders the route into an empty shell, stored with `"status": 200` and postponed
+       state in `.next/server/app/properties/[slug].meta`.
+     - Each request sets the stored status (`res.statusCode = cachedData.status` in
+       `next/dist/esm/build/templates/app-page-runtime.js`) before it resumes the render. So
+       `notFound()` can only render the not-found UI, and the responses carry
+       `x-nextjs-prerender: 1` and `x-nextjs-postponed: 1`.
+     - Vercel's edge serves the shell first in the same way.
+     - The alternative was a `proxy.ts` existence check: one extra query on every detail page
+       load, and the generic "Page not found" page.
+     - The user kept the soft 404 instead: "Listing not found" with `noindex`. The page change
+       was reverted.
 2. **F2, bucket CORS.** Replace the hyphenated origin with `https://verifiedpropertieske.vercel.app`
    on both buckets, using `PutBucketCors` from a one-off script in the gitignored
    `.data/exit-run/`.

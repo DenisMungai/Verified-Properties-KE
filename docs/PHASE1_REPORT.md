@@ -1,7 +1,7 @@
 # Phase 1 exit report
 
-**Status: complete. Every Phase 1 exit criterion passed.** Four findings are listed at the end; their
-fixes are planned in `prompts/s11-exit-fixes.md`.
+**Status: complete. Every Phase 1 exit criterion passed.** Four findings are listed at the end.
+F2–F4 were fixed on 5 November (`prompts/s11-exit-fixes.md`). F1 is accepted as a framework limit.
 
 - Run date: 5 November 2026 (times in UTC)
 - Target: Neon `dev` branch (`ep-weathered-cloud-b9h4jvv4`), which the live site
@@ -109,26 +109,41 @@ Seeded samples, checked in the browser:
 
 ## Findings
 
-Fixes for all four are planned in `prompts/s11-exit-fixes.md`.
+Follow-up: `prompts/s11-exit-fixes.md`.
 
-- **F1. Hidden listing URLs return HTTP 200, not 404.** Draft, pending, rejected and missing slugs
-  all render the "Listing not found" page with `noindex`, and none of their content appears. But
-  the status is 200 because the page streams (Cache Components) before `notFound()` runs. Search
-  engines treat it as a soft 404.
-  *Suggested fix:* resolve the listing before the streamed boundary (for example in
-  `generateMetadata` or a non-suspended check), so `notFound()` sets a real 404.
-- **F2. Photo uploads fail on the live site.** The `private-uploads` bucket's CORS rule allows
-  `https://verified-properties-ke.vercel.app` (with hyphens), but the live site is
-  `https://verifiedpropertieske.vercel.app`. A preflight from the live origin gets **403**, so the
-  browser's direct upload is blocked. Localhost is allowed, which is why local uploads work.
-  *Suggested fix:* add `https://verifiedpropertieske.vercel.app` to the CORS origins on both
-  buckets (and drop the hyphenated one), then upload a photo on the live site.
-- **F3. The live sandbox doesn't enforce the callback IP allowlist.** The replay from a
-  non-Safaricom IP was accepted. This is as designed: in sandbox the allowlist applies only when
+- **F1. Hidden listing URLs return HTTP 200, not 404. Accepted, not fixed.** Draft, pending,
+  rejected and missing slugs all render the "Listing not found" page with `noindex`, and none of
+  their content appears. Search engines treat it as a soft 404 and don't index it.
+  - *Why it can't be fixed in the page:* Next (Cache Components) prerenders
+    `/properties/[slug]` into an empty shell stored with status 200. Each request serves that
+    status, then resumes the render (`x-nextjs-prerender: 1`, `x-nextjs-postponed: 1`).
+  - Calling `notFound()` before any `<Suspense>`, with `instant = false`, was built and tested on
+    5 Nov. It still returned 200, so it was reverted.
+  - A `proxy.ts` existence check could give a real 404. It would cost an extra query on every
+    detail page load and show the generic "Page not found" page, so it was declined.
+- **F2. Photo uploads fail on the live site. Fixed 5 Nov.** The `private-uploads` bucket's CORS
+  rule allowed `https://verified-properties-ke.vercel.app` (with hyphens), but the live site is
+  `https://verifiedpropertieske.vercel.app`. A preflight from the live origin got **403**, so the
+  browser's direct upload was blocked. Localhost was allowed, which is why local uploads worked.
+  - *Fix:* both buckets now allow `https://verifiedpropertieske.vercel.app`, `http://localhost:3000`
+    and `http://127.0.0.1:3000`. The hyphenated origin was dropped. Methods (PUT, GET, HEAD), the
+    `content-type` header and the 3600s max age are unchanged.
+  - *Evidence:* read back with `GetBucketCors`. A PUT preflight now gets 200 with the matching
+    allow-origin from the live origin and from localhost on both buckets. The old hyphenated
+    origin gets 403.
+  - A real photo upload on the live site is still to be confirmed by the owner.
+- **F3. The live sandbox doesn't enforce the callback IP allowlist. Fixed 5 Nov.** The replay from
+  a non-Safaricom IP was accepted. This was by design: in sandbox the allowlist applies only when
   `MPESA_CALLBACK_ALLOWED_IPS` is set, and production defaults to the Safaricom ranges. The token
-  and STK Query still protect it.
-  *Suggested fix:* set the variable in Vercel too, so the live sandbox behaves like production.
-- **F4 (minor).** The footer shows "Log in" and "Get started" to signed-in users.
+  and STK Query still protected it.
+  - *Fix:* Vercel production now has `MPESA_CALLBACK_ALLOWED_IPS =
+    196.201.212.0/24,196.201.213.0/24,196.201.214.0/24` (plain, production only). It applies from
+    the deploy of the fix commit.
+- **F4 (minor). The footer showed "Log in" and "Get started" to signed-in users. Fixed 5 Nov.**
+  - *Fix:* `FooterAccount` reads the session behind `<Suspense>`, the same pattern as the header.
+    Signed out, it shows Log in and Get started; signed in, it shows My account (`/account`).
+  - *Evidence:* checked in Edge at 1280px and 390px, signed out and signed in. Every link has a
+    44px hit area, with 0px horizontal overflow and 0 console errors.
 
 ## Known gaps
 
@@ -139,9 +154,9 @@ Fixes for all four are planned in `prompts/s11-exit-fixes.md`.
 
 ## Next steps for Phase 2
 
-- **Apply the S11 follow-up fixes** (`prompts/s11-exit-fixes.md`): a real 404 on hidden listings,
-  bucket CORS for the live origin, the callback allowlist in the live sandbox, and the footer
-  account links.
+- **S11 follow-up fixes** (`prompts/s11-exit-fixes.md`): F2–F4 are done. Still to confirm: one
+  real photo upload on the live site, and a forged callback getting 403 on the live site after
+  deploy. F1 stays a soft 404 with `noindex`.
 - **Before real users:**
   - move the live site from the `dev` branch to `production`, copying users, listings and photos
     (buckets are branch-scoped)
