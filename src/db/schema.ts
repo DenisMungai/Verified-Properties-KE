@@ -89,9 +89,11 @@ export const rentPeriod = pgEnum("rent_period", ["week", "month", "year"]);
 export const landSizeUnit = pgEnum("land_size_unit", ["sqm", "acre", "hectare"]);
 export const listerType = pgEnum("lister_type", ["agent", "owner", "developer"]);
 
+/** `documents_pending` (S12): paid, waiting for documents; also where "Request changes" returns a request. */
 export const verificationStatus = pgEnum("verification_status", [
   "unverified",
   "payment_pending",
+  "documents_pending",
   "under_review",
   "verified",
   "rejected",
@@ -471,6 +473,8 @@ export const verificationRequests = pgTable(
     decisionReason: text("decision_reason"),
     /** A passed review is valid for 12 months (plan §4). */
     reviewExpiresAt: timestamp("review_expires_at", { withTimezone: true }),
+    /** The invoice that paid for this review (S12): its payment is what a rejection credits. */
+    invoiceId: uuid("invoice_id").references(() => invoices.id),
     ...timestamps,
   },
   (t) => [
@@ -480,6 +484,11 @@ export const verificationRequests = pgTable(
       "verification_requests_verified_has_expiry",
       sql`${t.status} <> 'verified' or (${t.decidedAt} is not null and ${t.reviewExpiresAt} is not null)`,
     ),
+    // One open request per lister (payment_pending, documents_pending, under_review). Written as
+    // "not closed" because the migration that adds documents_pending can't name it yet.
+    uniqueIndex("verification_requests_one_open_idx")
+      .on(t.listerUserId)
+      .where(sql`${t.status} not in ('unverified', 'verified', 'rejected', 'expired', 'suspended')`),
   ],
 );
 
@@ -491,11 +500,27 @@ export const verificationDocuments = pgTable(
     requestId: uuid("request_id")
       .notNull()
       .references(() => verificationRequests.id, { onDelete: "cascade" }),
-    storageKey: text("storage_key").notNull(),
+    storageKey: text("storage_key").notNull().unique(),
     documentType: text("document_type").notNull(),
+    /** Sanitised display label for admins only; never part of a storage key. */
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
     uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("verification_documents_request_idx").on(t.requestId)],
+  (t) => [
+    index("verification_documents_request_idx").on(t.requestId),
+    check(
+      "verification_documents_type_valid",
+      sql`${t.documentType} in ('national_id', 'earb_certificate', 'business_registration')`,
+    ),
+    check(
+      "verification_documents_content_type_valid",
+      sql`${t.contentType} in ('application/pdf', 'image/jpeg', 'image/png')`,
+    ),
+    check("verification_documents_size_range", sql`${t.sizeBytes} between 1 and 10485760`),
+    check("verification_documents_file_name_length", sql`char_length(${t.fileName}) between 1 and 120`),
+  ],
 );
 
 /** Append-only (enforced by trigger): submit, pay, view document, approve, reject, suspend, expire. */
@@ -511,7 +536,13 @@ export const verificationAuditLog = pgTable(
     reason: text("reason"),
     createdAt,
   },
-  (t) => [index("verification_audit_log_request_idx").on(t.requestId, t.createdAt)],
+  (t) => [
+    index("verification_audit_log_request_idx").on(t.requestId, t.createdAt),
+    check(
+      "verification_audit_log_action_valid",
+      sql`${t.action} in ('start', 'pay', 'upload', 'remove_document', 'submit', 'view_document', 'request_changes', 'approve', 'reject', 'suspend', 'credit', 'credit_skipped')`,
+    ),
+  ],
 );
 
 /* -------------------------------------------------------------------------- */

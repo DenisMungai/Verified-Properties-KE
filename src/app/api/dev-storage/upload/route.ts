@@ -2,6 +2,7 @@ import { getDevStorageSecret, getPrivateStore } from "@/lib/storage";
 import { verifyUploadToken } from "@/lib/storage/dev-disk";
 import { UPLOADS_PREFIX } from "@/lib/storage/keys";
 import { MAX_UPLOAD_BYTES } from "@/lib/storage/limits";
+import { MAX_DOCUMENT_BYTES } from "@/lib/verification/rules";
 import { readCapped, TooLargeError } from "@/lib/storage/object-store";
 
 /**
@@ -25,7 +26,7 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     // Node's web ReadableStream is async-iterable; the DOM lib types don't say so.
     const stream = request.body as unknown as AsyncIterable<Uint8Array>;
-    body = await readCapped(stream, Math.min(grant.contentLength, MAX_UPLOAD_BYTES));
+    body = await readCapped(stream, Math.min(grant.contentLength, Math.max(MAX_UPLOAD_BYTES, MAX_DOCUMENT_BYTES)));
   } catch (error) {
     if (error instanceof TooLargeError) return new Response("Too large.", { status: 413 });
     throw error;

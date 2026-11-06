@@ -92,3 +92,38 @@ export function baseKeyOfAvatarVariant(key: string): string | null {
   const match = /^(avatars\/[A-Za-z0-9_-]{1,64}\/[0-9a-f-]{36})-(?:128|384)\.webp$/i.exec(key);
   return match ? match[1] : null;
 }
+
+/* --------------------------- verification documents -------------------------- */
+
+/** Final home of verification documents in the PRIVATE bucket (prompt S12 decision 6). */
+export const VERIFICATION_PREFIX = "verification/";
+
+function verificationUploadPrefix(userId: string): string {
+  if (!SAFE_SEGMENT.test(userId)) throw new Error("Unsafe storage key segment");
+  // "verification" is never a UUID, so this can't overlap a listing upload prefix.
+  return `${UPLOADS_PREFIX}${userId}/verification/`;
+}
+
+/** A temporary upload; the orphan sweep removes it if it is never finalised. */
+export function newVerificationUploadKey(userId: string): string {
+  return `${verificationUploadPrefix(userId)}${randomUUID()}`;
+}
+
+/** True only for a verification upload key issued to this user. */
+export function isOwnVerificationUploadKey(key: string, userId: string): boolean {
+  let prefix: string;
+  try {
+    prefix = verificationUploadPrefix(userId);
+  } catch {
+    return false;
+  }
+  return key.startsWith(prefix) && UUID.test(key.slice(prefix.length));
+}
+
+/** `verification/<userId>/<requestId>/<documentId>`, all server-generated. */
+export function verificationDocumentKey(userId: string, requestId: string, documentId: string): string {
+  if (!SAFE_SEGMENT.test(userId) || !UUID.test(requestId) || !UUID.test(documentId)) {
+    throw new Error("Unsafe storage key segment");
+  }
+  return `${VERIFICATION_PREFIX}${userId}/${requestId}/${documentId}`;
+}

@@ -1,6 +1,7 @@
 import "server-only";
 import { referencedAvatarKeys } from "@/db/queries/lister-profiles";
 import { referencedBaseKeys } from "@/db/queries/listing-photos";
+import { referencedDocumentKeys } from "@/db/queries/verification";
 import { sweepOrphans } from "@/lib/storage/cleanup";
 import type { JobDeps, JobResult } from "./types";
 
@@ -12,7 +13,8 @@ export async function runStorageCleanup(deps: JobDeps): Promise<JobResult> {
     privateStore: deps.storage.private,
     referencedBaseKeys: (keys) => referencedBaseKeys(deps.db, keys),
     referencedAvatarKeys: (keys) => referencedAvatarKeys(deps.db, keys),
+    referencedDocumentKeys: (keys) => referencedDocumentKeys(deps.db, keys),
     now: deps.now(),
   });
-  return { status: "ok", counts: { uploadsDeleted: result.uploadsDeleted, imagesDeleted: result.imagesDeleted, avatarsDeleted: result.avatarsDeleted } };
+  return { status: "ok", counts: { uploadsDeleted: result.uploadsDeleted, imagesDeleted: result.imagesDeleted, avatarsDeleted: result.avatarsDeleted, documentsDeleted: result.documentsDeleted } };
 }

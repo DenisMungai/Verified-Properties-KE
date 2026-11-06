@@ -3,6 +3,7 @@ import { NavLink } from "@/components/layout/NavLink";
 const OVERVIEW = { href: "/admin", label: "Overview", exact: true } as const;
 const MODERATION_LINKS = [
   { href: "/admin/listings", label: "Listings queue", exact: false },
+  { href: "/admin/verification", label: "Verification", exact: false },
   { href: "/admin/reports", label: "Reports", exact: false },
 ] as const;
 /** Billing and platform admins both work on billing (prompt S10 decision 1). */

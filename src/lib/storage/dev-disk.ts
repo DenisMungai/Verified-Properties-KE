@@ -15,6 +15,7 @@ export type DevBucket = "public" | "private";
 export const DEV_STORAGE_ROOT = path.join(process.cwd(), ".data", "storage");
 export const DEV_UPLOAD_PATH = "/api/dev-storage/upload";
 export const DEV_PUBLIC_PATH = "/api/dev-storage/public";
+export const DEV_PRIVATE_PATH = "/api/dev-storage/private";
 
 /** Letters, digits, `/`, `_` and `-`, with an optional `.webp` suffix: no dots, so no `..`. */
 const KEY_PATTERN = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*(?:\.webp)?$/;
@@ -76,6 +77,32 @@ export function verifyUploadToken(token: string, secret: string, now = Date.now(
   return grant;
 }
 
+/* ------------------------------- read tokens ------------------------------- */
+
+/** Read grants are signed under a different prefix, so an upload token can never read and vice versa. */
+const READ_PREFIX = "read:";
+
+export function createReadToken(key: string, expiresAt: number, secret: string): string {
+  const payload = Buffer.from(JSON.stringify({ key, expiresAt })).toString("base64url");
+  return `${payload}.${sign(READ_PREFIX + payload, secret)}`;
+}
+
+/** The key a read token grants, or null if it is malformed, tampered with or expired. */
+export function verifyReadToken(token: string, secret: string, now = Date.now()): string | null {
+  const [payload, signature, extra] = token.split(".");
+  if (!payload || !signature || extra !== undefined) return null;
+  const expected = Buffer.from(sign(READ_PREFIX + payload, secret));
+  const given = Buffer.from(signature);
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  try {
+    const grant = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { key?: unknown; expiresAt?: unknown };
+    if (typeof grant.key !== "string" || typeof grant.expiresAt !== "number" || grant.expiresAt < now) return null;
+    return isSafeDevKey(grant.key) ? grant.key : null;
+  } catch {
+    return null;
+  }
+}
+
 /* ---------------------------------- store ---------------------------------- */
 
 async function walk(dir: string): Promise<string[]> {
@@ -104,6 +131,12 @@ export function createDevDiskStore(bucket: DevBucket, secret: string, root = DEV
         secret,
       );
       return `${DEV_UPLOAD_PATH}?t=${encodeURIComponent(token)}`;
+    },
+
+    async presignGet(key, expiresIn) {
+      if (bucket !== "private") throw new Error("Dev read links are for the private bucket only");
+      const token = createReadToken(key, Date.now() + expiresIn * 1000, secret);
+      return `${DEV_PRIVATE_PATH}?t=${encodeURIComponent(token)}`;
     },
 
     async get(key, maxBytes) {

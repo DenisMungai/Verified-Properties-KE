@@ -10,6 +10,11 @@ export interface StoredObject {
 export interface ObjectStore {
   /** A URL the browser can PUT one object to. Key, content type and length are all fixed. */
   presignPut(key: string, contentType: string, contentLength: number, expiresInSeconds: number): Promise<string>;
+  /**
+   * A short-lived URL to read one private object (S12: admins viewing verification documents).
+   * Served inline with the stored content type, never cached.
+   */
+  presignGet(key: string, expiresInSeconds: number): Promise<string>;
   /** Null when the object is missing; throws TooLargeError once it passes `maxBytes`. */
   get(key: string, maxBytes: number): Promise<Buffer | null>;
   put(key: string, body: Buffer, contentType: string, cacheControl?: string): Promise<void>;

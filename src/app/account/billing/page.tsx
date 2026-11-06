@@ -16,6 +16,7 @@ import { listingsUsingSlots } from "@/lib/billing/plan-schedule";
 import { formatNairobiDate } from "@/lib/format";
 import { getMpesaSettings } from "@/lib/mpesa";
 import { single, type SearchParams } from "@/lib/search-params";
+import { loadListerVerification } from "@/lib/verification/load";
 import { requireLister } from "../listings/guard";
 import { cancelScheduledChangeAction } from "./actions";
 
@@ -90,7 +91,7 @@ async function Billing({ searchParams }: { searchParams: SearchParams }) {
   const db = getDb();
   const now = new Date();
   const overview = await getBillingOverview(db, user.id, now);
-  const invoices = await listInvoices(db, overview.pool);
+  const [invoices, verification] = await Promise.all([listInvoices(db, overview.pool), loadListerVerification(db, user.id, now)]);
   const flash = FLASH[single(params.updated) ?? single(params.error) ?? ""];
   const paybill = getMpesaSettings()?.shortcode ?? null;
 
@@ -101,7 +102,7 @@ async function Billing({ searchParams }: { searchParams: SearchParams }) {
         <div className="xl:col-span-2">
           <CurrentPlanCard overview={overview} now={now} />
         </div>
-        <VerificationCard />
+        <VerificationCard view={verification?.view ?? null} />
       </div>
       <ScheduledNotice overview={overview} />
       <KeepChoice overview={overview} now={now} />

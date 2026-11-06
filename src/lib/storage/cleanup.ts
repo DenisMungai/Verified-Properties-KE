@@ -1,5 +1,5 @@
 import "server-only";
-import { AVATARS_PREFIX, baseKeyOfAvatarVariant, baseKeyOfVariant, LISTINGS_PREFIX, UPLOADS_PREFIX } from "./keys";
+import { AVATARS_PREFIX, baseKeyOfAvatarVariant, baseKeyOfVariant, LISTINGS_PREFIX, UPLOADS_PREFIX, VERIFICATION_PREFIX } from "./keys";
 import type { ObjectStore } from "./object-store";
 
 /** Objects younger than this are left alone: an upload or ingest may still be running. */
@@ -9,6 +9,7 @@ export interface SweepResult {
   uploadsDeleted: number;
   imagesDeleted: number;
   avatarsDeleted: number;
+  documentsDeleted: number;
 }
 
 /**
@@ -16,6 +17,7 @@ export interface SweepResult {
  * - temporary uploads older than 24 hours (finalize never ran)
  * - public variants older than 24 hours whose photo row is gone (a failed delete or insert)
  * - avatar variants older than 24 hours that no lister profile points at (prompt lister-avatars)
+ * - verification documents older than 24 hours with no document row (prompt S12 decision 6)
  * S9 calls this from a QStash job. `referencedBaseKeys` / `referencedAvatarKeys` return which base
  * keys are still in use.
  */
@@ -24,6 +26,8 @@ export async function sweepOrphans(args: {
   privateStore: ObjectStore;
   referencedBaseKeys: (baseKeys: string[]) => Promise<Set<string>>;
   referencedAvatarKeys: (baseKeys: string[]) => Promise<Set<string>>;
+  /** Which verification document keys still have a row; omit to skip the documents sweep. */
+  referencedDocumentKeys?: (keys: string[]) => Promise<Set<string>>;
   now?: Date;
 }): Promise<SweepResult> {
   const cutoff = (args.now ?? new Date()).getTime() - ORPHAN_AGE_MS;
@@ -51,5 +55,15 @@ export async function sweepOrphans(args: {
 
   const imagesDeleted = await sweepPublic(LISTINGS_PREFIX, baseKeyOfVariant, args.referencedBaseKeys);
   const avatarsDeleted = await sweepPublic(AVATARS_PREFIX, baseKeyOfAvatarVariant, args.referencedAvatarKeys);
-  return { uploadsDeleted: staleUploads.length, imagesDeleted, avatarsDeleted };
+
+  let documentsDeleted = 0;
+  if (args.referencedDocumentKeys) {
+    const oldDocuments = (await args.privateStore.list(VERIFICATION_PREFIX)).filter((o) => isOld(o.lastModified));
+    const keys = oldDocuments.map((o) => o.key);
+    const referenced = keys.length > 0 ? await args.referencedDocumentKeys(keys) : new Set<string>();
+    const orphaned = keys.filter((key) => !referenced.has(key));
+    await args.privateStore.delete(orphaned);
+    documentsDeleted = orphaned.length;
+  }
+  return { uploadsDeleted: staleUploads.length, imagesDeleted, avatarsDeleted, documentsDeleted };
 }

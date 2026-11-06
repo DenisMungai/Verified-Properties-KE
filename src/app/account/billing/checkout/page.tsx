@@ -9,13 +9,15 @@ import { getDb } from "@/db";
 import { getActivePlans } from "@/db/queries/billing";
 import { getBillingOverview } from "@/db/queries/billing-page";
 import { getListerProfile } from "@/db/queries/lister-profiles";
-import { paidAmountCovering } from "@/db/queries/payments";
+import { paidAmountCovering, type Plan } from "@/db/queries/payments";
+import { getVerificationSubscription } from "@/db/queries/verification";
 import { checkoutOption } from "@/lib/billing/plan-change";
 import { planFitsPool, planTerms } from "@/lib/billing/prepare-invoice";
 import { cardPaymentsEnabled } from "@/lib/card";
 import { formatNairobiDate } from "@/lib/format";
 import { getMpesaSettings } from "@/lib/mpesa";
 import { single, type SearchParams } from "@/lib/search-params";
+import { checkVerificationPurchase, VERIFICATION_PURCHASE_MESSAGES } from "@/lib/verification/purchase";
 import { requireLister } from "../../listings/guard";
 
 export const metadata: Metadata = { title: "Choose a plan" };
@@ -26,10 +28,68 @@ function localPhone(e164: string | null | undefined): string {
   return match ? `0${match[1]} ${match[2]} ${match[3]}` : "";
 }
 
+/**
+ * `?plan=verification` (prompt S12 decision 4): the verification add-on on its own. Paying opens
+ * a review; the server re-checks eligibility and prices it from `plans` when the payment starts.
+ */
+async function VerificationCheckout({ userId, plan, phone }: { userId: string; plan: Plan; phone: string }) {
+  const db = getDb();
+  const now = new Date();
+  const eligible = await checkVerificationPurchase(db, userId, now);
+  if (!eligible.ok) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FormAlert state={{ formError: VERIFICATION_PURCHASE_MESSAGES[eligible.code] }} />
+        <Link href="/account/verification" className={buttonClasses({ variant: "secondary", className: "self-start" })}>
+          Back to verification
+        </Link>
+      </div>
+    );
+  }
+  const mpesa = getMpesaSettings();
+  const cardsEnabled = cardPaymentsEnabled();
+  if (!mpesa && !cardsEnabled) {
+    return <FormAlert state={{ formError: "Payments are not set up yet. Please try again later." }} />;
+  }
+  const live = await getVerificationSubscription(db, userId);
+  const current = live ? { subscription: live.subscription, plan: planTerms(live.plan) } : null;
+  const option: CheckoutPlanOption = {
+    code: plan.code,
+    name: plan.name,
+    listingLimit: null,
+    summary: "Admin review of your documents, then the \"Profile verified\" badge while it's paid",
+    ...checkoutOption({ current, target: planTerms(plan), now, coveringPaidAmountKes: null }),
+  };
+  return (
+    <div className="flex flex-col gap-6">
+      <FormAlert state={{ message: "Paying starts your review. The badge appears only after an admin approves your documents." }} />
+      <CheckoutForm
+        options={[option]}
+        defaultCode={option.code}
+        defaultPhone={phone}
+        mpesaEnabled={mpesa !== null}
+        cardsEnabled={cardsEnabled}
+        paybill={mpesa?.shortcode ?? null}
+      />
+      <Link href="/account/verification" className="inline-flex min-h-control items-center self-start text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink">
+        What verification checks
+      </Link>
+    </div>
+  );
+}
+
 async function Checkout({ searchParams }: { searchParams: SearchParams }) {
   const [user, params] = await Promise.all([requireLister("/account/billing/checkout"), searchParams]);
   const db = getDb();
   const now = new Date();
+  const requestedCode = single(params.plan);
+  if (requestedCode) {
+    const verification = (await getActivePlans(db, "verification")).find((plan) => plan.code === requestedCode);
+    if (verification) {
+      const profile = await getListerProfile(db, user.id);
+      return <VerificationCheckout userId={user.id} plan={verification} phone={localPhone(profile?.phone)} />;
+    }
+  }
   const [overview, plans, profile] = await Promise.all([
     getBillingOverview(db, user.id, now),
     getActivePlans(db, "listing"),
@@ -106,18 +166,40 @@ function CheckoutSkeleton() {
   );
 }
 
+const BACK_TO_BILLING = (
+  <Link href="/account/billing" className={buttonClasses({ variant: "secondary", className: "self-start" })}>
+    Back to billing
+  </Link>
+);
+
+const LISTING_HEADING = (
+  <PageHeading
+    title="Choose a plan"
+    description="Pick the plan that fits how many listings you want live. Drafts stay free."
+    action={BACK_TO_BILLING}
+  />
+);
+
+/** The verification add-on gets its own heading; everything else is the plan picker. */
+async function CheckoutHeading({ searchParams }: { searchParams: SearchParams }) {
+  const requested = single((await searchParams).plan);
+  const isVerification = requested ? (await getActivePlans(getDb(), "verification")).some((plan) => plan.code === requested) : false;
+  if (!isVerification) return LISTING_HEADING;
+  return (
+    <PageHeading
+      title="Pay for verification"
+      description="Paying starts your review. You upload your documents next."
+      action={BACK_TO_BILLING}
+    />
+  );
+}
+
 export default function CheckoutPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <>
-      <PageHeading
-        title="Choose a plan"
-        description="Pick the plan that fits how many listings you want live. Drafts stay free."
-        action={
-          <Link href="/account/billing" className={buttonClasses({ variant: "secondary", className: "self-start" })}>
-            Back to billing
-          </Link>
-        }
-      />
+      <Suspense fallback={LISTING_HEADING}>
+        <CheckoutHeading searchParams={searchParams} />
+      </Suspense>
       <Suspense fallback={<CheckoutSkeleton />}>
         <Checkout searchParams={searchParams} />
       </Suspense>

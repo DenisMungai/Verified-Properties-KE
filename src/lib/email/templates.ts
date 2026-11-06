@@ -149,3 +149,56 @@ export function renewalReminderEmail(name: string, details: RenewalReminderDetai
 export function renewalReminderSms(details: Pick<RenewalReminderDetails, "planName" | "endsOn">, billingUrl: string): string {
   return `${BRAND.name}: your ${details.planName} plan ends ${details.endsOn}. Renew to keep your listings live: ${billingUrl}`;
 }
+
+export type VerificationEmailKind = "changes_requested" | "approved" | "rejected" | "suspended";
+
+const VERIFICATION_EMAILS: Record<VerificationEmailKind, { subject: string; heading: string; lead: string; action: string }> = {
+  changes_requested: {
+    subject: "Your verification needs changes",
+    heading: "Please update your documents",
+    lead: "our team reviewed your verification and needs a few changes before approving it.",
+    action: "Update documents",
+  },
+  approved: {
+    subject: "Your profile is verified",
+    heading: "Profile verified",
+    lead: "your verification was approved. Your listings now show the \"Profile verified\" badge and rank first.",
+    action: "View verification",
+  },
+  rejected: {
+    subject: "Your verification was not approved",
+    heading: "Verification not approved",
+    lead: "our team couldn't approve your verification.",
+    action: "View details",
+  },
+  suspended: {
+    subject: "Your verification is suspended",
+    heading: "Verification suspended",
+    lead: "your \"Profile verified\" badge has been suspended.",
+    action: "View details",
+  },
+};
+
+/**
+ * Verification decisions (prompt S12 decision 11). First name and the admin's reason only; no
+ * document details. The link goes to the signed-in verification page.
+ */
+export function verificationDecisionEmail(
+  name: string,
+  kind: VerificationEmailKind,
+  details: { reason?: string | null; creditNote?: string | null },
+  url: string,
+): EmailContent {
+  const copy = VERIFICATION_EMAILS[kind];
+  const body = `Hi ${firstName(name)}, ${copy.lead}`;
+  const rows = [
+    ...(details.reason ? ([["Reason", details.reason]] as const) : []),
+    ...(details.creditNote ? ([["Your fee", details.creditNote]] as const) : []),
+  ];
+  const footnote = "The badge says \"Profile verified\". It confirms the checks we made on your profile, not a licence or a guarantee about any property.";
+  return {
+    subject: copy.subject,
+    html: layout({ heading: copy.heading, body, actionLabel: copy.action, url, footnote, details: rows }),
+    text: [body, "", ...rows.map(([label, value]) => `${label}: ${value}`), "", `${copy.action}: ${url}`, "", footnote].join("\n"),
+  };
+}

@@ -15,6 +15,12 @@ import {
   type Invoice,
   type Plan,
 } from "@/db/queries/payments";
+import {
+  VERIFICATION_PURCHASE_MESSAGES,
+  attachVerificationInvoice,
+  checkVerificationPurchase,
+  type VerificationPurchaseRefusal,
+} from "@/lib/verification/purchase";
 import type { BillingDeps } from "./deps";
 import { classifyPlanChange, type PlanChangeKind, type PlanTerms } from "./plan-change";
 
@@ -23,9 +29,15 @@ import { classifyPlanChange, type PlanChangeKind, type PlanTerms } from "./plan-
  * which plan, and the open invoice to pay. Price, plan and owner always come from the database.
  */
 
-export type PurchaseRefusal = "no_profile" | "plan_not_found" | "plan_not_available" | "agency_admin_only";
+export type PurchaseRefusal =
+  | "no_profile"
+  | "plan_not_found"
+  | "plan_not_available"
+  | "agency_admin_only"
+  | VerificationPurchaseRefusal;
 
 export const PURCHASE_MESSAGES: Record<PurchaseRefusal | "use_schedule", string> = {
+  ...VERIFICATION_PURCHASE_MESSAGES,
   no_profile: "Set up your lister profile before choosing a plan.",
   plan_not_found: "That plan isn't available. Choose another plan.",
   plan_not_available: "That plan isn't available for your account.",
@@ -44,11 +56,21 @@ export function planFitsPool(plan: Plan, pool: ListingPool): boolean {
 
 export type ResolvedPurchase = { ok: true; pool: ListingPool; plan: Plan } | { ok: false; code: PurchaseRefusal };
 
-export async function resolvePurchase(db: DbExecutor, userId: string, planCode: string): Promise<ResolvedPurchase> {
+export async function resolvePurchase(
+  db: DbExecutor,
+  userId: string,
+  planCode: string,
+  now: Date = new Date(),
+): Promise<ResolvedPurchase> {
   if (!(await getListerProfile(db, userId))) return { ok: false, code: "no_profile" };
   const plan = await getActivePlanByCode(db, planCode);
   if (!plan) return { ok: false, code: "plan_not_found" };
-  // Verification is bought in Phase 2, where paying starts a review.
+  if (plan.kind === "verification") {
+    // Verification is per person, even for agency members (prompt S12 decision 3).
+    if (plan.priceKes <= 0) return { ok: false, code: "plan_not_available" };
+    const check = await checkVerificationPurchase(db, userId, now);
+    return check.ok ? { ok: true, pool: { kind: "user", userId }, plan } : check;
+  }
   const pool = await getListingPool(db, userId);
   if (pool.kind === "agency" && !(await isAgencyAdmin(db, userId, pool.agencyId))) {
     return { ok: false, code: "agency_admin_only" };
@@ -98,6 +120,8 @@ export async function preparePlanInvoice(
     if (reusable && inFlight && (await inFlight(tx, reusable, now))) return { ok: false, code: "in_flight" };
     const invoice =
       reusable ?? (await insertInvoice(tx, { subscriptionId: sub.id, planId: plan.id, amountKes: plan.priceKes }));
+    // Paying for verification opens a review request in the same transaction (prompt S12 decision 4).
+    if (plan.kind === "verification" && owner.kind === "user") await attachVerificationInvoice(tx, owner.userId, invoice.id, now);
     return { ok: true, invoice, kind };
   });
 }

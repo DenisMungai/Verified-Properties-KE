@@ -8,6 +8,7 @@ import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
 import { billingAttentionCounts } from "@/db/queries/billing-admin";
 import { adminCounts } from "@/db/queries/moderation";
+import { verificationCounts } from "@/db/queries/verification";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = { title: "Admin console", robots: { index: fal
 
 const QUICK_ACTIONS = [
   { href: "/admin/listings", label: "Review listings awaiting moderation" },
+  { href: "/admin/verification", label: "Review verification requests" },
   { href: "/admin/reports", label: "Review reported listings" },
   { href: "/admin/billing", label: "Payments and refunds" },
 ] as const;
@@ -38,13 +40,14 @@ async function Overview() {
       </div>
     );
   }
-  const counts = await adminCounts(getDb());
+  const [counts, verification] = await Promise.all([adminCounts(getDb()), verificationCounts(getDb())]);
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Published listings" value={counts.published} note="Live in search" />
         <StatCard label="Pending review" value={counts.pending} note="Needs moderation" href="/admin/listings" />
         <StatCard label="Open reports" value={counts.openReports} note="Reported by users" href="/admin/reports" />
+        <StatCard label="Verification reviews" value={verification.underReview} note="Check documents" href="/admin/verification" />
       </div>
       <section aria-labelledby="quick-actions" className="flex flex-col gap-3 rounded-lg bg-mint-50 p-5 md:p-6">
         <h2 id="quick-actions" className="text-title text-emerald-700">

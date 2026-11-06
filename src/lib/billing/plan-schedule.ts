@@ -52,9 +52,10 @@ async function managedPool(db: DbExecutor, userId: string): Promise<ListingPool 
 }
 
 export async function scheduleDowngrade(deps: Deps, userId: string, planCode: string): Promise<ScheduleResult> {
-  const purchase = await resolvePurchase(deps.db, userId, planCode);
+  const purchase = await resolvePurchase(deps.db, userId, planCode, deps.now());
   if (!purchase.ok) return fail(purchase.code);
   const { pool, plan } = purchase;
+  if (plan.kind !== "listing") return fail("plan_not_available");
   const now = deps.now();
 
   return deps.withTransaction(async (tx) => {

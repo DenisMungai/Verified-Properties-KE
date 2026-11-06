@@ -73,7 +73,7 @@ export async function startPlanPayment(
   );
   if (!limit.ok) return { ok: false, code: "rate_limited", message: tooManyAttemptsMessage(limit.retryAfterSeconds) };
 
-  const purchase = await resolvePurchase(deps.db, input.userId, input.planCode);
+  const purchase = await resolvePurchase(deps.db, input.userId, input.planCode, deps.now());
   if (!purchase.ok) return fail(purchase.code);
   const { pool, plan } = purchase;
 

@@ -74,6 +74,7 @@ describe.skipIf(!url)("core schema constraints", { timeout: 30_000 }, () => {
     expect(verification.rows.map((r) => r.v)).toEqual([
       "unverified",
       "payment_pending",
+      "documents_pending",
       "under_review",
       "verified",
       "rejected",
@@ -130,10 +131,10 @@ describe.skipIf(!url)("core schema constraints", { timeout: 30_000 }, () => {
     );
     const log = await client.query<{ id: string }>(
       `insert into verification_audit_log (request_id, actor_user_id, action)
-       values ($1, 'u_test', 'submitted') returning id`,
+       values ($1, 'u_test', 'submit') returning id`,
       [request.rows[0].id],
     );
-    await expectRejected("update verification_audit_log set action = 'approved' where id = $1", [
+    await expectRejected("update verification_audit_log set action = 'approve' where id = $1", [
       log.rows[0].id,
     ]);
   });

@@ -23,6 +23,7 @@ import {
   propertyImages,
   subscriptions,
   users,
+  verificationAuditLog,
   verificationRequests,
 } from "@/db/schema";
 import { ACTIVE_LISTING_STATUSES, DAY_MS } from "@/lib/billing/constants";
@@ -308,14 +309,19 @@ async function ensureVerifiedReview(tx: DbExecutor, userId: string, now: Date): 
   if (current) return "existing";
   const expires = new Date(now);
   expires.setUTCMonth(expires.getUTCMonth() + REVIEW_VALID_MONTHS);
-  await tx.insert(verificationRequests).values({
-    listerUserId: userId,
-    status: "verified",
-    submittedAt: now,
-    decidedAt: now,
-    decisionReason: SAMPLE_DECISION_REASON,
-    reviewExpiresAt: expires,
-  });
+  const [request] = await tx
+    .insert(verificationRequests)
+    .values({
+      listerUserId: userId,
+      status: "verified",
+      submittedAt: now,
+      decidedAt: now,
+      decisionReason: SAMPLE_DECISION_REASON,
+      reviewExpiresAt: expires,
+    })
+    .returning({ id: verificationRequests.id });
+  // The audit trail the S11 exit report found missing: no admin decided it, so no actor.
+  await tx.insert(verificationAuditLog).values({ requestId: request.id, actorUserId: null, action: "approve", reason: SAMPLE_DECISION_REASON });
   return "inserted";
 }
 
@@ -457,8 +463,10 @@ async function seedLister(deps: SeedDeps, cache: PhotoCache, prefix: string, pla
     result = await deps.withTransaction(async (tx) => {
       const { user, avatarKey } = await upsertUserAndProfile(tx, plan);
       const listingPlan = await ensurePaidSubscription(tx, plan.userId, plan.listingPlan, now);
-      const verification = plan.verificationPlan ? await ensurePaidSubscription(tx, plan.userId, plan.verificationPlan, now) : "-";
+      // The review first: with an approved review in place, the verification payment only renews
+      // the badge and opens no new request (prompt S12 decision 3).
       const verificationReview = plan.lister.verified ? await ensureVerifiedReview(tx, plan.userId, now) : "-";
+      const verification = plan.verificationPlan ? await ensurePaidSubscription(tx, plan.userId, plan.verificationPlan, now) : "-";
 
       const unusedKeys: string[] = [];
       let inserted = 0;

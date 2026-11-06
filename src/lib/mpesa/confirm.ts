@@ -18,6 +18,7 @@ import {
 import { invoices } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { planChangeAtConfirmation, type PlanTerms } from "@/lib/billing/plan-change";
+import { onVerificationPaid } from "@/lib/verification/purchase";
 import { wholeKes } from "./payloads";
 import type { ClosedStatus } from "./result-codes";
 
@@ -158,6 +159,10 @@ export async function confirmPayment(
   const plan = change.planId === invoicePlan.id ? invoicePlan : currentPlan;
   if (plan.kind === "listing" && plan.listingLimit !== null) {
     restoredListingIds = await restorePausedListings(tx, ownerOf(sub), plan.listingLimit, confirmedAt);
+  }
+  // Paying for verification moves the review on to documents; it never grants the badge (S12).
+  if (plan.kind === "verification" && sub.ownerUserId) {
+    await onVerificationPaid(tx, sub.ownerUserId, invoice.id, confirmedAt);
   }
 
   await statusChange(tx, payment, { entity: "payment", from: payment.status, to: "confirmed", receipt: receipt ?? payment.providerReference });

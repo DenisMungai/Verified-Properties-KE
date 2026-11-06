@@ -228,9 +228,10 @@ describe.skipIf(!url)("M-Pesa payments (integration)", { timeout: 60_000 }, () =
     expect(second.paymentId).not.toBe(first.paymentId);
   });
 
-  it("refuses verification plans, the agency plan for a user pool, and unknown plans", async () => {
+  it("refuses verification without a listing plan, the agency plan for a user pool, and unknown plans", async () => {
     const userId = await insertUser("pay_u_rules");
-    expect(await start(userId, "t_pay_verify")).toMatchObject({ ok: false, code: "plan_not_available" });
+    // S12: verification is on sale, but only to listers whose listing plan is in good standing.
+    expect(await start(userId, "t_pay_verify")).toMatchObject({ ok: false, code: "listing_plan_required" });
     expect(await start(userId, "t_pay_agency")).toMatchObject({ ok: false, code: "plan_not_available" });
     expect(await start(userId, "t_pay_nope")).toMatchObject({ ok: false, code: "plan_not_found" });
     expect(await start(userId, "t_pay_starter", "12345")).toMatchObject({ ok: false, code: "invalid_phone" });

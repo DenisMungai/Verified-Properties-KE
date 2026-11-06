@@ -41,6 +41,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   close_payment: "Closed, no money kept",
   credit_from_payment: "Payment turned into plan days",
   credit_days: "Goodwill credit",
+  verification_credit: "Rejected verification fee turned into plan days",
 };
 
 export function flagReasonLabel(reason: string | null): string {

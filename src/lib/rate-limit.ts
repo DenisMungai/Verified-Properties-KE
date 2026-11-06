@@ -28,6 +28,8 @@ export const POLICIES = {
   inquiryPerUser: { name: "inquiry:user", limit: 10, windowSeconds: 60 * 60 },
   reportPerUser: { name: "report:user", limit: 10, windowSeconds: 60 * 60 },
   favoritePerUser: { name: "favorite:user", limit: 120, windowSeconds: 60 * 60 },
+  verificationUploadPerUser: { name: "verification-upload:user", limit: 30, windowSeconds: 60 * 60 },
+  verificationSubmitPerUser: { name: "verification-submit:user", limit: 10, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface LimitResult {

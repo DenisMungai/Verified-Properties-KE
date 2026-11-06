@@ -43,6 +43,13 @@
       "when": 1793778233620,
       "tag": "0005_admin_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793950823184,
+      "tag": "0006_verification",
+      "breakpoints": true
     }
   ]
 }

@@ -38,7 +38,7 @@ describe("sweepOrphans", () => {
       referencedAvatarKeys: async () => new Set(),
     });
 
-    expect(result).toEqual({ uploadsDeleted: 1, imagesDeleted: 3, avatarsDeleted: 0 });
+    expect(result).toEqual({ uploadsDeleted: 1, imagesDeleted: 3, avatarsDeleted: 0, documentsDeleted: 0 });
     expect([...privateStore.objects.keys()].sort()).toEqual([`uploads/u_owner/${listing}/bbbb`, "verification/u_owner/doc"]);
     expect([...publicStore.objects.keys()].sort()).toEqual([...variantKeys(kept), ...variantKeys(fresh)].sort());
     expect(asked).toEqual([[kept, orphan]]);
@@ -63,8 +63,35 @@ describe("sweepOrphans", () => {
       referencedAvatarKeys: async (keys) => new Set(keys.filter((key) => key === current)),
     });
 
-    expect(result).toEqual({ uploadsDeleted: 1, imagesDeleted: 0, avatarsDeleted: 2 });
+    expect(result).toEqual({ uploadsDeleted: 1, imagesDeleted: 0, avatarsDeleted: 2, documentsDeleted: 0 });
     expect([...privateStore.objects.keys()]).toEqual([]);
     expect([...publicStore.objects.keys()].sort()).toEqual([...avatarVariantKeys(current), ...avatarVariantKeys(justUploaded)].sort());
+  });
+  it("deletes old verification documents with no row and keeps recorded and recent ones (S12)", async () => {
+    const privateStore = createMemoryStore();
+    const publicStore = createMemoryStore();
+    const recorded = "verification/u_owner/req/recorded";
+    const abandoned = "verification/u_owner/req/abandoned";
+    const inFlight = "verification/u_owner/req/in-flight";
+    seed(privateStore, recorded, old);
+    seed(privateStore, abandoned, old);
+    seed(privateStore, inFlight, recent);
+
+    const asked: string[][] = [];
+    const result = await sweepOrphans({
+      privateStore,
+      publicStore,
+      now,
+      referencedBaseKeys: async () => new Set(),
+      referencedAvatarKeys: async () => new Set(),
+      referencedDocumentKeys: async (keys) => {
+        asked.push([...keys].sort());
+        return new Set(keys.filter((key) => key === recorded));
+      },
+    });
+
+    expect(result.documentsDeleted).toBe(1);
+    expect([...privateStore.objects.keys()].sort()).toEqual([inFlight, recorded].sort());
+    expect(asked).toEqual([[abandoned, recorded]]);
   });
 });

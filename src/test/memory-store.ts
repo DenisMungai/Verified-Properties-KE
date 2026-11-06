@@ -14,6 +14,9 @@ export function createMemoryStore(): ObjectStore & { objects: Map<string, Memory
     async presignPut(key, contentType, contentLength) {
       return `memory://${key}?type=${encodeURIComponent(contentType)}&length=${contentLength}`;
     },
+    async presignGet(key, expiresIn) {
+      return `memory://${key}?get=1&expires=${expiresIn}`;
+    },
     async get(key, maxBytes) {
       const found = objects.get(key);
       if (!found) return null;

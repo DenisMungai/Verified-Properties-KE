@@ -43,6 +43,18 @@ export function createS3Store(config: S3StoreConfig): ObjectStore {
         { expiresIn, signableHeaders: new Set(["content-type", "content-length"]) },
       ),
 
+    presignGet: (key, expiresIn) =>
+      getSignedUrl(
+        client,
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          ResponseContentDisposition: "inline",
+          ResponseCacheControl: "private, no-store",
+        }),
+        { expiresIn },
+      ),
+
     async get(key, maxBytes) {
       let res;
       try {

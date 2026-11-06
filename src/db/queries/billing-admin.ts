@@ -273,7 +273,8 @@ export type AuditAction =
   | "refund_paybill"
   | "close_payment"
   | "credit_from_payment"
-  | "credit_days";
+  | "credit_days"
+  | "verification_credit";
 
 /** Append-only (trigger); written in the same transaction as the action it records. */
 export async function insertBillingAudit(

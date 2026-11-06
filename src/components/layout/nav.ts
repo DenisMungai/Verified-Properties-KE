@@ -20,6 +20,7 @@ export function accountLinks(user: HeaderUser) {
       ? [
           { href: "/account/listings", label: "My listings" },
           { href: "/account/inquiries", label: "Inquiries" },
+          { href: "/account/verification", label: "Verification" },
           { href: "/account/billing", label: "Subscription & billing" },
         ]
       : []),

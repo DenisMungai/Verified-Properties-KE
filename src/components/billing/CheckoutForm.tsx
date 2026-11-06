@@ -19,6 +19,8 @@ export interface CheckoutPlanOption {
   code: string;
   name: string;
   listingLimit: number | null;
+  /** Shown instead of the listing limit (the verification add-on has none). */
+  summary?: string;
   kind: PlanChangeKind;
   /** What paying now costs; 0 for a scheduled downgrade. Display only: the server prices it. */
   payKes: number;
@@ -155,7 +157,7 @@ export function CheckoutForm({
                       </span>
                     )}
                   </span>
-                  <span className="text-small text-slate-600">{listingLimitLine(option.listingLimit)}</span>
+                  <span className="text-small text-slate-600">{option.summary ?? listingLimitLine(option.listingLimit)}</span>
                   <span className="text-body font-semibold tabular">
                     {option.kind === "downgrade" ? "Nothing to pay now" : `${formatKes(option.payKes)} / 30 days`}
                   </span>
