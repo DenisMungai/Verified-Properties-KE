@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { Heart, Phone, Plus, UserRound } from "lucide-react";
+import { ComparisonPanel, EngagementCards } from "@/components/account/ListerStats";
 import { PageHeading } from "@/components/account/PageHeading";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { planUsageSummary } from "@/components/listings/PlanUsagePanel";
-import { Badge, EmptyState, Skeleton, buttonClasses } from "@/components/ui";
+import { Badge, EmptyState, Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { getListingPlanUsage, type ListingPlanUsage } from "@/db/queries/billing";
 import { getListerProfile } from "@/db/queries/lister-profiles";
@@ -15,11 +16,44 @@ import { greetingFor } from "@/lib/greeting";
 import { displayKenyanPhone } from "@/lib/kenya";
 import { LISTER_ROLES, LISTER_TYPE_LABELS, hasAnyRole } from "@/lib/roles";
 import { requireUser } from "@/lib/session";
+import { loadListerStats } from "@/lib/stats/load";
+import { loadListerVerification } from "@/lib/verification/load";
+import { viewBadge, type ListerView } from "@/lib/verification/view";
 import type { SearchParams } from "@/lib/search-params";
 
 export const metadata: Metadata = { title: "Your account" };
 
-/** Design "01 — Lister Dashboard" stat card. Other cards (enquiries, views) arrive with their data. */
+/** One read per request, shared by the stat cards, the comparison panel and the profile badge. */
+const getStats = cache((userId: string) => loadListerStats(getDb(), userId, new Date()));
+const getVerificationView = cache(async (userId: string): Promise<ListerView | null> => {
+  const data = await loadListerVerification(getDb(), userId, new Date());
+  return data?.view ?? null;
+});
+
+async function StatCards({ userId }: { userId: string }) {
+  const [stats, verification] = await Promise.all([getStats(userId), getVerificationView(userId)]);
+  return <EngagementCards stats={stats} verification={verification} />;
+}
+
+async function SinceVerified({ userId }: { userId: string }) {
+  const stats = await getStats(userId);
+  if (stats.comparison.kind === "none") return null;
+  return (
+    <div className="mb-4">
+      <ComparisonPanel comparison={stats.comparison} />
+    </div>
+  );
+}
+
+/** The derived badge (S2 view), never a stored flag; "Profile verified" only while it's live. */
+async function ProfileBadge({ userId }: { userId: string }) {
+  const view = await getVerificationView(userId);
+  if (view?.state === "verified" && view.badgeLive) return <VerifiedBadge />;
+  const pill = view ? viewBadge(view) : { label: "Not verified", tone: "neutral" as const };
+  return <Badge tone={pill.tone}>{pill.label}</Badge>;
+}
+
+/** Design "01 — Lister Dashboard" stat card. */
 function ActiveListingsCard({ usage }: { usage: ListingPlanUsage }) {
   const { headline, detail } = planUsageSummary(usage);
   const hasPlan = usage.limit !== null;
@@ -62,7 +96,7 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
       <PageHeading
         title={`${greetingFor(new Date())}, ${firstName(user.name)}`}
         description={
-          isLister ? "Your listings, profile and account at a glance." : "Your saved homes and account at a glance."
+          isLister ? "Your properties, enquiries and verification at a glance." : "Your saved homes and account at a glance."
         }
         action={
           usage ? (
@@ -80,9 +114,17 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
         />
       )}
       {usage && (
-        <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <ActiveListingsCard usage={usage} />
-        </div>
+        <>
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <ActiveListingsCard usage={usage} />
+            <Suspense fallback={<StatCardsSkeleton />}>
+              <StatCards userId={user.id} />
+            </Suspense>
+          </div>
+          <Suspense fallback={null}>
+            <SinceVerified userId={user.id} />
+          </Suspense>
+        </>
       )}
       <div className="grid gap-4 xl:grid-cols-2">
         {profile ? (
@@ -94,8 +136,9 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
                 </h2>
                 <p className="text-small text-slate-600">{LISTER_TYPE_LABELS[profile.listerType]}</p>
               </div>
-              {/* The badge is derived from review + subscriptions (S2); nobody is verified yet. */}
-              <Badge>Not verified</Badge>
+              <Suspense fallback={<Skeleton className="h-6 w-28 rounded-full" />}>
+                <ProfileBadge userId={user.id} />
+              </Suspense>
             </div>
             {profile.phone && (
               <p className="flex items-center gap-2 text-small text-ink">
@@ -134,6 +177,16 @@ async function Overview({ searchParams }: { searchParams: SearchParams }) {
           }
         />
       </div>
+    </>
+  );
+}
+
+function StatCardsSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }, (_, i) => (
+        <Skeleton key={i} className="h-40 rounded-lg" />
+      ))}
     </>
   );
 }

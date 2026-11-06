@@ -30,6 +30,8 @@ export const POLICIES = {
   favoritePerUser: { name: "favorite:user", limit: 120, windowSeconds: 60 * 60 },
   verificationUploadPerUser: { name: "verification-upload:user", limit: 30, windowSeconds: 60 * 60 },
   verificationSubmitPerUser: { name: "verification-submit:user", limit: 10, windowSeconds: 60 * 60 },
+  /** Not abuse protection: counts one property view per visitor and listing per 30 minutes (S13). */
+  listingViewPerVisitor: { name: "listing-view:visitor", limit: 1, windowSeconds: 30 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface LimitResult {

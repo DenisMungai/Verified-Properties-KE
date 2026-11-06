@@ -5,6 +5,7 @@ import { runPlanChanges } from "./plan-changes";
 import { runReconciliation } from "./reconciliation";
 import { runRenewalReminders } from "./renewal-reminders";
 import { runStorageCleanup } from "./storage-cleanup";
+import { runVerificationLifecycle } from "./verification-lifecycle";
 import { JOB_SCHEDULES } from "./schedules";
 import type { JobDeps, JobName, JobRun, JobSummary } from "./types";
 
@@ -16,6 +17,7 @@ export const JOBS: Record<JobName, JobRun> = {
   "payment-checks": runPaymentChecks,
   reconciliation: runReconciliation,
   "storage-cleanup": runStorageCleanup,
+  "verification-lifecycle": runVerificationLifecycle,
 };
 
 export { JOB_SCHEDULES };

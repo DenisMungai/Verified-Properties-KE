@@ -4,8 +4,9 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { StorageNotConfiguredError } from "@/lib/storage/object-store";
-import { getListerDeps, VERIFICATION_PATH } from "@/lib/verification/app-deps";
+import { getDecisionDeps, getListerDeps, VERIFICATION_PATH } from "@/lib/verification/app-deps";
 import { finalizeDocument, removeDocument, requestDocumentUpload, submitForReview } from "@/lib/verification/lister";
+import { startRereview } from "@/lib/verification/rereview";
 import {
   DOCUMENT_MIME_TYPES,
   DOCUMENT_REJECT_MESSAGES,
@@ -114,4 +115,22 @@ export async function submitVerificationAction(): Promise<VerificationActionResu
   }
   refresh();
   return { ok: true, message: "Submitted. We'll review your documents, usually within 2 working days." };
+}
+
+/**
+ * Starts a free re-review (prompt S13 decisions 3–4). Takes nothing from the browser: eligibility
+ * and the review being renewed are worked out from the session user's own records.
+ */
+export async function startRereviewAction(): Promise<VerificationActionResult> {
+  const user = await requireLister(VERIFICATION_PATH);
+  try {
+    const limit = await checkRateLimits([[POLICIES.verificationSubmitPerUser, rateLimitKey(user.id)]]);
+    if (!limit.ok) return { ok: false, error: tooManyAttemptsMessage(limit.retryAfterSeconds) };
+    const result = await startRereview(getDecisionDeps(), user.id);
+    if (!result.ok) return { ok: false, error: result.message };
+  } catch (error) {
+    return failure(error, "start re-review");
+  }
+  refresh();
+  return { ok: true, message: "Re-review started. Upload your documents below, then submit." };
 }

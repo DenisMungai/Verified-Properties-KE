@@ -1,5 +1,5 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { and, eq, gt, inArray, isNull, like } from "drizzle-orm";
 import sharp from "sharp";
 import type { DbExecutor } from "@/db/executor";
@@ -23,10 +23,12 @@ import {
   propertyImages,
   subscriptions,
   users,
+  listingViewDays,
   verificationAuditLog,
   verificationRequests,
 } from "@/db/schema";
 import { ACTIVE_LISTING_STATUSES, DAY_MS } from "@/lib/billing/constants";
+import { nairobiDay } from "@/lib/stats/engagement";
 import { confirmPayment } from "@/lib/mpesa/confirm";
 import { listerRoleFor } from "@/lib/roles";
 import { processAvatar, processImage, type ProcessedAvatarVariant, type ProcessedImage } from "@/lib/storage/image-processing";
@@ -423,6 +425,21 @@ async function insertListing(
   return true;
 }
 
+/** Sample view counters (prompt S13 decision 14): 0–40 a day for the last 60 Nairobi days. */
+export const SAMPLE_VIEW_DAYS = 60;
+
+async function insertSampleViews(tx: DbExecutor, propertyId: string, now: Date): Promise<void> {
+  // Deterministic per listing and day, so a re-seed of the same listing would write the same numbers.
+  const seed = createHash("sha256").update(propertyId).digest();
+  await tx.insert(listingViewDays).values(
+    Array.from({ length: SAMPLE_VIEW_DAYS }, (_, i) => ({
+      propertyId,
+      day: nairobiDay(new Date(now.getTime() - i * DAY_MS)),
+      views: seed[i % seed.length] % 41,
+    })),
+  ).onConflictDoNothing();
+}
+
 async function seedLister(deps: SeedDeps, cache: PhotoCache, prefix: string, plan: ListerPlan): Promise<ListerSeedReport> {
   const { db, publicStore } = deps;
   const now = deps.now();
@@ -482,6 +499,18 @@ async function seedLister(deps: SeedDeps, cache: PhotoCache, prefix: string, pla
         }
       }
       if (uploads.avatarBaseKey && avatarKey !== uploads.avatarBaseKey) unusedKeys.push(...avatarVariantKeys(uploads.avatarBaseKey));
+      // View counters for every published SAMPLE listing, new or already there; existing days are kept.
+      const published = await tx
+        .select({ id: properties.id })
+        .from(properties)
+        .where(
+          and(
+            eq(properties.ownerUserId, plan.userId),
+            eq(properties.status, "published"),
+            inArray(properties.slug, SAMPLE_LISTINGS.filter((l) => l.lister === plan.lister.key).map((l) => sampleSlug(prefix, l))),
+          ),
+        );
+      for (const row of published) await insertSampleViews(tx, row.id, now);
 
       return {
         report: {
@@ -608,6 +637,7 @@ async function removeLister(tx: DbExecutor, userId: string, now: Date): Promise<
     archived = [...new Set([...moderated, ...discussed].map((row) => row.id))];
     if (archived.length > 0) {
       await tx.delete(propertyImages).where(inArray(propertyImages.propertyId, archived));
+      await tx.delete(listingViewDays).where(inArray(listingViewDays.propertyId, archived));
       await tx
         .update(properties)
         .set({ status: "archived", pausedAt: null, pauseReason: null })
@@ -633,7 +663,7 @@ async function removeLister(tx: DbExecutor, userId: string, now: Date): Promise<
     .returning({ id: subscriptions.id });
   const expired = await tx
     .update(verificationRequests)
-    .set({ status: "expired" })
+    .set({ status: "expired", endedAt: now })
     .where(and(eq(verificationRequests.listerUserId, userId), eq(verificationRequests.status, "verified")))
     .returning({ id: verificationRequests.id });
 

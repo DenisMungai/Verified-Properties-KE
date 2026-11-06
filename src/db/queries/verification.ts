@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import {
   agencies,
@@ -124,9 +124,31 @@ export async function lockRequest(tx: DbExecutor, id: string): Promise<Verificat
   return row ?? null;
 }
 
+/** The lister's most recent approved review, current or ended (`verified` or `expired`). */
+export async function getLastApprovedRequest(db: DbExecutor, userId: string): Promise<VerificationRequest | null> {
+  const [row] = await db
+    .select()
+    .from(vr)
+    .where(and(eq(vr.listerUserId, userId), inArray(vr.status, ["verified", "expired"]), isNotNull(vr.decidedAt)))
+    .orderBy(desc(vr.decidedAt))
+    .limit(1);
+  return row ?? null;
+}
+
+/** When the lister was first approved (the "since you were verified" baseline), or null. */
+export async function getFirstApprovalAt(db: DbExecutor, userId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ at: vr.decidedAt })
+    .from(vr)
+    .where(and(eq(vr.listerUserId, userId), inArray(vr.status, ["verified", "expired"]), isNotNull(vr.decidedAt)))
+    .orderBy(asc(vr.decidedAt))
+    .limit(1);
+  return row?.at ?? null;
+}
+
 export async function insertRequest(
   tx: DbExecutor,
-  values: { listerUserId: string; status: VerificationStatus; invoiceId: string | null },
+  values: { listerUserId: string; status: VerificationStatus; invoiceId: string | null; renewsRequestId?: string | null },
 ): Promise<VerificationRequest> {
   const [row] = await tx.insert(vr).values(values).returning();
   return row;
@@ -135,7 +157,12 @@ export async function insertRequest(
 export async function updateRequest(
   tx: DbExecutor,
   id: string,
-  values: Partial<Pick<VerificationRequest, "status" | "invoiceId" | "submittedAt" | "decidedAt" | "decidedBy" | "decisionReason" | "reviewExpiresAt">>,
+  values: Partial<
+    Pick<
+      VerificationRequest,
+      "status" | "invoiceId" | "submittedAt" | "decidedAt" | "decidedBy" | "decisionReason" | "reviewExpiresAt" | "endedAt" | "documentsPurgedAt"
+    >
+  >,
 ): Promise<void> {
   await tx.update(vr).set(values).where(eq(vr.id, id));
 }
@@ -226,7 +253,7 @@ export async function referencedDocumentKeys(db: DbExecutor, keys: string[]): Pr
 /* Admin                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export type QueueTab = "under_review" | "documents_pending" | "verified" | "rejected" | "suspended";
+export type QueueTab = "under_review" | "documents_pending" | "verified" | "expired" | "rejected" | "suspended";
 
 export interface QueueRow {
   id: string;
@@ -237,6 +264,8 @@ export interface QueueRow {
   submittedAt: Date | null;
   decidedAt: Date | null;
   updatedAt: Date;
+  /** Set on a re-review (S13). */
+  renewsRequestId: string | null;
 }
 
 const QUEUE_LIMIT = 200;
@@ -254,6 +283,7 @@ export async function verificationQueue(db: DbExecutor, tab: QueueTab): Promise<
       submittedAt: vr.submittedAt,
       decidedAt: vr.decidedAt,
       updatedAt: vr.updatedAt,
+      renewsRequestId: vr.renewsRequestId,
     })
     .from(vr)
     .innerJoin(users, eq(users.id, vr.listerUserId))

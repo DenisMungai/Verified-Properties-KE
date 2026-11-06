@@ -118,6 +118,8 @@ export function paymentReceiptEmail(name: string, receipt: PaymentReceiptDetails
 
 export interface RenewalReminderDetails {
   planName: string;
+  /** Which plan is ending (S13 decision 8). Defaults to a listing plan. */
+  planKind?: "listing" | "verification";
   /** "5d": five days before the period end; "1d": the day before. */
   reminder: "5d" | "1d";
   /** "5 Dec 2026", already formatted in Nairobi time. */
@@ -129,9 +131,11 @@ export interface RenewalReminderDetails {
 /** Renewal reminders 5 days and 1 day before a listing plan ends (prompt S9 decision 9). */
 export function renewalReminderEmail(name: string, details: RenewalReminderDetails, url: string): EmailContent {
   const when = details.reminder === "1d" ? "tomorrow" : "in 5 days";
-  const body =
-    `Hi ${firstName(name)}, your ${details.planName} plan ends ${when}, on ${details.endsOn}. ` +
-    "Your listings stay live for 3 days after that, then they're paused until you renew.";
+  const after =
+    details.planKind === "verification"
+      ? "Your \"Profile verified\" badge stays for 3 days after that, then it's hidden until you renew."
+      : "Your listings stay live for 3 days after that, then they're paused until you renew.";
+  const body = `Hi ${firstName(name)}, your ${details.planName} plan ends ${when}, on ${details.endsOn}. ${after}`;
   const rows = [
     ["Plan", details.planName],
     ["Ends on", details.endsOn],
@@ -146,11 +150,51 @@ export function renewalReminderEmail(name: string, details: RenewalReminderDetai
 }
 
 /** The SMS version: no name, under 160 characters with a typical plan name and app URL. */
-export function renewalReminderSms(details: Pick<RenewalReminderDetails, "planName" | "endsOn">, billingUrl: string): string {
-  return `${BRAND.name}: your ${details.planName} plan ends ${details.endsOn}. Renew to keep your listings live: ${billingUrl}`;
+export function renewalReminderSms(details: Pick<RenewalReminderDetails, "planName" | "endsOn" | "planKind">, billingUrl: string): string {
+  const keep = details.planKind === "verification" ? "your Profile verified badge" : "your listings live";
+  return `${BRAND.name}: your ${details.planName} plan ends ${details.endsOn}. Renew to keep ${keep}: ${billingUrl}`;
 }
 
-export type VerificationEmailKind = "changes_requested" | "approved" | "rejected" | "suspended";
+/* Verification lifecycle (prompt S13 decision 9): first name, a date and a link; nothing else. */
+
+export interface RereviewDetails {
+  /** "30d" or "7d" before the review ends. */
+  reminder: "30d" | "7d";
+  /** "5 Dec 2026", already formatted in Nairobi time. */
+  endsOn: string;
+}
+
+export function rereviewDueEmail(name: string, details: RereviewDetails, url: string): EmailContent {
+  const when = details.reminder === "7d" ? "in 7 days" : "in 30 days";
+  const body =
+    `Hi ${firstName(name)}, your verification review ends ${when}, on ${details.endsOn}. ` +
+    "Start your re-review now and upload fresh documents. It's included in your verification plan, and your badge stays while we check.";
+  const rows = [["Review ends on", details.endsOn]] as const;
+  const footnote = "Reviews are valid for 12 months. Without a new review, the \"Profile verified\" badge comes off when this one ends.";
+  return {
+    subject: `Your verification review ends ${when}`,
+    html: layout({ heading: "Time for your re-review", body, actionLabel: "Start re-review", url, footnote, details: rows }),
+    text: [body, "", ...rows.map(([label, value]) => `${label}: ${value}`), "", `Start re-review: ${url}`, "", footnote].join("\n"),
+  };
+}
+
+export function rereviewDueSms(details: RereviewDetails, url: string): string {
+  return `${BRAND.name}: your verification review ends ${details.endsOn}. Start your re-review to keep your badge: ${url}`;
+}
+
+export function verificationExpiredEmail(name: string, details: { endedOn: string }, url: string): EmailContent {
+  const body =
+    `Hi ${firstName(name)}, your verification review ended on ${details.endedOn}, so your "Profile verified" badge is no longer shown. ` +
+    "Start a re-review to get it back.";
+  const footnote = "If your verification plan is still paid up, the re-review is included.";
+  return {
+    subject: "Your verification review has ended",
+    html: layout({ heading: "Verification review ended", body, actionLabel: "Start re-review", url, footnote }),
+    text: [body, "", `Start re-review: ${url}`, "", footnote].join("\n"),
+  };
+}
+
+export type VerificationEmailKind = "changes_requested" | "approved" | "rejected" | "rereview_rejected" | "suspended";
 
 const VERIFICATION_EMAILS: Record<VerificationEmailKind, { subject: string; heading: string; lead: string; action: string }> = {
   changes_requested: {
@@ -169,6 +213,12 @@ const VERIFICATION_EMAILS: Record<VerificationEmailKind, { subject: string; head
     subject: "Your verification was not approved",
     heading: "Verification not approved",
     lead: "our team couldn't approve your verification.",
+    action: "View details",
+  },
+  rereview_rejected: {
+    subject: "Your re-review was not approved",
+    heading: "Re-review not approved",
+    lead: "our team couldn't approve your re-review. Your current review stays valid until it ends, and you can start another re-review with updated documents.",
     action: "View details",
   },
   suspended: {

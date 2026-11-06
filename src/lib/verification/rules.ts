@@ -110,7 +110,8 @@ export function isOpenStatus(status: VerificationStatus): boolean {
 const TRANSITIONS: Record<VerificationStatus, readonly VerificationStatus[]> = {
   unverified: [],
   payment_pending: ["documents_pending"],
-  documents_pending: ["under_review"],
+  // → rejected only when a suspension closes an open re-review (S13 decision 6); never offered in the UI.
+  documents_pending: ["under_review", "rejected"],
   under_review: ["verified", "documents_pending", "rejected"],
   verified: ["suspended", "expired"],
   rejected: [],
@@ -168,6 +169,10 @@ export const AUDIT_ACTIONS = [
   "suspend",
   "credit",
   "credit_skipped",
+  "rereview",
+  "expire",
+  "supersede",
+  "purge_documents",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -184,7 +189,70 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   suspend: "Suspended",
   credit: "Fee credited to listing plan",
   credit_skipped: "Credit not applied",
+  rereview: "Re-review started",
+  expire: "Review expired",
+  supersede: "Replaced by a newer review",
+  purge_documents: "Documents deleted (retention)",
 };
+
+/* -------------------------------------------------------------------------- */
+/* Re-review (prompt S13 decisions 3–4)                                       */
+/* -------------------------------------------------------------------------- */
+
+/** A re-review can start this many days before the current review ends (and any time after). */
+export const REREVIEW_WINDOW_DAYS = 30;
+
+const DAY = 24 * 60 * 60 * 1000;
+
+export type RereviewRefusal =
+  | "no_approved_review"
+  | "too_early"
+  | "request_open"
+  | "suspended"
+  | "verification_plan_inactive"
+  | "listing_plan_inactive";
+
+export const REREVIEW_MESSAGES: Record<RereviewRefusal, string> = {
+  no_approved_review: "There is no approved review to renew. Start a new verification instead.",
+  too_early: `You can start a re-review ${REREVIEW_WINDOW_DAYS} days before your review ends.`,
+  request_open: "You already have a verification request in progress.",
+  suspended: "Your verification is suspended. Contact support before applying again.",
+  verification_plan_inactive: "Renew your verification plan to start a re-review.",
+  listing_plan_inactive: "Verification needs an active listing plan. Renew or choose a plan first.",
+};
+
+export interface RereviewFacts {
+  /** The lister's most recent request with status `verified` or `expired`. */
+  lastApproved: { status: VerificationStatus; reviewExpiresAt: Date | null } | null;
+  hasOpenRequest: boolean;
+  latestStatus: VerificationStatus | null;
+  /** Active or in grace. */
+  verificationPlanOk: boolean;
+  listingPlanOk: boolean;
+}
+
+/** Whether a free re-review may start now. Pure: the action re-checks inside its transaction. */
+export function canStartRereview(facts: RereviewFacts, now: Date): { ok: true } | { ok: false; code: RereviewRefusal } {
+  if (facts.latestStatus === "suspended") return { ok: false, code: "suspended" };
+  if (facts.hasOpenRequest) return { ok: false, code: "request_open" };
+  const approved = facts.lastApproved;
+  if (!approved || !approved.reviewExpiresAt || (approved.status !== "verified" && approved.status !== "expired")) {
+    return { ok: false, code: "no_approved_review" };
+  }
+  if (approved.reviewExpiresAt.getTime() - now.getTime() > REREVIEW_WINDOW_DAYS * DAY) return { ok: false, code: "too_early" };
+  if (!facts.verificationPlanOk) return { ok: false, code: "verification_plan_inactive" };
+  if (!facts.listingPlanOk) return { ok: false, code: "listing_plan_inactive" };
+  return { ok: true };
+}
+
+/** Re-review reminder windows (S13 decision 7): "30d" while more than 7 days are left, then "7d". */
+export type RereviewReminder = "30d" | "7d";
+
+export function rereviewReminderDue(reviewExpiresAt: Date, now: Date): RereviewReminder | null {
+  const left = reviewExpiresAt.getTime() - now.getTime();
+  if (left <= 0 || left > REREVIEW_WINDOW_DAYS * DAY) return null;
+  return left <= 7 * DAY ? "7d" : "30d";
+}
 
 /** The four checks an admin confirms before approving (design 05). */
 export const REVIEW_CHECKLIST = [

@@ -61,13 +61,15 @@ export interface ReminderCandidate {
   planCode: string;
   planName: string;
   priceKes: number;
+  /** Listing plans and, since S13, verification plans (decision 8). */
+  planKind: "listing" | "verification";
 }
 
 /** A reminder row is finished unless it failed and still has attempts left (decision 8). */
 export const REMINDER_MAX_ATTEMPTS = 3;
 
 /**
- * Paid listing plans ending within `(now, until]` that still have an unfinished reminder for the
+ * Paid listing and verification plans ending within `(now, until]` that still have an unfinished reminder for the
  * window they are in: "1d" inside the last day, otherwise "5d" (decision 7).
  */
 export async function reminderCandidates(db: DbExecutor, now: Date, until: Date, oneDayBefore: Date, limit: number): Promise<ReminderCandidate[]> {
@@ -90,12 +92,12 @@ export async function reminderCandidates(db: DbExecutor, now: Date, until: Date,
       planCode: plans.code,
       planName: plans.name,
       priceKes: plans.priceKes,
+      planKind: subscriptions.kind,
     })
     .from(subscriptions)
     .innerJoin(plans, eq(plans.id, effectivePlanAtEnd))
     .where(
       and(
-        eq(subscriptions.kind, "listing"),
         inArray(subscriptions.status, [...PAID_SUBSCRIPTION_STATUSES]),
         gt(subscriptions.currentPeriodEnd, now),
         lte(subscriptions.currentPeriodEnd, until),

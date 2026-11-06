@@ -19,6 +19,7 @@ const TABS: { tab: QueueTab; label: string }[] = [
   { tab: "under_review", label: "To review" },
   { tab: "documents_pending", label: "Waiting on lister" },
   { tab: "verified", label: "Verified" },
+  { tab: "expired", label: "Expired" },
   { tab: "rejected", label: "Rejected" },
   { tab: "suspended", label: "Suspended" },
 ];
@@ -28,6 +29,7 @@ const NOTICES: Record<string, string> = {
   changes_requested: "Changes requested. The lister can see your reason and upload again.",
   rejected: "Verification rejected. The fee was credited to the lister's listing plan.",
   rejected_refund: "Verification rejected. The fee couldn't be credited, so the lister needs a manual refund.",
+  rejected_rereview: "Re-review rejected. Nothing was paid for it, so there's no credit; the lister's current review stays valid until it ends.",
   suspended: "Badge suspended. It's hidden from search and the lister's listings straight away.",
 };
 
@@ -99,7 +101,10 @@ async function Queue({ searchParams }: { searchParams: SearchParams }) {
                         {row.agencyName ? ` · ${row.agencyName}` : ""}
                       </span>
                     </td>
-                    <td className="px-1 text-slate-700 md:px-4 md:py-3">{requestNumber(row.id)}</td>
+                    <td className="px-1 text-slate-700 md:px-4 md:py-3">
+                      {requestNumber(row.id)}
+                      {row.renewsRequestId && <span className="block text-micro text-slate-600">Re-review</span>}
+                    </td>
                     <td className="px-1 text-slate-700 md:px-4 md:py-3">
                       {tab === "under_review" && row.submittedAt ? (
                         <span className="flex flex-wrap items-center gap-2">

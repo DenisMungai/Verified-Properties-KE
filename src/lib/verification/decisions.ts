@@ -4,10 +4,11 @@ import type { DbExecutor } from "@/db/executor";
 import { getListingPool, getListingSubscription } from "@/db/queries/billing";
 import { insertBillingAudit } from "@/db/queries/billing-admin";
 import { lockSubscription, openInvoices, updateSubscription, voidInvoices } from "@/db/queries/payments";
-import { insertAudit, lockRequest, updateRequest, type VerificationRequest } from "@/db/queries/verification";
+import { getOpenRequest, insertAudit, lockRequest, updateRequest, type VerificationRequest } from "@/db/queries/verification";
+import { lockOtherVerifiedRequests } from "@/db/queries/verification-lifecycle";
 import { payments, subscriptions } from "@/db/schema";
 import { canReceiveCredit, creditDaysFromPayment, extendPeriodByDays } from "@/lib/billing/credit";
-import { canTransition, reviewExpiresAt, type VerificationStatus } from "./rules";
+import { canTransition, requestNumber, reviewExpiresAt, type VerificationStatus } from "./rules";
 
 /**
  * Admin decisions on a verification request (prompt S12 decisions 8 and 9). The caller has already
@@ -40,7 +41,7 @@ export const CREDIT_SKIP_LABELS: Record<CreditSkipCause, string> = {
 };
 
 export type DecisionResult =
-  | { ok: true; listerUserId: string; credit?: CreditOutcome }
+  | { ok: true; listerUserId: string; credit?: CreditOutcome; /** A re-review (S13): no fee, so no credit. */ rereview?: boolean }
   | { ok: false; code: DecisionRefusal; message: string };
 
 const refuse = (code: DecisionRefusal): DecisionResult => ({ ok: false, code, message: DECISION_MESSAGES[code] });
@@ -68,7 +69,12 @@ async function decide(
     if (request.listerUserId === adminId) return refuse("self_review");
     if (request.status !== from || !canTransition(from, to)) return refuse("conflict");
     const credit = await apply(tx, request, deps.now());
-    return { ok: true, listerUserId: request.listerUserId, ...(credit ? { credit } : {}) };
+    return {
+      ok: true,
+      listerUserId: request.listerUserId,
+      ...(credit ? { credit } : {}),
+      ...(request.renewsRequestId ? { rereview: true } : {}),
+    };
   });
 }
 
@@ -82,6 +88,18 @@ export function approveRequest(deps: DecisionDeps, adminId: string, requestId: s
       reviewExpiresAt: reviewExpiresAt(now),
     });
     await insertAudit(tx, { requestId: request.id, actorUserId: adminId, action: "approve" });
+    // S13 decision 5: the new review replaces any older one, so the expiry job and the re-review
+    // reminders never act on a review that no longer counts.
+    for (const older of await lockOtherVerifiedRequests(tx, request.listerUserId, request.id)) {
+      if (!canTransition(older.status, "expired")) continue;
+      await updateRequest(tx, older.id, { status: "expired", endedAt: now });
+      await insertAudit(tx, {
+        requestId: older.id,
+        actorUserId: adminId,
+        action: "supersede",
+        reason: `Replaced by ${requestNumber(request.id)}`,
+      });
+    }
   });
 }
 
@@ -96,16 +114,28 @@ export function suspendRequest(deps: DecisionDeps, adminId: string, requestId: s
   return decide(deps, "suspend", adminId, requestId, async (tx, request, now) => {
     await updateRequest(tx, request.id, { status: "suspended", decidedAt: now, decidedBy: adminId, decisionReason: reason });
     await insertAudit(tx, { requestId: request.id, actorUserId: adminId, action: "suspend", reason });
+    // S13 decision 6: a re-review in progress is closed too; a suspended lister can't be re-approved
+    // by finishing it.
+    const open = await getOpenRequest(tx, request.listerUserId, true);
+    if (open && canTransition(open.status, "rejected")) {
+      await updateRequest(tx, open.id, { status: "rejected", decidedAt: now, decidedBy: adminId, decisionReason: SUSPENSION_CLOSURE_REASON });
+      await insertAudit(tx, { requestId: open.id, actorUserId: adminId, action: "reject", reason: SUSPENSION_CLOSURE_REASON });
+    }
     // No more billing for a badge the lister can't have; a late payment on a voided invoice is
     // flagged for a billing admin instead of reopening verification.
     await endVerificationBilling(tx, request.listerUserId, now);
   });
 }
 
+export const SUSPENSION_CLOSURE_REASON = "Closed because verification was suspended.";
+
 export function rejectRequest(deps: DecisionDeps, adminId: string, requestId: string, reason: string): Promise<DecisionResult> {
   return decide(deps, "reject", adminId, requestId, async (tx, request, now) => {
     await updateRequest(tx, request.id, { status: "rejected", decidedAt: now, decidedBy: adminId, decisionReason: reason });
     await insertAudit(tx, { requestId: request.id, actorUserId: adminId, action: "reject", reason });
+    // S13 decision 6: a re-review was never paid for, so there is nothing to credit, and the
+    // current review keeps its badge (and its billing) until it ends.
+    if (request.renewsRequestId) return;
     const credit = await creditRejectedFee(tx, adminId, request, now);
     await insertAudit(tx, {
       requestId: request.id,

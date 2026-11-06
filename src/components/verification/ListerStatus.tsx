@@ -2,8 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { formatKes, formatNairobiDate } from "@/lib/format";
+import { RETENTION_NOTICE } from "@/lib/verification/retention";
 import { DOCUMENT_LABELS, type DocumentType } from "@/lib/verification/rules";
 import { viewBadge, type ListerView } from "@/lib/verification/view";
+import { StartRereviewButton } from "./StartRereviewButton";
 
 const CHECKOUT = (code: string) => `/account/billing/checkout?plan=${encodeURIComponent(code)}`;
 const LISTING_CHECKOUT = "/account/billing/checkout";
@@ -68,6 +70,22 @@ function StartAction({ listingPlanOk, planCode, label }: { listingPlanOk: boolea
   );
 }
 
+/** "Your current badge stays until …" while a re-review runs (S13 decision 10). */
+function CurrentBadgeNote({ endsAt }: { endsAt: Date | null }) {
+  if (!endsAt) return null;
+  return <p className="text-small text-ink">Your current badge stays until {formatNairobiDate(endsAt)} while we check.</p>;
+}
+
+/** Free re-review when eligible; otherwise the paid route back (S13 decision 3). */
+function RereviewOrRenew({ canRereview, listingPlanOk, planCode }: { canRereview: boolean; listingPlanOk: boolean; planCode: string | null }) {
+  if (canRereview) return <StartRereviewButton />;
+  return <StartAction listingPlanOk={listingPlanOk} planCode={planCode} label="Renew verification" />;
+}
+
+export function RetentionNote() {
+  return <p className="text-micro text-slate-600">{RETENTION_NOTICE}</p>;
+}
+
 /**
  * The lister's verification status (prompt S12 decision 10), one state at a time. The badge wording
  * is fixed: "Profile verified" confirms the profile checks, never a licence or a property guarantee.
@@ -109,12 +127,16 @@ export function ListerStatus({
       );
     case "upload":
       return (
-        <Panel title={view.changesReason ? "Update your documents" : "Upload your documents"} badge={badge}>
+        <Panel title={view.changesReason ? "Update your documents" : view.currentEndsAt ? "Upload documents for your re-review" : "Upload your documents"} badge={badge}>
           {view.changesReason ? (
             <Reason label="What our team asked for" reason={view.changesReason} />
+          ) : view.currentEndsAt ? (
+            <p className="text-small text-ink">Add up-to-date copies of each document below, then submit them for review.</p>
           ) : (
             <p className="text-small text-ink">Payment received. Add each document below, then submit it for review.</p>
           )}
+          <CurrentBadgeNote endsAt={view.currentEndsAt} />
+          <RetentionNote />
         </Panel>
       );
     case "under_review":
@@ -124,16 +146,28 @@ export function ListerStatus({
             {view.submittedAt ? `Submitted on ${formatNairobiDate(view.submittedAt)}. ` : ""}We usually decide within 2 working days and
             will email you when we do.
           </p>
+          <CurrentBadgeNote endsAt={view.currentEndsAt} />
         </Panel>
       );
     case "verified":
       return (
         <Panel title={view.badgeLive ? "Your profile is verified" : "Your badge is paused"} badge={badge}>
           {view.badgeLive ? (
-            <p className="text-small text-ink">
-              Your review is valid until {formatNairobiDate(view.expiresAt)}. Keep your verification and listing plans paid to keep
-              the badge.
-            </p>
+            <>
+              <p className="text-small text-ink">
+                Your review is valid until {formatNairobiDate(view.expiresAt)}. Keep your verification and listing plans paid to keep
+                the badge.
+              </p>
+              {view.canRereview && (
+                <>
+                  <p className="text-small text-ink">
+                    Your review ends on {formatNairobiDate(view.expiresAt)}. Start your re-review now; it&apos;s included in your plan,
+                    and your badge stays while we check.
+                  </p>
+                  <StartRereviewButton />
+                </>
+              )}
+            </>
           ) : (
             <>
               <p className="text-small text-ink">
@@ -154,7 +188,35 @@ export function ListerStatus({
           )}
         </Panel>
       );
+    case "expired":
+      return (
+        <Panel title="Your verification review has ended" badge={badge}>
+          <p className="text-small text-ink">
+            Your review ended on {formatNairobiDate(view.endedAt)}, so the &ldquo;Profile verified&rdquo; badge is no longer shown.{" "}
+            {view.canRereview
+              ? "Start a re-review with up-to-date documents. It's included in your verification plan."
+              : "Renew your verification plan, then upload up-to-date documents for a new review."}
+          </p>
+          <WhatWeCheck required={required} />
+          <RereviewOrRenew canRereview={view.canRereview} listingPlanOk={view.listingPlanOk} planCode={plan?.code ?? null} />
+        </Panel>
+      );
     case "rejected":
+      if (view.rereview) {
+        return (
+          <Panel title="Your re-review wasn't approved" badge={badge}>
+            <Reason label="Reason" reason={view.reason} />
+            <p className="text-small text-ink">
+              {view.currentEndsAt
+                ? `Your current review stays valid until ${formatNairobiDate(view.currentEndsAt)}. `
+                : "Your previous review has ended. "}
+              Re-reviews are included in your plan, so there was no fee to refund. You can try again with updated documents.
+            </p>
+            <WhatWeCheck required={required} />
+            <RereviewOrRenew canRereview={view.canRereview} listingPlanOk={view.listingPlanOk} planCode={plan?.code ?? null} />
+          </Panel>
+        );
+      }
       return (
         <Panel title="Your verification wasn't approved" badge={badge}>
           <Reason label="Reason" reason={view.reason} />

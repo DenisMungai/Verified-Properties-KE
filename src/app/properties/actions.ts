@@ -1,15 +1,20 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { setFavorite } from "@/db/queries/favorites";
 import { createInquiry, type InquiryResult } from "@/db/queries/inquiries";
+import { recordListingView } from "@/db/queries/listing-views";
 import { createReport, type ReportResult } from "@/db/queries/reports";
 import { withTransaction } from "@/db/tx";
 import { fieldErrorsFrom, keepValues, type ActionState } from "@/lib/action-state";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
+import { requestIp } from "@/lib/mpesa/callback-guard";
 import { getCurrentUser } from "@/lib/session";
+import { nairobiDay } from "@/lib/stats/engagement";
 import { INQUIRY_FIELDS, inquirySchema, reportSchema } from "@/lib/validation/engagement";
 
 /**
@@ -139,4 +144,29 @@ export async function reportListingAction(_prev: ActionState, formData: FormData
       : { formError: REPORT_REFUSALS[result.reason], values };
   }
   return { ok: true, message: "Thanks. Our team will review this report." };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Property views                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Counts one view of a published listing (prompt S13 decision 12), called once by the detail
+ * page's beacon after it mounts. One count per visitor and listing per 30 minutes; never for the
+ * owner. The visitor key is a hash of the IP (or the user id) with the listing id, kept only as a
+ * short-lived rate-limit key. Nothing is returned and nothing ever errors: a missed view is fine.
+ */
+export async function recordListingViewAction(propertyId: string): Promise<void> {
+  const id = listingId.safeParse(propertyId);
+  if (!id.success) return;
+  try {
+    const user = await getCurrentUser();
+    const visitor = user?.id ?? requestIp(await headers()) ?? "unknown";
+    const key = createHash("sha256").update(`${visitor}|${id.data}`).digest("hex");
+    const limit = await checkRateLimits([[POLICIES.listingViewPerVisitor, rateLimitKey(key)]]);
+    if (!limit.ok) return;
+    await recordListingView(getDb(), id.data, nairobiDay(new Date()), user?.id ?? null);
+  } catch (error) {
+    if (!(error instanceof RateLimitUnavailableError)) logFailure("record view", error);
+  }
 }

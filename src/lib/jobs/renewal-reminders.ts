@@ -18,8 +18,8 @@ import { REMINDER_LEAD_DAYS, reminderDue, type DueReminder } from "./reminder-wi
 import type { JobDeps, JobResult } from "./types";
 
 /**
- * Renewal reminders 5 days and 1 day before a listing plan ends (plan v2.0 §4; prompt S9
- * decisions 7–10), by email and, when configured, SMS. Each channel is claimed in
+ * Renewal reminders 5 days and 1 day before a listing or verification plan ends (plan v2.0 §4; prompt S9
+ * decisions 7–10; verification plans since S13 decision 8), by email and, when configured, SMS. Each channel is claimed in
  * `billing_reminders` before sending, so a retry or an overlapping run never sends twice. The
  * Renew link opens the checkout page; it never starts a payment from a GET.
  */
@@ -39,6 +39,7 @@ async function sendEmails(deps: JobDeps, candidate: ReminderCandidate, reminder:
   if (recipients.length === 0) return { status: "skipped" };
   const details = {
     planName: candidate.planName,
+    planKind: candidate.planKind,
     reminder,
     endsOn: formatNairobiDate(candidate.periodEnd),
     price: formatKes(candidate.priceKes),
@@ -60,7 +61,7 @@ async function sendEmails(deps: JobDeps, candidate: ReminderCandidate, reminder:
 async function sendSms(deps: JobDeps, candidate: ReminderCandidate, recipients: ReminderRecipient[]): Promise<Delivery> {
   const phones = [...new Set(recipients.map((r) => r.phone).filter((p): p is string => Boolean(p)))];
   if (phones.length === 0) return { status: "skipped", error: "no_phone" };
-  const text = renewalReminderSms({ planName: candidate.planName, endsOn: formatNairobiDate(candidate.periodEnd) }, `${deps.appUrl}/account/billing`);
+  const text = renewalReminderSms({ planName: candidate.planName, planKind: candidate.planKind, endsOn: formatNairobiDate(candidate.periodEnd) }, `${deps.appUrl}/account/billing`);
   let sent = 0;
   let notConfigured = 0;
   let error: string | undefined;

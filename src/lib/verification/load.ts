@@ -3,7 +3,8 @@ import type { DbExecutor } from "@/db/executor";
 import { getActivePlans, getListingPool, getListingSubscription, isListerVerified } from "@/db/queries/billing";
 import { auditTrail, getLatestRequest, getListerContext, listDocuments, type ListerContext } from "@/db/queries/verification";
 import { subscriptionPhase } from "@/lib/billing/periods";
-import { requiredDocumentTypes, type DocumentType } from "./rules";
+import { loadRereviewState } from "./rereview";
+import { canStartRereview, requiredDocumentTypes, type DocumentType } from "./rules";
 import { listerView, type CreditFact, type ListerView } from "./view";
 
 /** Documents as the lister sees them: no storage keys, never a download link. */
@@ -43,7 +44,16 @@ export async function loadListerVerification(db: DbExecutor, userId: string, now
     if (entry) credit = entry.action === "credit" ? { kind: "credited", note: entry.reason ?? "" } : { kind: "skipped" };
   }
 
-  const view = listerView({ latest, listingPlanOk, badgeLive, credit, now });
+  const rereview = await loadRereviewState(db, userId, now);
+  const view = listerView({
+    latest,
+    listingPlanOk,
+    badgeLive,
+    credit,
+    now,
+    lastApproved: rereview.facts.lastApproved,
+    canRereview: canStartRereview(rereview.facts, now).ok,
+  });
   const documents =
     latest && view.state === "upload"
       ? (await listDocuments(db, latest.id)).map(({ id, documentType, fileName, sizeBytes, contentType }) => ({

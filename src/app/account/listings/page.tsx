@@ -11,11 +11,13 @@ import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { getListingPlanUsage } from "@/db/queries/billing";
+import { viewsByListing } from "@/db/queries/lister-stats";
 import { listManageableListings, photoSummaries, type ManageableListingRow } from "@/db/queries/listings";
 import type { ActionState } from "@/lib/action-state";
 import { PUBLISH_BLOCK_MESSAGES, type PublishBlockReason } from "@/lib/billing/entitlements";
 import { formatNairobiDate } from "@/lib/format";
 import { single, type SearchParams } from "@/lib/search-params";
+import { DAY_MS, nairobiDay } from "@/lib/stats/engagement";
 import { publicImageBaseUrl } from "@/lib/storage";
 import { requireLister } from "./guard";
 
@@ -55,7 +57,10 @@ function bannerFor(params: Record<string, string | string[] | undefined>): Actio
 
 const location = (row: ManageableListingRow) => row.neighbourhood ?? row.town;
 
-type ListingRow = ManageableListingRow & { coverUrl: string | null };
+/** `views`: the last 30 days, own listings only (S13 decision 13); null for a colleague's listing. */
+type ListingRow = ManageableListingRow & { coverUrl: string | null; views: number | null };
+
+const viewsText = (row: ListingRow) => (row.views === null ? "—" : row.views.toLocaleString("en-KE"));
 
 /** 64px cover thumbnail; decorative because the title beside it names the property. */
 function Thumb({ row }: { row: ListingRow }) {
@@ -77,6 +82,9 @@ function ListingsTable({ rows, userId }: { rows: ListingRow[]; userId: string })
           <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Property</th>
           <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Location</th>
           <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Status</th>
+          <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">
+            Views <span className="normal-case tracking-normal">(30 days)</span>
+          </th>
           <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Updated</th>
           <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Action</th>
         </tr>
@@ -102,6 +110,7 @@ function ListingsTable({ rows, userId }: { rows: ListingRow[]; userId: string })
             <td className={cell}>
               <ListingStatusBadge status={row.status} />
             </td>
+            <td className={`${cell} tabular text-slate-700`}>{viewsText(row)}</td>
             <td className={`${cell} whitespace-nowrap text-slate-700`}>{formatNairobiDate(row.updatedAt)}</td>
             <td className={cell}>
               <div className="flex items-center gap-2">
@@ -130,6 +139,7 @@ function ListingCards({ rows, userId }: { rows: ListingRow[]; userId: string }) 
               <OwnerNote row={row} userId={userId} />
               <span className="block text-micro text-slate-600">
                 {location(row)} · Updated {formatNairobiDate(row.updatedAt)}
+                {row.views !== null && ` · ${viewsText(row)} ${row.views === 1 ? "view" : "views"} in 30 days`}
               </span>
             </div>
             <ListingStatusBadge status={row.status} />
@@ -162,7 +172,14 @@ async function Listings({ searchParams }: { searchParams: SearchParams }) {
     db,
     listings.map((row) => row.id),
   );
-  const rows = listings.map((row) => ({ ...row, coverUrl: publicImageBaseUrl(covers.get(row.id)?.coverKey) }));
+  const now = new Date();
+  const own = listings.filter((row) => row.ownerUserId === user.id).map((row) => row.id);
+  const views = await viewsByListing(db, user.id, own, nairobiDay(new Date(now.getTime() - 30 * DAY_MS)), nairobiDay(now));
+  const rows = listings.map((row) => ({
+    ...row,
+    coverUrl: publicImageBaseUrl(covers.get(row.id)?.coverKey),
+    views: row.ownerUserId === user.id ? (views.get(row.id) ?? 0) : null,
+  }));
   const banner = bannerFor(params);
   const error = single(params.error);
   const blocked = isPublishBlockReason(error) ? error : null;

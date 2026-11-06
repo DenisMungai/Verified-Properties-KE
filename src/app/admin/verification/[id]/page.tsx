@@ -69,6 +69,14 @@ async function Review({ params }: { params: Params }) {
             {LISTER_TYPE_LABELS[lister.listerType]}
             {request.submittedAt ? ` · Submitted ${formatNairobiDate(request.submittedAt)}` : ""} · Application {requestNumber(request.id)}
           </p>
+          {request.renewsRequestId && (
+            <p className="text-micro text-slate-600">
+              Re-review of{" "}
+              <Link href={`/admin/verification/${request.renewsRequestId}`} className="font-semibold text-emerald-700 hover:underline">
+                {requestNumber(request.renewsRequestId)}
+              </Link>
+            </p>
+          )}
           <p className="break-all text-micro text-slate-600">
             {lister.email}
             {lister.phone ? ` · ${lister.phone}` : ""}
@@ -104,7 +112,11 @@ async function Review({ params }: { params: Params }) {
           <p className="text-micro text-slate-600">
             Required for this lister: {required.map((type) => DOCUMENT_LABELS[type].label).join(", ")}. Each view is logged.
           </p>
-          {documents.length === 0 ? (
+          {request.documentsPurgedAt ? (
+            <p className="rounded-sm bg-canvas p-3 text-small text-slate-700">
+              Documents deleted on {formatNairobiDate(request.documentsPurgedAt)} under the retention policy.
+            </p>
+          ) : documents.length === 0 ? (
             <p className="text-small text-slate-600">No documents uploaded yet.</p>
           ) : (
             <ul className="flex flex-col gap-3">
@@ -144,6 +156,9 @@ async function Review({ params }: { params: Params }) {
               <h2 className="text-title">Decision</h2>
               {request.status === "verified" && request.reviewExpiresAt && (
                 <p className="text-small text-ink">Approved. The review is valid until {formatNairobiDate(request.reviewExpiresAt)}.</p>
+              )}
+              {request.status === "expired" && request.endedAt && (
+                <p className="text-small text-ink">This review stopped counting on {formatNairobiDate(request.endedAt)}.</p>
               )}
               {request.status !== "under_review" && request.status !== "verified" && (
                 <p className="text-small text-slate-700">There&apos;s nothing to decide while the request is {status.label.toLowerCase()}.</p>

@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   doublePrecision,
   foreignKey,
   index,
@@ -370,6 +371,25 @@ export const favorites = pgTable(
   ],
 );
 
+/**
+ * Daily property-view counters (prompt S13 decision 12): one row per listing and Nairobi calendar
+ * day. Counts only: no IPs, users or user agents. A lister-facing number; never used for ranking.
+ */
+export const listingViewDays = pgTable(
+  "listing_view_days",
+  {
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    views: integer("views").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.propertyId, t.day] }),
+    check("listing_view_days_views_nonneg", sql`${t.views} >= 0`),
+  ],
+);
+
 /* -------------------------------------------------------------------------- */
 /* Inquiries, conversations, messages                                         */
 /* -------------------------------------------------------------------------- */
@@ -475,9 +495,16 @@ export const verificationRequests = pgTable(
     reviewExpiresAt: timestamp("review_expires_at", { withTimezone: true }),
     /** The invoice that paid for this review (S12): its payment is what a rejection credits. */
     invoiceId: uuid("invoice_id").references(() => invoices.id),
+    /** A re-review (S13): the approved request it will replace. Re-reviews are never paid for. */
+    renewsRequestId: uuid("renews_request_id"),
+    /** When a verified review stopped counting, by expiry or replacement (S13 retention clock). */
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** When the retention job deleted this request's documents (S13). */
+    documentsPurgedAt: timestamp("documents_purged_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
+    foreignKey({ columns: [t.renewsRequestId], foreignColumns: [t.id], name: "verification_requests_renews_request_id_fk" }),
     index("verification_requests_lister_idx").on(t.listerUserId, t.createdAt.desc()),
     index("verification_requests_status_idx").on(t.status, t.submittedAt),
     check(
@@ -540,8 +567,41 @@ export const verificationAuditLog = pgTable(
     index("verification_audit_log_request_idx").on(t.requestId, t.createdAt),
     check(
       "verification_audit_log_action_valid",
-      sql`${t.action} in ('start', 'pay', 'upload', 'remove_document', 'submit', 'view_document', 'request_changes', 'approve', 'reject', 'suspend', 'credit', 'credit_skipped')`,
+      sql`${t.action} in ('start', 'pay', 'upload', 'remove_document', 'submit', 'view_document', 'request_changes', 'approve', 'reject', 'suspend', 'credit', 'credit_skipped', 'rereview', 'expire', 'supersede', 'purge_documents')`,
     ),
+  ],
+);
+
+/**
+ * Re-review reminders and the expiry notice (prompt S13 decision 7): one row per request,
+ * reminder and channel, claimed before sending so a retried or overlapping job never sends twice.
+ * Same life cycle as `billing_reminders`.
+ */
+export const verificationReminders = pgTable(
+  "verification_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => verificationRequests.id),
+    /** "30d" or "7d" before the review ends, or "expired". */
+    reminder: text("reminder").notNull(),
+    /** "email" or "sms". */
+    channel: text("channel").notNull(),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(1),
+    /** The error's name only, never its message. */
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("verification_reminders_once").on(t.requestId, t.reminder, t.channel),
+    check("verification_reminders_reminder_valid", sql`${t.reminder} in ('30d', '7d', 'expired')`),
+    check("verification_reminders_channel_valid", sql`${t.channel} in ('email', 'sms')`),
+    check("verification_reminders_status_valid", sql`${t.status} in ('pending', 'sent', 'failed', 'skipped')`),
+    check("verification_reminders_attempts_positive", sql`${t.attempts} >= 1`),
+    check("verification_reminders_error_length", sql`${t.lastError} is null or char_length(${t.lastError}) <= 100`),
   ],
 );
 

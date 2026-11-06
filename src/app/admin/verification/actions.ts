@@ -84,6 +84,10 @@ export async function requestChangesAction(_prev: ActionState, formData: FormDat
 
 export async function rejectVerificationAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return withReason(formData, "reject", rejectRequest, async (result, reason) => {
+    if (result.rereview) {
+      await notifyLister(result.listerUserId, "rereview_rejected", { reason });
+      return "rejected_rereview";
+    }
     const credit = result.credit;
     const creditNote =
       credit?.kind === "credited"

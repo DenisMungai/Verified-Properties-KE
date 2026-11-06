@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, cache } from "react";
+import { ListingViewBeacon } from "@/components/listings/ListingViewBeacon";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Description } from "@/components/listing/Description";
 import { FactsList } from "@/components/listing/FactsList";
@@ -134,6 +135,7 @@ async function ListingDetail({ params }: { params: Params }) {
   return (
     <>
       <PageContainer className="flex flex-col gap-6 pb-28 pt-6 lg:gap-10 lg:pb-8">
+        {!mine && <ListingViewBeacon listingId={listing.id} />}
         <div className="flex flex-col gap-3">
           <Breadcrumbs listing={listing} />
           <div className="flex items-start justify-between gap-4">

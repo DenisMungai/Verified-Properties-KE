@@ -11,6 +11,7 @@ export const JOB_SCHEDULES: Record<JobName, { cron: string; nairobi: string }> =
   "renewal-reminders": { cron: "0 4 * * *", nairobi: "07:00" },
   reconciliation: { cron: "0 22 * * *", nairobi: "01:00" },
   "storage-cleanup": { cron: "0 0 * * *", nairobi: "03:00" },
+  "verification-lifecycle": { cron: "5 4 * * *", nairobi: "07:05" },
 };
 
 export const SCHEDULE_ID_PREFIX = "vpk-";
