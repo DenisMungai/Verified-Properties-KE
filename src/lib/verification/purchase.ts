@@ -66,6 +66,9 @@ export async function attachVerificationInvoice(tx: DbExecutor, userId: string, 
  */
 export async function onVerificationPaid(tx: DbExecutor, userId: string, invoiceId: string, confirmedAt: Date): Promise<void> {
   if (await getUnexpiredVerifiedRequest(tx, userId, confirmedAt)) return;
+  // A suspended lister never reopens verification by paying; support has to lift it first.
+  // (Suspension voids open invoices, so this is a second line of defence.)
+  if ((await getLatestRequest(tx, userId))?.status === "suspended") return;
   const open = await getOpenRequest(tx, userId, true);
   if (open && open.status !== "payment_pending") return;
   const request = open ?? (await insertRequest(tx, { listerUserId: userId, status: "payment_pending", invoiceId }));

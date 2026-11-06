@@ -316,9 +316,34 @@ describe.skipIf(!url)("verification (integration)", { timeout: 90_000 }, () => {
     const requestId = await submitted(lister);
     await approveRequest(decisionDeps, admin, requestId);
     expect(await verifiedNow(lister)).toBe(true);
+    // A renewal invoice opened before the suspension (e.g. an M-Pesa prompt still on the phone).
+    const renewal = await resolvePurchase(db, lister, "t_ver_verify", clock);
+    if (!renewal.ok) throw new Error(renewal.code);
+    const prepared = await preparePlanInvoice(billingDeps, renewal.pool, renewal.plan);
+    if (!prepared.ok) throw new Error(prepared.code);
+    const late = await insertStkPayment(db, {
+      invoiceId: prepared.invoice.id,
+      phoneE164: "+254712000111",
+      checkoutRequestId: `ws_CO_ver_${randomUUID()}`,
+      merchantRequestId: "mr_late",
+      amountKes: prepared.invoice.amountKes,
+    });
+
     expect((await suspendRequest(decisionDeps, admin, requestId, "Reported for misusing another agent's licence.")).ok).toBe(true);
     expect(await verifiedNow(lister)).toBe(false);
     expect(await resolvePurchase(db, lister, "t_ver_verify", clock)).toEqual({ ok: false, code: "verification_suspended" });
+    // Suspension ends verification billing: plan cancelled, open invoice voided.
+    expect((await one<{ status: string }>(`select status from subscriptions where owner_user_id = $1 and kind = 'verification'`, [lister])).status).toBe("cancelled");
+    expect((await one<{ status: string }>(`select status from invoices where id = $1`, [prepared.invoice.id])).status).toBe("void");
+
+    // The late payment is flagged for a billing admin and reopens nothing.
+    const receipt = `TV${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+    expect(await confirmPayment(db, late.id, { receipt, paidAmount: prepared.invoice.amountKes, confirmedAt: clock })).toEqual({
+      outcome: "flagged",
+      reason: "invoice_not_open",
+    });
+    expect(await countRequests(lister)).toBe(1);
+    expect((await requestOf(lister)).status).toBe("suspended");
   });
 
   /* ---------------------------------------------------------------------- */

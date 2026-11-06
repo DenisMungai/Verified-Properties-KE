@@ -3,9 +3,9 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { getListingPool, getListingSubscription } from "@/db/queries/billing";
 import { insertBillingAudit } from "@/db/queries/billing-admin";
-import { lockSubscription, updateSubscription } from "@/db/queries/payments";
+import { lockSubscription, openInvoices, updateSubscription, voidInvoices } from "@/db/queries/payments";
 import { insertAudit, lockRequest, updateRequest, type VerificationRequest } from "@/db/queries/verification";
-import { invoices, payments, subscriptions } from "@/db/schema";
+import { payments, subscriptions } from "@/db/schema";
 import { canReceiveCredit, creditDaysFromPayment, extendPeriodByDays } from "@/lib/billing/credit";
 import { canTransition, reviewExpiresAt, type VerificationStatus } from "./rules";
 
@@ -96,6 +96,9 @@ export function suspendRequest(deps: DecisionDeps, adminId: string, requestId: s
   return decide(deps, "suspend", adminId, requestId, async (tx, request, now) => {
     await updateRequest(tx, request.id, { status: "suspended", decidedAt: now, decidedBy: adminId, decisionReason: reason });
     await insertAudit(tx, { requestId: request.id, actorUserId: adminId, action: "suspend", reason });
+    // No more billing for a badge the lister can't have; a late payment on a voided invoice is
+    // flagged for a billing admin instead of reopening verification.
+    await endVerificationBilling(tx, request.listerUserId, now);
   });
 }
 
@@ -110,7 +113,7 @@ export function rejectRequest(deps: DecisionDeps, adminId: string, requestId: st
       action: credit.kind === "credited" ? "credit" : "credit_skipped",
       reason: credit.kind === "credited" ? `${credit.days} days added to the listing plan` : CREDIT_SKIP_LABELS[credit.cause],
     });
-    await cancelVerificationSubscription(tx, request, now);
+    await endVerificationBilling(tx, request.listerUserId, now);
     return credit;
   });
 }
@@ -154,19 +157,25 @@ async function creditRejectedFee(tx: DbExecutor, adminId: string, request: Verif
   return { kind: "credited", days };
 }
 
-/** The badge subscription ends with the rejection, so no renewal reminders follow. */
-async function cancelVerificationSubscription(tx: DbExecutor, request: VerificationRequest, now: Date): Promise<void> {
-  if (!request.invoiceId) return;
-  const [invoice] = await tx.select({ subscriptionId: invoices.subscriptionId }).from(invoices).where(eq(invoices.id, request.invoiceId)).limit(1);
-  if (!invoice) return;
-  await tx
-    .update(subscriptions)
-    .set({ status: "cancelled", cancelledAt: now })
+/**
+ * Rejection and suspension end the lister's verification billing: the live verification
+ * subscription is cancelled (no renewal reminders) and its open invoices are voided, so a payment
+ * that arrives later is flagged as `invoice_not_open` instead of being applied.
+ */
+async function endVerificationBilling(tx: DbExecutor, listerUserId: string, now: Date): Promise<void> {
+  const live = await tx
+    .select({ id: subscriptions.id })
+    .from(subscriptions)
     .where(
       and(
-        eq(subscriptions.id, invoice.subscriptionId),
+        eq(subscriptions.ownerUserId, listerUserId),
         eq(subscriptions.kind, "verification"),
         inArray(subscriptions.status, ["pending", "active", "past_due", "paused"]),
       ),
-    );
+    )
+    .for("update");
+  for (const sub of live) {
+    await voidInvoices(tx, (await openInvoices(tx, sub.id)).map((invoice) => invoice.id), now);
+    await tx.update(subscriptions).set({ status: "cancelled", cancelledAt: now }).where(eq(subscriptions.id, sub.id));
+  }
 }
