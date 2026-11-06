@@ -161,10 +161,19 @@ Follow-up: `prompts/s11-exit-fixes.md`.
   live site. Still to confirm: one real photo upload on the live site. F1 stays a soft 404 with
   `noindex`.
 - **Before real users:**
-  - move the live site from the `dev` branch to `production`, copying users, listings and photos
-    (buckets are branch-scoped)
+  - ~~move the live site from the `dev` branch to `production`~~ **Done 6 Nov**
+    (`prompts/infra-production-branch.md`).
+    - *Moved:* `0005` applied to production. The owner's account, listing, 13 photos (39
+      variants) and sandbox billing were copied with the same ids. Production buckets, CORS and
+      credential were created.
+    - *Vercel:* the database and storage vars now point at production. `NEXT_PUBLIC_APP_URL` was
+      corrected to the non-hyphenated host.
+    - *Left on dev:* samples and throwaway users.
   - set up Resend
   - do the Daraja production go-live, with a confirmed Safaricom IP list and a real-money check
+    - At go-live, clear the sandbox billing rows copied to production: subscription, invoice
+      `VPK0000005`, payment and 6 payment events. `payment_events` is append-only, so this
+      needs an operator step: reset the branch, or drop and restore the trigger.
 - **Phase 2 scope (plan v2.0):**
   - the verification workflow: document upload to the private bucket, the review queue, and the
     audit log the seed doesn't write

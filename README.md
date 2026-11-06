@@ -58,8 +58,9 @@ ADMIN_CREATE_CONFIRM=yes npm run admin:create -- you@example.com --role billing_
 5. **Region:** Neon `aws-eu-central-1` pairs with Vercel `fra1`, which `vercel.json` pins for the
    app's functions. Every query is a network round trip, so keep the two together: from Kenya, a
    Singapore database took about 1.4s per query against about 0.2s for Frankfurt.
-6. **Production:** when deploying, set Vercel's `DATABASE_URL` to the `production` branch's
-   **pooled** string and run `npm run db:migrate` against its direct string.
+6. **Production:** Vercel's `DATABASE_URL` is the `production` branch's **pooled** string. After a
+   new migration, run `npm run db:migrate` against its direct string too (set
+   `DATABASE_URL_UNPOOLED` for that one command), or the live site falls behind.
 
 `drizzle/0000_extensions.sql` enables `pg_trgm`. `0001_core_schema.sql` creates the core tables
 and the append-only triggers on the moderation and verification audit logs. `0002_billing.sql`
@@ -103,9 +104,10 @@ Production refuses uploads until storage is configured. Setup, once per branch:
 4. Stale `uploads/` in the private bucket are removed by the orphan sweep
    (`src/lib/storage/cleanup.ts`, scheduled in S9), along with unused public variants.
 
-Buckets are branch-scoped: they hold the files for that branch's rows. The live site currently
-uses the **dev** branch (database and photos); moving it to the `production` branch later means
-copying the photos there as well.
+Buckets are branch-scoped: they hold the files for that branch's rows. Since 6 Nov 2026 the live
+site uses the **production** branch (database and photos, credential `verifiedpropertieske-prod`).
+Local development stays on **dev**, with its own buckets and sample data, so nothing done locally
+reaches the live site.
 
 ### M-Pesa (S5)
 
