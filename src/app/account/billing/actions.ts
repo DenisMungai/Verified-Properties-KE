@@ -7,6 +7,7 @@ import { getPaymentStatusForUser } from "@/db/queries/billing-page";
 import { lastEventAt } from "@/db/queries/payments";
 import type { ActionState } from "@/lib/action-state";
 import { getBillingDeps } from "@/lib/billing/app-deps";
+import { cancelInvoice, hideInvoice } from "@/lib/billing/invoice-actions";
 import { paymentView, type PaymentView } from "@/lib/billing/payment-view";
 import { cancelScheduledChange, keepListingsAfterDowngrade, scheduleDowngrade } from "@/lib/billing/plan-schedule";
 import { getCardDeps } from "@/lib/card";
@@ -20,8 +21,9 @@ import { RateLimitUnavailableError } from "@/lib/rate-limit";
 import { requireLister } from "../listings/guard";
 
 /**
- * Billing Server Actions (prompts S5, S6). The client sends a plan code, a phone, a payment id or
- * listing ids only: never an amount, plan id, subscription id or credit. Every action checks the
+ * Billing Server Actions (prompts S5, S6, billing-cancel-delete-invoices). The client sends a plan
+ * code, a phone, a payment id, an invoice number or listing ids only: never an amount, plan id,
+ * subscription id or credit. Every action checks the
  * session and scopes what it reads or changes to the user's own pool.
  */
 
@@ -183,4 +185,40 @@ export async function keepListingsAction(_prev: ActionState, formData: FormData)
   }
   if (!result.ok) return { formError: result.message };
   redirect(`${BILLING_PATH}?updated=kept`);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Unpaid invoices (prompt billing-cancel-delete-invoices)                    */
+/* -------------------------------------------------------------------------- */
+
+const invoiceNumberSchema = z.string().trim().regex(/^VPK[0-9]{7,9}$/);
+
+export async function cancelInvoiceAction(formData: FormData): Promise<void> {
+  const user = await requireLister(BILLING_PATH);
+  const parsed = invoiceNumberSchema.safeParse(formData.get("invoiceNumber"));
+  let outcome = "error=invoice_failed";
+  if (parsed.success) {
+    try {
+      const result = await cancelInvoice(getBillingDeps(), user.id, parsed.data);
+      if (result.ok) outcome = "updated=invoice_cancelled";
+      else if (result.code === "in_progress") outcome = "error=invoice_in_progress";
+    } catch (error) {
+      logFailure("cancel invoice", error);
+    }
+  }
+  redirect(`${BILLING_PATH}?${outcome}`);
+}
+
+export async function deleteInvoiceAction(formData: FormData): Promise<void> {
+  const user = await requireLister(BILLING_PATH);
+  const parsed = invoiceNumberSchema.safeParse(formData.get("invoiceNumber"));
+  let ok = false;
+  if (parsed.success) {
+    try {
+      ok = (await hideInvoice(getBillingDeps(), user.id, parsed.data)).ok;
+    } catch (error) {
+      logFailure("delete invoice", error);
+    }
+  }
+  redirect(`${BILLING_PATH}?${ok ? "updated=invoice_deleted" : "error=invoice_failed"}`);
 }

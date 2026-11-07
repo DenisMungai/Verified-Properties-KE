@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { agencyMembers, invoices, payments, plans, subscriptions } from "@/db/schema";
 import { subscriptionPhase, type SubscriptionPhase } from "@/lib/billing/periods";
@@ -74,9 +74,11 @@ export interface InvoiceRow {
   periodEnd: Date | null;
   paidAt: Date | null;
   createdAt: Date;
+  /** A payment on it was confirmed, flagged, refunded or credited: it can't leave the list. */
+  hasMoney: boolean;
 }
 
-/** The pool's invoices across all its subscriptions, newest first. */
+/** The pool's invoices across all its subscriptions, newest first, minus those the lister removed. */
 export async function listInvoices(db: DbExecutor, pool: ListingPool, limit = 24): Promise<InvoiceRow[]> {
   return db
     .select({
@@ -88,11 +90,16 @@ export async function listInvoices(db: DbExecutor, pool: ListingPool, limit = 24
       periodEnd: invoices.periodEnd,
       paidAt: invoices.paidAt,
       createdAt: invoices.createdAt,
+      hasMoney: sql<boolean>`exists (
+        select 1 from ${payments}
+        where ${payments.invoiceId} = ${invoices.id}
+          and ${payments.status} in ('confirmed', 'flagged', 'refunded', 'credited')
+      )`,
     })
     .from(invoices)
     .innerJoin(subscriptions, eq(subscriptions.id, invoices.subscriptionId))
     .innerJoin(plans, eq(plans.id, invoices.planId))
-    .where(and(poolOwns(pool), eq(subscriptions.kind, "listing")))
+    .where(and(poolOwns(pool), eq(subscriptions.kind, "listing"), isNull(invoices.listerHiddenAt)))
     .orderBy(desc(invoices.createdAt))
     .limit(limit);
 }

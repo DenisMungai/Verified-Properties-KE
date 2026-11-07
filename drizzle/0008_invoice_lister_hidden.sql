@@ -1,0 +1,2 @@
+ALTER TABLE "invoices" ADD COLUMN "lister_hidden_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_hidden_only_void" CHECK ("invoices"."lister_hidden_at" is null or "invoices"."status" = 'void');

@@ -178,6 +178,36 @@ export async function voidInvoices(tx: DbExecutor, ids: string[], now: Date): Pr
     .where(and(inArray(invoices.id, ids), eq(invoices.status, "open")));
 }
 
+/** A listing-plan invoice of this pool, locked for update; null for anyone else's number. */
+export async function lockPoolListingInvoice(tx: DbExecutor, owner: SubscriptionOwner, invoiceNumber: string): Promise<Invoice | null> {
+  const [row] = await tx
+    .select({ invoice: invoices })
+    .from(invoices)
+    .innerJoin(subscriptions, eq(subscriptions.id, invoices.subscriptionId))
+    .where(and(eq(invoices.invoiceNumber, invoiceNumber), ownerCondition(owner), eq(subscriptions.kind, "listing")))
+    .limit(1)
+    .for("update", { of: invoices });
+  return row?.invoice ?? null;
+}
+
+/** The lister removed a void invoice from their list (display only). */
+export async function hideInvoiceForLister(tx: DbExecutor, id: string, now: Date): Promise<void> {
+  await tx
+    .update(invoices)
+    .set({ listerHiddenAt: now })
+    .where(and(eq(invoices.id, id), eq(invoices.status, "void"), isNull(invoices.listerHiddenAt)));
+}
+
+/** A never-paid subscription with nothing left to pay is closed, freeing the owner's live slot. */
+export async function cancelPendingSubscription(tx: DbExecutor, id: string, now: Date): Promise<boolean> {
+  const rows = await tx
+    .update(subscriptions)
+    .set({ status: "cancelled", cancelledAt: now })
+    .where(and(eq(subscriptions.id, id), eq(subscriptions.status, "pending")))
+    .returning({ id: subscriptions.id });
+  return rows.length > 0;
+}
+
 export async function insertInvoice(
   tx: DbExecutor,
   { subscriptionId, planId, amountKes }: { subscriptionId: string; planId: string; amountKes: number },
@@ -199,6 +229,17 @@ export async function findInvoiceByNumber(db: DbExecutor, invoiceNumber: string)
 /* -------------------------------------------------------------------------- */
 /* Payments and events                                                        */
 /* -------------------------------------------------------------------------- */
+
+/** Method, status and age of every payment on an invoice (cancel and hide rules). */
+export async function invoicePaymentFacts(
+  db: DbExecutor,
+  invoiceId: string,
+): Promise<Pick<Payment, "method" | "status" | "createdAt">[]> {
+  return db
+    .select({ method: payments.method, status: payments.status, createdAt: payments.createdAt })
+    .from(payments)
+    .where(eq(payments.invoiceId, invoiceId));
+}
 
 /** A pending STK request for the invoice created after `since` (the in-flight guard). */
 export async function hasRecentPendingStk(tx: DbExecutor, invoiceId: string, since: Date): Promise<boolean> {
@@ -379,7 +420,8 @@ export type PaymentEventType =
   | "card_webhook"
   | "card_verify"
   | "reconciliation"
-  | "admin_resolution";
+  | "admin_resolution"
+  | "invoice_cancelled";
 
 export async function recordPaymentEvent(
   db: DbExecutor,

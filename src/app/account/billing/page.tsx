@@ -27,6 +27,10 @@ const FLASH: Record<string, ActionState> = {
   cancelled: { message: "Scheduled change cancelled. You keep your current plan." },
   kept: { message: "Saved. The listings you chose stay live; the rest are paused until you have room again." },
   cancel_failed: { formError: "We couldn't cancel the change. Please try again." },
+  invoice_cancelled: { message: "Invoice cancelled. Don't pay it by Paybill; start a new payment when you're ready." },
+  invoice_deleted: { message: "Invoice removed from your list." },
+  invoice_in_progress: { formError: "A payment for this invoice is still in progress. Try again in a few minutes." },
+  invoice_failed: { formError: "We couldn't update that invoice. Please try again." },
 };
 
 /** A downgrade waiting for its date (prompt S6 decision 4, before the change). */
@@ -114,7 +118,7 @@ async function Billing({ searchParams }: { searchParams: SearchParams }) {
           amountKes={overview.openInvoice.amountKes}
         />
       )}
-      <InvoiceTable rows={invoices} showAmounts={overview.canManage} />
+      <InvoiceTable rows={invoices} canManage={overview.canManage} />
     </div>
   );
 }

@@ -826,9 +826,15 @@ export const invoices = pgTable(
     periodEnd: timestamp("period_end", { withTimezone: true }),
     paidAt: timestamp("paid_at", { withTimezone: true }),
     voidedAt: timestamp("voided_at", { withTimezone: true }),
+    /**
+     * The lister removed this void, never-paid invoice from their list. Display only: payment
+     * records and admin screens still show it.
+     */
+    listerHiddenAt: timestamp("lister_hidden_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
+    check("invoices_hidden_only_void", sql`${t.listerHiddenAt} is null or ${t.status} = 'void'`),
     check("invoices_amount_positive", sql`${t.amountKes} > 0`),
     check("invoices_number_format", sql`${t.invoiceNumber} ~ '^VPK[0-9]{7,9}$'`),
     check(

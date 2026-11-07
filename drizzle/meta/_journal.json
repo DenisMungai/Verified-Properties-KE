@@ -57,6 +57,13 @@
       "when": 1793986037515,
       "tag": "0007_verification_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794035620110,
+      "tag": "0008_invoice_lister_hidden",
+      "breakpoints": true
     }
   ]
 }

@@ -5,11 +5,12 @@ import type { InvoiceRow } from "@/db/queries/billing-page";
 import { receiptPath } from "@/lib/billing/receipt-path";
 import { formatKes, formatNairobiDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { InvoiceRowActions } from "./InvoiceRowActions";
 
 const STATUS: Record<InvoiceRow["status"], { label: string; className: string }> = {
   paid: { label: "Paid", className: "text-emerald-700" },
   open: { label: "Open", className: "text-warning-text" },
-  void: { label: "Void", className: "text-slate-600" },
+  void: { label: "Cancelled", className: "text-slate-600" },
   refunded: { label: "Refunded", className: "text-slate-600" },
 };
 
@@ -32,11 +33,22 @@ function ReceiptLink({ row }: { row: InvoiceRow }) {
   );
 }
 
+/** Receipt for paid rows; cancel or delete for unpaid ones, only for whoever manages the plan. */
+function RowActions({ row, canManage }: { row: InvoiceRow; canManage: boolean }) {
+  return (
+    <>
+      <ReceiptLink row={row} />
+      {canManage && <InvoiceRowActions row={row} />}
+    </>
+  );
+}
+
 /**
  * Design "02 — Billing & Verification" invoices: separated rows on canvas at md+, cards below.
- * Agency members who are not admins see no amounts (prompt S6 decision 10).
+ * Agency members who are not admins see no amounts and no invoice actions (prompt S6 decision 10).
  */
-export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAmounts: boolean }) {
+export function InvoiceTable({ rows, canManage }: { rows: InvoiceRow[]; canManage: boolean }) {
+  const showAmounts = canManage;
   return (
     <section aria-labelledby="invoices-heading" className="rounded-lg border border-line bg-white p-4 md:p-5">
       <h2 id="invoices-heading" className="mb-2 text-title">
@@ -60,7 +72,7 @@ export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAm
                 <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Date</th>
                 {showAmounts && <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Amount</th>}
                 <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide">Status</th>
-                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide"><span className="sr-only">Receipt</span></th>
+                <th scope="col" className="px-4 pb-1 text-micro font-semibold uppercase tracking-wide"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -76,7 +88,7 @@ export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAm
                     {showAmounts && <td className={cn(cell, "whitespace-nowrap tabular")}>{formatKes(row.amountKes)}</td>}
                     <td className={cn(cell, "font-medium", STATUS[row.status].className)}>{STATUS[row.status].label}</td>
                     <td className={cell}>
-                      <ReceiptLink row={row} />
+                      <RowActions row={row} canManage={canManage} />
                     </td>
                   </tr>
                 );
@@ -97,7 +109,7 @@ export function InvoiceTable({ rows, showAmounts }: { rows: InvoiceRow[]; showAm
                   {dateOf(row)}
                   {showAmounts && <span className="tabular"> · {formatKes(row.amountKes)}</span>}
                 </span>
-                <ReceiptLink row={row} />
+                <RowActions row={row} canManage={canManage} />
               </li>
             ))}
           </ul>

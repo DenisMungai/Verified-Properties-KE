@@ -1,6 +1,7 @@
 import "server-only";
 import { hasRecentPendingStk, insertStkPayment, recordPaymentEvent } from "@/db/queries/payments";
 import type { PlanChangeKind } from "@/lib/billing/plan-change";
+import { IN_FLIGHT_SECONDS } from "@/lib/billing/constants";
 import { PURCHASE_MESSAGES, preparePlanInvoice, resolvePurchase, type PurchaseRefusal } from "@/lib/billing/prepare-invoice";
 import { formatKes } from "@/lib/format";
 import { maskPhone, normalizeKenyanPhone } from "@/lib/kenya";
@@ -14,9 +15,6 @@ import type { PaymentDeps } from "./deps";
  * a plan code and a phone number. The subscription and invoice are prepared in one transaction;
  * the STK Push is sent after it commits, because a network call never sits inside a transaction.
  */
-
-/** A second STK request for the same invoice is refused for this long. */
-export const IN_FLIGHT_SECONDS = 90;
 
 /** TransactionDesc is limited to 13 characters. */
 const DESCRIPTION_MAX = 13;

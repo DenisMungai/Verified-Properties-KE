@@ -11,6 +11,12 @@ export const GRACE_DAYS = 3;
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** A second STK request for the same invoice is refused for this long; so is cancelling it. */
+export const IN_FLIGHT_SECONDS = 90;
+
+/** A pending card checkout blocks cancelling its invoice for this long (the lister may still pay). */
+export const CARD_CANCEL_BLOCK_MINUTES = 15;
+
 /** Listing statuses that use a slot in the plan's active-listing limit. */
 export const ACTIVE_LISTING_STATUSES = ["published", "pending_review"] as const;
 
