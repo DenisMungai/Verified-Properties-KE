@@ -7,87 +7,85 @@ import heroImage from "@/assets/images/home-hero.jpg";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { HomeSearch } from "@/components/search/HomeSearch";
 import { LocationTiles } from "@/components/search/LocationTiles";
-import { HOME_CARD_GRID, HOME_CARD_IMAGE_SIZES, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
-import { HOW_RANKING_WORKS_HREF } from "@/components/search/ResultsHeader";
-import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
+import { HOME_CARD_GRID, PropertyGridSkeleton } from "@/components/search/PropertyCard";
+import { FeaturedDisclosure, ShowcaseSection } from "@/components/search/ShowcaseSection";
+import { saveContextFor } from "@/components/search/card-data";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
-import { homeShowcase } from "@/db/queries/public-listings";
-import { SEARCH_PATH } from "@/lib/search/params";
+import { homeSections } from "@/db/queries/public-listings";
+import { SEARCH_PATH, searchHref } from "@/lib/search/params";
+import { HOME_COUNTY, HOME_COUNTY_SLOTS, HOME_SLOTS } from "@/lib/search/ranking";
 
 /**
- * Verified featured listings when any qualify, otherwise the newest without a Featured label
- * (plan v2.0 §5 "Home page"; prompt S7 decision 9).
+ * The home listings (plan v2.0 §5 "Home page"; prompts S7 decision 9 and S14): the site-wide
+ * section, then the county section, which never repeats a card. Featured cards are verified
+ * listers' only; the newest fill the rest without the label.
  */
 async function HomeListings() {
   // The rotation seed reads the clock, which must follow a request-time signal.
   await connection();
-  const { featured, newest } = await homeShowcase(getDb());
+  const { main, county } = await homeSections(getDb());
 
-  if (featured.length === 0 && newest.length === 0) {
+  if (main.featured.length === 0 && main.newest.length === 0) {
     return (
-      <EmptyState
-        icon={<House />}
-        title="No listings yet"
-        description="Published homes, apartments and land will appear here."
-        action={
-          <Link href="/sign-up?intent=list" className={buttonClasses()}>
-            List your property
-          </Link>
-        }
-      />
+      <section aria-label="Listings">
+        <EmptyState
+          icon={<House />}
+          title="No listings yet"
+          description="Published homes, apartments and land will appear here."
+          action={
+            <Link href="/sign-up?intent=list" className={buttonClasses()}>
+              List your property
+            </Link>
+          }
+        />
+      </section>
     );
   }
 
-  const showcase = featured.length > 0;
-  const saveContext = await saveContextFor([...featured, ...newest].map((card) => card.id), "/");
+  const ids = [main, county].flatMap((section) => [...section.featured, ...section.newest]).map((card) => card.id);
+  const saveContext = await saveContextFor(ids, "/");
+  const mainFeatured = main.featured.length > 0;
+  const countyFeatured = county.featured.length > 0;
+  const countyShown = countyFeatured || county.newest.length > 0;
   return (
-    <div className="flex flex-col">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-title">{showcase ? "Verified homes worth a closer look" : "Newest listings"}</h2>
-          <p className="text-small text-slate-600">
-            {showcase ? (
-              <>
-                Featured listings come from verified listers, a paid service.{" "}
-                <Link href={HOW_RANKING_WORKS_HREF} className="font-medium text-emerald-700 underline underline-offset-4 hover:text-ink">
-                  How it works
-                </Link>
-              </>
-            ) : (
-              "The latest homes, apartments, land and commercial property on the marketplace."
-            )}
-          </p>
-        </div>
-        <Link
-          href={SEARCH_PATH}
-          className="inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-ink underline-offset-4 hover:underline sm:self-auto"
-        >
-          Browse all properties
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
-      </div>
-      <ul className={HOME_CARD_GRID}>
-        {toCardData(featured).map((listing) => (
-          <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} featured save={saveProps(saveContext, listing.id)} sizes={HOME_CARD_IMAGE_SIZES} />
-          </li>
-        ))}
-        {toCardData(newest).map((listing) => (
-          <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} save={saveProps(saveContext, listing.id)} sizes={HOME_CARD_IMAGE_SIZES} />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <ShowcaseSection
+        id="home-listings"
+        heading={mainFeatured ? "Verified homes worth a closer look" : "Newest listings"}
+        subline={
+          mainFeatured ? <FeaturedDisclosure /> : "The latest homes, apartments, land and commercial property on the marketplace."
+        }
+        link={{ href: SEARCH_PATH, label: "Browse all properties" }}
+        showcase={main}
+        saveContext={saveContext}
+      />
+      {countyShown && (
+        <ShowcaseSection
+          id="home-county"
+          heading={countyFeatured ? `Featured in ${HOME_COUNTY}` : `Newest in ${HOME_COUNTY}`}
+          subline={countyFeatured ? <FeaturedDisclosure /> : `The latest listings in ${HOME_COUNTY} County.`}
+          link={{ href: searchHref({ q: HOME_COUNTY }), label: `See all in ${HOME_COUNTY}` }}
+          showcase={county}
+          saveContext={saveContext}
+        />
+      )}
+    </>
   );
 }
 
 function HomeListingsSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-6 w-72 max-w-full" />
-      <PropertyGridSkeleton count={4} grid={HOME_CARD_GRID} />
+    <div className="flex flex-col gap-16" aria-busy="true">
+      <span className="sr-only">Loading listings</span>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-6 w-72 max-w-full" />
+        <PropertyGridSkeleton count={HOME_SLOTS} grid={HOME_CARD_GRID} />
+      </div>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-6 w-56 max-w-full" />
+        <PropertyGridSkeleton count={HOME_COUNTY_SLOTS} grid={HOME_CARD_GRID} />
+      </div>
     </div>
   );
 }
@@ -153,11 +151,9 @@ export default function HomePage() {
           <LocationTiles />
         </section>
 
-        <section aria-label="Listings">
-          <Suspense fallback={<HomeListingsSkeleton />}>
-            <HomeListings />
-          </Suspense>
-        </section>
+        <Suspense fallback={<HomeListingsSkeleton />}>
+          <HomeListings />
+        </Suspense>
       </PageContainer>
     </>
   );

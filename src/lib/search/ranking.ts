@@ -33,6 +33,10 @@ export const HOME_SLOTS = 8;
 export const HOME_PER_LISTER = 2;
 export const FEATURED_MIN_PHOTOS = FEATURED_PHOTO_COUNT;
 
+/** The home county section (prompt S14 decisions 2 and 4): one row of the 4-column home grid. */
+export const HOME_COUNTY = "Nairobi";
+export const HOME_COUNTY_SLOTS = 4;
+
 const seedFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: NAIROBI_TIME_ZONE,
   year: "numeric",

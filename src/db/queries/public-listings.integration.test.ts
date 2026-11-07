@@ -4,8 +4,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, PAGE_SIZE, type SearchFilters } from "@/lib/search/params";
-import { HOME_SLOTS } from "@/lib/search/ranking";
-import { homeShowcase, searchListings, type PublicListingCard } from "./public-listings";
+import { HOME_COUNTY_SLOTS, HOME_PER_LISTER, HOME_SLOTS } from "@/lib/search/ranking";
+import { homeSections, homeShowcase, searchListings, type PublicListingCard } from "./public-listings";
 
 /**
  * Public search, ranking and the home showcase against the Neon test branch (TEST_DATABASE_URL).
@@ -437,5 +437,70 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     const { featured, newest } = await homeShowcase(db, NOW);
     expect(featured).toEqual([]);
     expect(newest.map((card: PublicListingCard) => card.id)).toEqual(ids.slice(0, HOME_SLOTS));
+  });
+
+  /* ---------------------------------------------------------------------- */
+  /* Home county section (S14)                                              */
+  /* ---------------------------------------------------------------------- */
+
+  it("features verified Nairobi listings only, 2 per lister, never repeating the main section", async () => {
+    const ownerOf = new Map<string, string>();
+    for (let l = 1; l <= 5; l++) {
+      const owner = `s14_v${l}`;
+      await insertLister(owner, { verified: true });
+      for (let i = 0; i < 3; i++) ownerOf.set(await insertListing({ owner, photos: 5, ageDays: 10 + l + i / 10 }), owner);
+    }
+    await insertLister("s14_coast", { verified: true });
+    const coast = await insertListing({ owner: "s14_coast", photos: 5, county: "Mombasa", town: "Nyali", ageDays: 3 });
+    await insertLister("s14_plain");
+    const plain = [
+      await insertListing({ owner: "s14_plain", photos: 8, ageDays: 0.1 }),
+      await insertListing({ owner: "s14_plain", photos: 8, ageDays: 0.2 }),
+    ];
+
+    const { main, county } = await homeSections(db, NOW);
+    // 11 verified candidates fill the main section's featured slots, so it shows no newest.
+    expect(main.featured).toHaveLength(HOME_SLOTS);
+    expect(main.newest).toEqual([]);
+    expect(main.featured.map((card) => card.id)).toEqual((await homeShowcase(db, NOW)).featured.map((card) => card.id));
+
+    expect(county.featured).toHaveLength(HOME_COUNTY_SLOTS);
+    expect(county.newest).toEqual([]);
+    const mainIds = new Set(main.featured.map((card) => card.id));
+    for (const card of county.featured) {
+      expect(card.county).toBe("Nairobi");
+      expect(card.verified).toBe(true);
+      expect(mainIds.has(card.id)).toBe(false);
+      expect(ownerOf.has(card.id)).toBe(true);
+    }
+    expect(county.featured.map((card) => card.id)).not.toContain(coast);
+    expect(county.featured.some((card) => plain.includes(card.id))).toBe(false);
+    const perLister = new Map<string, number>();
+    for (const card of county.featured) perLister.set(ownerOf.get(card.id)!, (perLister.get(ownerOf.get(card.id)!) ?? 0) + 1);
+    expect(Math.max(...perLister.values())).toBeLessThanOrEqual(HOME_PER_LISTER);
+  });
+
+  it("falls back to the newest Nairobi listings not already shown, unlabelled", async () => {
+    await insertLister("s14_only");
+    const ids: string[] = [];
+    for (let i = 0; i < HOME_SLOTS + 2; i++) ids.push(await insertListing({ owner: "s14_only", photos: 6, ageDays: i + 1 }));
+    await insertListing({ owner: "s14_only", photos: 6, county: "Kiambu", town: "Ruiru", ageDays: HOME_SLOTS + 5 });
+
+    const { main, county } = await homeSections(db, NOW);
+    expect(main.newest.map((card) => card.id)).toEqual(ids.slice(0, HOME_SLOTS));
+    expect(county.featured).toEqual([]);
+    expect(county.newest.map((card) => card.id)).toEqual(ids.slice(HOME_SLOTS));
+  });
+
+  it("leaves the county section empty when no Nairobi listings are left to show", async () => {
+    await insertLister("s14_away");
+    for (let i = 0; i < HOME_SLOTS + 2; i++) {
+      await insertListing({ owner: "s14_away", photos: 6, county: "Nakuru", town: "Nakuru", ageDays: i + 1 });
+    }
+    await insertListing({ owner: "s14_away", photos: 6, ageDays: 0.5 });
+
+    const { main, county } = await homeSections(db, NOW);
+    expect(main.newest).toHaveLength(HOME_SLOTS);
+    expect(county).toEqual({ featured: [], newest: [] });
   });
 });

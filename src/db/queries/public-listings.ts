@@ -1,11 +1,13 @@
 import "server-only";
-import { and, eq, gte, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, gte, ilike, inArray, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { agencies, favorites, listerProfiles, properties, propertyImages } from "@/db/schema";
 import type { LandSizeUnit } from "@/lib/format";
 import { PAGE_SIZE, escapeLike, type SearchFilters } from "@/lib/search/params";
 import {
   FEATURED_MIN_PHOTOS,
+  HOME_COUNTY,
+  HOME_COUNTY_SLOTS,
   HOME_PER_LISTER,
   HOME_SLOTS,
   VERIFIED_STRIP_SIZE,
@@ -238,10 +240,24 @@ export interface HomeShowcase {
   newest: PublicListingCard[];
 }
 
-/** The home listings section (decision 9). The two lists never overlap; together at most HOME_SLOTS. */
-export async function homeShowcase(db: DbExecutor, now = new Date()): Promise<HomeShowcase> {
-  const seed = nairobiDateSeed(now);
-  const matched = matchedSql(publishedOnly, null, now);
+interface SectionSpec {
+  /** Which published listings the section draws from. Must include `publishedOnly`. */
+  where: SQL;
+  slots: number;
+  /** Listings already shown in an earlier section. Server-produced ids, each a bound parameter. */
+  excludeIds: readonly string[];
+  seed: string;
+  now: Date;
+}
+
+/**
+ * One home section (S7 decision 9; S14 decision 5): verified listings that meet the quality bar,
+ * at most HOME_PER_LISTER per lister in this section, rotated daily; the newest fill the rest.
+ * The two lists never overlap; together at most `slots`.
+ */
+async function showcaseSection(db: DbExecutor, { where, slots, excludeIds, seed, now }: SectionSpec): Promise<HomeShowcase> {
+  const scoped = excludeIds.length > 0 ? and(where, notInArray(p.id, [...excludeIds]))! : where;
+  const matched = matchedSql(scoped, null, now);
   const [featured, newestRows] = await Promise.all([
     cards(
       db,
@@ -252,13 +268,40 @@ export async function homeShowcase(db: DbExecutor, now = new Date()): Promise<Ho
           where verified and photo_count >= ${FEATURED_MIN_PHOTOS} and "coverKey" is not null
         )
         select ${cardSelect} from candidates where lr <= ${HOME_PER_LISTER}
-        order by ${rotationKey(seed)} limit ${HOME_SLOTS}`,
+        order by ${rotationKey(seed)} limit ${slots}`,
     ),
-    cards(db, sql`with matched as (${matched}) select ${cardSelect} from matched order by ${strictOrderBy("newest")} limit ${HOME_SLOTS}`),
+    cards(db, sql`with matched as (${matched}) select ${cardSelect} from matched order by ${strictOrderBy("newest")} limit ${slots}`),
   ]);
   const featuredIds = new Set(featured.map((card) => card.id));
-  const newest = newestRows.filter((card) => !featuredIds.has(card.id)).slice(0, HOME_SLOTS - featured.length);
+  const newest = newestRows.filter((card) => !featuredIds.has(card.id)).slice(0, slots - featured.length);
   return { featured, newest };
+}
+
+export interface HomeSections {
+  /** "Verified homes worth a closer look": site-wide, HOME_SLOTS cards. */
+  main: HomeShowcase;
+  /** "Featured in HOME_COUNTY": that county only, never repeating a card from `main`. */
+  county: HomeShowcase;
+}
+
+/** Both home sections (S14 decisions 1–2). The county pick needs the main section's ids, so it runs second. */
+export async function homeSections(db: DbExecutor, now = new Date()): Promise<HomeSections> {
+  const seed = nairobiDateSeed(now);
+  const main = await showcaseSection(db, { where: publishedOnly, slots: HOME_SLOTS, excludeIds: [], seed, now });
+  const shown = [...main.featured, ...main.newest].map((card) => card.id);
+  const county = await showcaseSection(db, {
+    where: and(publishedOnly, sql`lower(${p.county}) = lower(${HOME_COUNTY})`)!,
+    slots: HOME_COUNTY_SLOTS,
+    excludeIds: shown,
+    seed,
+    now,
+  });
+  return { main, county };
+}
+
+/** The main home section on its own. */
+export async function homeShowcase(db: DbExecutor, now = new Date()): Promise<HomeShowcase> {
+  return showcaseSection(db, { where: publishedOnly, slots: HOME_SLOTS, excludeIds: [], seed: nairobiDateSeed(now), now });
 }
 
 export const SIMILAR_LIMIT = 3;

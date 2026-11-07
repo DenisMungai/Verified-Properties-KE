@@ -4,17 +4,20 @@ import { Suspense } from "react";
 import { PlanCard } from "@/components/billing/PlanCard";
 import { planTermsLine } from "@/components/billing/plan-copy";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { Badge, Skeleton, buttonClasses } from "@/components/ui";
+import { Skeleton, buttonClasses } from "@/components/ui";
+import { GetVerifiedLink, activeVerificationPriceKes, verificationPeriodLabel } from "@/components/verification/PublicOffer";
 import { getDb } from "@/db";
 import { getActivePlans } from "@/db/queries/billing";
 import { checkoutPath } from "@/lib/billing/receipt-path";
+import { formatKes } from "@/lib/format";
 import { cardPaymentsEnabled } from "@/lib/card";
 import { signInPath } from "@/lib/safe-redirect";
 import { getCurrentUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Listing plans for agents, owners and agencies. Drafts are free; pay monthly with M-Pesa when you publish.",
+  description:
+    "Listing plans for agents, owners and agencies, and the verification add-on. Drafts are free; pay monthly with M-Pesa when you publish.",
 };
 
 /**
@@ -55,6 +58,31 @@ async function Plans() {
   );
 }
 
+/**
+ * Live verification price and CTA (prompt S14 decision 8). With no active verification plan, only
+ * the explanation above shows.
+ */
+async function VerificationOffer() {
+  const priceKes = await activeVerificationPriceKes();
+  if (priceKes === null) return null;
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-small text-ink">
+        <span className="tabular text-title font-bold">{formatKes(priceKes)}</span> {verificationPeriodLabel()}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link
+          href="/how-it-works#verification"
+          className="inline-flex min-h-control items-center text-small font-medium text-emerald-700 underline underline-offset-4 hover:text-ink"
+        >
+          What we check
+        </Link>
+        <GetVerifiedLink />
+      </div>
+    </div>
+  );
+}
+
 function PlansSkeleton() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
@@ -77,16 +105,17 @@ export default function PricingPage() {
         <Plans />
       </Suspense>
       <section aria-labelledby="verification-addon-heading" className="flex flex-col gap-3 rounded-lg bg-mint-50 p-4 md:p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 id="verification-addon-heading" className="text-title text-emerald-700">
-            Verification add-on
-          </h2>
-          <Badge>Coming soon</Badge>
-        </div>
+        <h2 id="verification-addon-heading" className="text-title text-emerald-700">
+          Verification add-on
+        </h2>
         <p className="max-w-prose text-small text-ink">
           A monthly add-on on top of any plan. After an admin review passes, your listings show &ldquo;Profile
-          verified&rdquo;. Paying alone never makes anyone verified.
+          verified&rdquo;, rank first in search and can be featured on the home page. Paying alone never makes anyone
+          verified.
         </p>
+        <Suspense fallback={<Skeleton className="h-control-lg w-64 max-w-full rounded-lg" />}>
+          <VerificationOffer />
+        </Suspense>
       </section>
     </PageContainer>
   );
