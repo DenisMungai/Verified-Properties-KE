@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { messageStatus } from "@/db/queries/messaging";
@@ -18,6 +19,8 @@ function json(body: unknown, status = 200): Response {
 }
 
 export async function GET(request: Request): Promise<Response> {
+  // Outside the try, so a build-time prerender interruption isn't caught and logged as a failure.
+  await connection();
   try {
     const user = await getCurrentUser();
     if (!user?.emailVerified) return json({ error: "unauthorized" }, 401);

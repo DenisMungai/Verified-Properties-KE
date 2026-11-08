@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { getDb } from "@/db";
 import { getUserRoles } from "@/db/queries/roles";
 import { getAuth } from "@/lib/auth";
@@ -22,6 +23,8 @@ export interface CurrentUser {
  * inside <Suspense> under Cache Components. Roles are read fresh from the database.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // Stop any prerender pass here, so Better Auth's session query never starts and gets aborted.
+  await connection();
   const session = await getAuth().api.getSession({ headers: await headers() });
   if (!session) return null;
   const { user } = session;
