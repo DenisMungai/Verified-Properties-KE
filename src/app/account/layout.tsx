@@ -4,13 +4,19 @@ import { AccountNav } from "@/components/account/AccountNav";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ADMIN_ROLES, LISTER_ROLES, hasAnyRole } from "@/lib/roles";
+import { unreadForUser } from "@/lib/messaging/unread";
 import { requireUser } from "@/lib/session";
 
 async function AccountNavLoader() {
   const user = await requireUser();
   return (
     <AccountNav
-      user={{ name: user.name, isLister: hasAnyRole(user.roles, LISTER_ROLES), isAdmin: hasAnyRole(user.roles, ADMIN_ROLES) }}
+      user={{
+        name: user.name,
+        isLister: hasAnyRole(user.roles, LISTER_ROLES),
+        isAdmin: hasAnyRole(user.roles, ADMIN_ROLES),
+        unread: await unreadForUser(user.id),
+      }}
     />
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { buttonClasses } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { unreadForUser } from "@/lib/messaging/unread";
 import { getCurrentUser } from "@/lib/session";
 import { ADMIN_ROLES, LISTER_ROLES, hasAnyRole } from "@/lib/roles";
 import { AccountMenu } from "./AccountMenu";
@@ -19,6 +20,7 @@ async function headerUser(): Promise<HeaderUser | null> {
     name: user.name,
     isLister: hasAnyRole(user.roles, LISTER_ROLES),
     isAdmin: hasAnyRole(user.roles, ADMIN_ROLES),
+    unread: await unreadForUser(user.id),
   };
 }
 

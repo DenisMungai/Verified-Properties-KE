@@ -64,6 +64,13 @@
       "when": 1794035620110,
       "tag": "0008_invoice_lister_hidden",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794143864145,
+      "tag": "0009_messaging",
+      "breakpoints": true
     }
   ]
 }

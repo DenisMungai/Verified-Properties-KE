@@ -2,9 +2,11 @@
 
 import { createHash } from "node:crypto";
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
+import { conversationHref } from "@/lib/messaging/paths";
 import { setFavorite } from "@/db/queries/favorites";
 import { createInquiry, type InquiryResult } from "@/db/queries/inquiries";
 import { recordListingView } from "@/db/queries/listing-views";
@@ -81,6 +83,8 @@ const INQUIRY_REFUSALS: Record<Extract<InquiryResult, { ok: false }>["reason"], 
   own_listing: "This is your own listing.",
   too_many: "You've already sent 3 messages about this property today. Please wait for a reply.",
   duplicate: "You already sent this exact message. The lister has it.",
+  blocked: "You can't message this lister.",
+  closed: "This conversation was closed by VerifiedPropertiesKE.",
 };
 
 export async function sendInquiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -104,9 +108,9 @@ export async function sendInquiryAction(_prev: ActionState, formData: FormData):
   }
   if (!result.ok) return { formError: INQUIRY_REFUSALS[result.reason], values };
 
-  // Re-render the listing so the lister panel shows the contact details this inquiry unlocked.
-  refresh();
-  return { ok: true, message: "Message sent. The lister will reply to you directly." };
+  // The inquiry is now the first message of a conversation (prompt S15 decisions 1 and 4): the
+  // buyer lands in it, with the lister's contact details the inquiry unlocked in its header.
+  redirect(`${conversationHref(result.conversationId)}?sent=1`);
 }
 
 /* -------------------------------------------------------------------------- */

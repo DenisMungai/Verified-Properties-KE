@@ -19,10 +19,12 @@ import { Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { getListerContact, hasInquired } from "@/db/queries/inquiries";
 import { getPublicListing, type PublicListingDetail } from "@/db/queries/listing-detail";
+import { conversationForListing } from "@/db/queries/messaging";
 import { getManageableListing } from "@/db/queries/listings";
 import { similarListings } from "@/db/queries/public-listings";
 import { formatKes, formatNairobiDate } from "@/lib/format";
 import { contactVisibility, visibleContact } from "@/lib/listings/contact";
+import { conversationHref } from "@/lib/messaging/paths";
 import { signInPath } from "@/lib/safe-redirect";
 import { RENT_SUFFIX } from "@/lib/search/card";
 import { MODE_LABELS, searchHref, type SearchMode } from "@/lib/search/params";
@@ -111,12 +113,13 @@ async function ListingDetail({ params }: { params: Params }) {
 
   const user = await getCurrentUser();
   const signedIn = user?.emailVerified ? user : null;
-  const [mine, inquired] = signedIn
+  const [mine, inquired, conversationId] = signedIn
     ? await Promise.all([
         getManageableListing(db, signedIn.id, listing.id).then(Boolean),
         hasInquired(db, signedIn.id, listing.id),
+        conversationForListing(db, signedIn.id, listing.id),
       ])
-    : [false, false];
+    : [false, false, null];
 
   // The contact rule is applied here, on the server: hidden details never reach the page.
   const visibility = contactVisibility({ listerVerified: listing.verified, viewerHasInquired: inquired });
@@ -127,7 +130,11 @@ async function ListingDetail({ params }: { params: Params }) {
     ? { kind: "signed_out", signInHref: signInPath(path) }
     : mine
       ? { kind: "own" }
-      : { kind: "buyer", defaults: { fullName: signedIn.name, email: signedIn.email } };
+      : {
+          kind: "buyer",
+          defaults: { fullName: signedIn.name, email: signedIn.email },
+          conversationHref: conversationId ? conversationHref(conversationId) : null,
+        };
 
   const saveContext = await saveContextFor([listing.id], path);
   const photos = listing.photos.map((photo) => ({ baseUrl: publicImageBaseUrl(photo.storageKey), alt: photo.altText }));

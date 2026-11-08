@@ -1,5 +1,6 @@
 import { NavLink } from "@/components/layout/NavLink";
 import { accountLinks, type HeaderUser } from "@/components/layout/nav";
+import { UnreadBadge } from "@/components/messaging/UnreadBadge";
 
 /**
  * Design "01 — Lister Dashboard" sidebar: active item on Soft green with Forest text.
@@ -15,10 +16,11 @@ export function AccountNav({ user }: { user: HeaderUser }) {
             <NavLink
               href={link.href}
               exact={link.href === "/account"}
-              className="flex min-h-control items-center whitespace-nowrap rounded-md px-3 text-small font-medium text-slate-600 transition-colors hover:bg-white hover:text-ink"
+              className="flex min-h-control items-center gap-2 whitespace-nowrap rounded-md px-3 text-small font-medium text-slate-600 transition-colors hover:bg-white hover:text-ink"
               activeClassName="bg-mint-50 font-semibold text-emerald-700 hover:bg-mint-50 hover:text-emerald-700"
             >
               {link.label}
+              {link.badge && <UnreadBadge initial={user.unread} className="lg:ml-auto" />}
             </NavLink>
           </li>
         ))}

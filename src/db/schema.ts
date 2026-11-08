@@ -440,6 +440,9 @@ export const conversations = pgTable(
       .references(() => users.id),
     createdAt,
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set by a moderator (prompt S15 decision 13): nobody can send any more. */
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closedBy: text("closed_by").references(() => users.id),
   },
   (t) => [
     unique("conversations_unique_participants").on(t.propertyId, t.buyerUserId, t.listerUserId),
@@ -464,11 +467,85 @@ export const messages = pgTable(
     createdAt,
     readAt: timestamp("read_at", { withTimezone: true }),
     reportedAt: timestamp("reported_at", { withTimezone: true }),
+    /** Removed by a moderator: the body stays for evidence but is never shown to participants. */
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+    removedBy: text("removed_by").references(() => users.id),
   },
   (t) => [
     check("messages_body_length", sql`char_length(${t.body}) between 1 and 5000`),
     index("messages_conversation_recent_idx").on(t.conversationId, t.createdAt),
+    index("messages_unread_idx").on(t.conversationId).where(sql`${t.readAt} is null`),
   ],
+);
+
+/** Either person can block the other: no messages either way in any conversation between them. */
+export const userBlocks = pgTable(
+  "user_blocks",
+  {
+    blockerUserId: text("blocker_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedUserId: text("blocked_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt,
+  },
+  (t) => [
+    primaryKey({ columns: [t.blockerUserId, t.blockedUserId] }),
+    check("user_blocks_not_self", sql`${t.blockerUserId} <> ${t.blockedUserId}`),
+    index("user_blocks_blocked_idx").on(t.blockedUserId),
+  ],
+);
+
+/** A recipient's report of one message (prompt S15 decision 12). */
+export const messageReports = pgTable(
+  "message_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    reporterUserId: text("reporter_user_id").references(() => users.id, { onDelete: "set null" }),
+    reason: text("reason").notNull(),
+    details: text("details"),
+    status: reportStatus("status").notNull().default("open"),
+    resolvedBy: text("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt,
+  },
+  (t) => [
+    check(
+      "message_reports_details_length",
+      sql`${t.details} is null or char_length(${t.details}) <= 2000`,
+    ),
+    index("message_reports_status_idx").on(t.status, t.createdAt.desc()),
+    uniqueIndex("message_reports_one_open_per_reporter")
+      .on(t.messageId, t.reporterUserId)
+      .where(sql`${t.status} in ('open', 'reviewing')`),
+  ],
+);
+
+/** Append-only (enforced by trigger): every moderator view and decision on a conversation. */
+export const messageModerationLog = pgTable(
+  "message_moderation_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id),
+    messageId: uuid("message_id").references(() => messages.id),
+    reportId: uuid("report_id").references(() => messageReports.id),
+    reason: text("reason"),
+    createdAt,
+  },
+  (t) => [index("message_moderation_log_conversation_idx").on(t.conversationId, t.createdAt.desc())],
 );
 
 /* -------------------------------------------------------------------------- */

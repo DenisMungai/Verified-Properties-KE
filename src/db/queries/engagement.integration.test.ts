@@ -4,7 +4,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { savedIdsAmong, setFavorite } from "./favorites";
-import { createInquiry, getListerContact, hasInquired, listReceived, markRead, unreadCount } from "./inquiries";
+import { createInquiry, getListerContact, hasInquired } from "./inquiries";
+import { listConversations, unreadTotal } from "./messaging";
 import { getPublicListing } from "./listing-detail";
 import { savedListings, similarListings } from "./public-listings";
 import { createReport } from "./reports";
@@ -189,7 +190,7 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
   it("creates an inquiry addressed to the owner, and remembers that the buyer asked", async () => {
     const { id } = await insertListing("s8e_owner");
     expect(await hasInquired(db, "s8e_buyer", id)).toBe(false);
-    expect(await createInquiry(db, "s8e_buyer", id, inquiry())).toEqual({ ok: true });
+    expect(await createInquiry(db, "s8e_buyer", id, inquiry())).toMatchObject({ ok: true });
     const rows = await client.query(`select sender_user_id, recipient_user_id, phone, message from inquiries where property_id = $1`, [id]);
     expect(rows.rows).toEqual([
       { sender_user_id: "s8e_buyer", recipient_user_id: "s8e_owner", phone: "+254711222333", message: inquiry().message },
@@ -208,30 +209,28 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
     expect(await createInquiry(db, "s8e_buyer", draft.id, inquiry())).toEqual({ ok: false, reason: "unavailable" });
 
     const { id } = await insertListing("s8e_owner");
-    expect(await createInquiry(db, "s8e_buyer", id, inquiry("First message about the flat."))).toEqual({ ok: true });
+    expect(await createInquiry(db, "s8e_buyer", id, inquiry("First message about the flat."))).toMatchObject({ ok: true });
     expect(await createInquiry(db, "s8e_buyer", id, inquiry("First message about the flat."))).toEqual({ ok: false, reason: "duplicate" });
-    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Second message about the flat."))).toEqual({ ok: true });
-    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Third message about the flat."))).toEqual({ ok: true });
+    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Second message about the flat."))).toMatchObject({ ok: true });
+    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Third message about the flat."))).toMatchObject({ ok: true });
     expect(await createInquiry(db, "s8e_buyer", id, inquiry("Fourth message about the flat."))).toEqual({ ok: false, reason: "too_many" });
     // Older than 24 hours no longer counts.
     await client.query(`update inquiries set created_at = now() - interval '25 hours' where property_id = $1`, [id]);
-    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Fourth message about the flat."))).toEqual({ ok: true });
+    expect(await createInquiry(db, "s8e_buyer", id, inquiry("Fourth message about the flat."))).toMatchObject({ ok: true });
   });
 
-  it("shows inquiries to the owner and the agency admin only, and scopes mark-as-read", async () => {
+  it("starts one conversation with the listing owner (not the agency admin) and reuses it", async () => {
     const agencyListing = await insertListing("s8e_agent", { agencyId });
-    await createInquiry(db, "s8e_buyer", agencyListing.id, inquiry());
-    const [received] = await listReceived(db, "s8e_agent");
-    expect(received).toMatchObject({ fullName: "Buyer Person", phone: "+254711222333", readAt: null });
-    expect(await listReceived(db, "s8e_agency_admin")).toHaveLength(1);
-    expect(await listReceived(db, "s8e_other")).toEqual([]);
-    expect(await unreadCount(db, "s8e_agent")).toBe(1);
+    const first = await createInquiry(db, "s8e_buyer", agencyListing.id, inquiry("First message about the flat."));
+    const second = await createInquiry(db, "s8e_buyer", agencyListing.id, inquiry("Second message about the flat."));
+    expect(first.ok && second.ok && first.conversationId === second.conversationId).toBe(true);
 
-    expect(await markRead(db, "s8e_other", received.id)).toBe(0);
-    expect(await markRead(db, "s8e_other")).toBe(0);
-    expect(await unreadCount(db, "s8e_agent")).toBe(1);
-    expect(await markRead(db, "s8e_agent", received.id)).toBe(1);
-    expect(await unreadCount(db, "s8e_agent")).toBe(0);
+    const [conversation] = await listConversations(db, "s8e_agent");
+    expect(conversation).toMatchObject({ role: "lister", otherName: "s8e_buyer", unread: 2, lastExcerpt: "Second message about the flat." });
+    expect(await unreadTotal(db, "s8e_agent")).toBe(2);
+    expect(await listConversations(db, "s8e_agency_admin")).toEqual([]);
+    expect(await listConversations(db, "s8e_other")).toEqual([]);
+    expect(await listConversations(db, "s8e_buyer")).toMatchObject([{ role: "buyer", unread: 0, lastFromMe: true }]);
   });
 
   /* ---------------------------------------------------------------------- */
@@ -241,14 +240,14 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
   it("accepts one open report per person, never on your own or an unpublished listing", async () => {
     const { id } = await insertListing("s8e_owner");
     const input = { reason: "scam" as const, details: "Asked for a deposit before any viewing." };
-    expect(await createReport(db, "s8e_buyer", id, input)).toEqual({ ok: true });
+    expect(await createReport(db, "s8e_buyer", id, input)).toMatchObject({ ok: true });
     expect(await createReport(db, "s8e_buyer", id, input)).toEqual({ ok: false, reason: "already_reported" });
-    expect(await createReport(db, "s8e_other", id, input)).toEqual({ ok: true });
+    expect(await createReport(db, "s8e_other", id, input)).toMatchObject({ ok: true });
     expect(await createReport(db, "s8e_owner", id, input)).toEqual({ ok: false, reason: "own_listing" });
     const draft = await insertListing("s8e_owner", { status: "draft" });
     expect(await createReport(db, "s8e_buyer", draft.id, input)).toEqual({ ok: false, reason: "unavailable" });
     // After the report is resolved, the same person may report again.
     await client.query(`update listing_reports set status = 'dismissed' where property_id = $1`, [id]);
-    expect(await createReport(db, "s8e_buyer", id, input)).toEqual({ ok: true });
+    expect(await createReport(db, "s8e_buyer", id, input)).toMatchObject({ ok: true });
   });
 });

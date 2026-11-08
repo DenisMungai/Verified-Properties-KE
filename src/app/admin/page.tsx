@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Admin console", robots: { index: fal
 const QUICK_ACTIONS = [
   { href: "/admin/listings", label: "Review listings awaiting moderation" },
   { href: "/admin/verification", label: "Review verification requests" },
-  { href: "/admin/reports", label: "Review reported listings" },
+  { href: "/admin/reports", label: "Review reported listings and messages" },
   { href: "/admin/billing", label: "Payments and refunds" },
 ] as const;
 

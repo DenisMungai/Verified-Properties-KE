@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
    * Hostnames only (no scheme or port); `*` stands for one label, so the LAN IP can change.
    */
   allowedDevOrigins: ["127.0.0.1", "10.*.*.*", "192.168.*.*"],
+  // S15: inquiries moved into Messages; old bookmarks and emails still land somewhere useful.
+  async redirects() {
+    return [{ source: "/account/inquiries", destination: "/account/messages", permanent: false }];
+  },
 };
 
 export default nextConfig;

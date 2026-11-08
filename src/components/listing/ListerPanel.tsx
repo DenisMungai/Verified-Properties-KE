@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Mail, MessageSquare, Phone } from "lucide-react";
 import { Avatar, VerifiedBadge, buttonClasses } from "@/components/ui";
 import type { PublicListingDetail } from "@/db/queries/listing-detail";
 import { formatKes } from "@/lib/format";
@@ -12,7 +12,7 @@ import { InquiryForm } from "./InquiryForm";
 export type Viewer =
   | { kind: "signed_out"; signInHref: string }
   | { kind: "own" }
-  | { kind: "buyer"; defaults: { fullName: string; email: string } };
+  | { kind: "buyer"; defaults: { fullName: string; email: string }; conversationHref: string | null };
 
 const PRICE_LABEL = { sale: "Sale price", rent: "Rent" } as const;
 
@@ -83,7 +83,19 @@ export function ListerPanel({
         <ContactDetails contact={contact} visibility={visibility} viewer={viewer} />
       </div>
 
-      {viewer.kind === "buyer" && <InquiryForm listingId={listing.id} defaults={viewer.defaults} />}
+      {viewer.kind === "buyer" &&
+        (viewer.conversationHref ? (
+          // Follow-ups go to the conversation (prompt S15 decision 4).
+          <div className="flex flex-col gap-2">
+            <Link href={viewer.conversationHref} className={buttonClasses({ size: "lg", className: "w-full" })}>
+              <MessageSquare aria-hidden="true" className="size-4" />
+              Message the lister
+            </Link>
+            <p className="text-micro text-slate-600">Your conversation about this property is in Messages.</p>
+          </div>
+        ) : (
+          <InquiryForm listingId={listing.id} defaults={viewer.defaults} />
+        ))}
       {viewer.kind === "signed_out" && (
         <div className="flex flex-col gap-2">
           <Link href={viewer.signInHref} className={buttonClasses({ size: "lg", className: "w-full" })}>
@@ -95,8 +107,8 @@ export function ListerPanel({
       {viewer.kind === "own" && (
         <p className="rounded-md bg-mint-50 px-4 py-3 text-small text-emerald-700">
           This is your listing. Buyers&apos; messages appear in{" "}
-          <Link href="/account/inquiries" className="font-semibold underline">
-            Inquiries
+          <Link href="/account/messages" className="font-semibold underline">
+            Messages
           </Link>
           .
         </p>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/actions";
+import { UnreadBadge } from "@/components/messaging/UnreadBadge";
 import { accountLinks, type HeaderUser } from "./nav";
 
 function initials(name: string): string {
@@ -59,6 +60,7 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
           {initials(user.name)}
         </span>
         <span className="max-w-40 truncate">{user.name}</span>
+        <UnreadBadge initial={user.unread} />
         <ChevronDown aria-hidden="true" className="size-4 text-slate-600" />
       </button>
       <div
@@ -71,9 +73,10 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="flex min-h-control items-center rounded-md px-3 text-small text-ink hover:bg-mint-50"
+                className="flex min-h-control items-center justify-between gap-2 rounded-md px-3 text-small text-ink hover:bg-mint-50"
               >
                 {link.label}
+                {link.badge && <UnreadBadge initial={user.unread} />}
               </Link>
             </li>
           ))}

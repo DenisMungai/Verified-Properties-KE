@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
-import { agencies, listerProfiles, listingModerationLog, listingReports, properties, propertyImages, users } from "@/db/schema";
+import { agencies, listerProfiles, listingModerationLog, listingReports, messageReports, properties, propertyImages, users } from "@/db/schema";
 import { subscriptionPhase, type SubscriptionPhase } from "@/lib/billing/periods";
 import { getListingPool, getListingSubscription } from "./billing";
 import { editorColumns, type EditableListing } from "./listings";
@@ -41,7 +41,9 @@ export async function adminCounts(db: DbExecutor): Promise<AdminCounts> {
     .select({
       published: sql<number>`(select count(*)::int from ${p} where ${p.status} = 'published')`,
       pending: sql<number>`(select count(*)::int from ${p} where ${p.status} = 'pending_review')`,
-      openReports: sql<number>`(select count(*)::int from ${r} where ${r.status} in ('open', 'reviewing'))`,
+      // Listing and message reports share the Reports page (prompt S15 decision 13).
+      openReports: sql<number>`(select count(*)::int from ${r} where ${r.status} in ('open', 'reviewing'))
+        + (select count(*)::int from ${messageReports} where ${messageReports.status} in ('open', 'reviewing'))`,
     })
     .from(sql`(select 1) as one`);
   return row ?? { published: 0, pending: 0, openReports: 0 };

@@ -35,7 +35,7 @@ export function EngagementCards({ stats, verification }: { stats: ListerStats; v
   const views = figureLine(stats.views, "views");
   return (
     <>
-      <StatCard id="enquiries-stat" label="Enquiries (30 days)" value={count(stats.enquiries.total)} line={enquiries.line} lineTone={enquiries.tone} link={{ href: "/account/inquiries", label: "View enquiries" }} />
+      <StatCard id="enquiries-stat" label="Enquiries (30 days)" value={count(stats.enquiries.total)} line={enquiries.line} lineTone={enquiries.tone} link={{ href: "/account/messages", label: "View messages" }} />
       <StatCard id="views-stat" label="Property views (30 days)" value={count(stats.views.total)} line={views.line} lineTone={views.tone} link={{ href: "/account/listings", label: "Views by listing" }} />
       {verification && (
         <StatCard

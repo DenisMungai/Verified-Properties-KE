@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/actions";
+import { UnreadBadge } from "@/components/messaging/UnreadBadge";
 import { buttonClasses } from "@/components/ui/Button";
 import { Logo } from "./Logo";
 import { NavLink } from "./NavLink";
@@ -40,10 +41,11 @@ export function MobileMenu({ user }: { user: HeaderUser | null }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={dialogId}
-        className="inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50 group-has-[[data-header-overlay]]/header:text-white group-has-[[data-header-overlay]]/header:hover:bg-white/10"
+        className="relative inline-flex size-control items-center justify-center rounded-md text-ink hover:bg-mint-50 group-has-[[data-header-overlay]]/header:text-white group-has-[[data-header-overlay]]/header:hover:bg-white/10"
       >
         <Menu aria-hidden="true" className="size-5" />
         <span className="sr-only">Open menu</span>
+        {user && <UnreadBadge initial={user.unread} variant="dot" className="absolute right-2 top-2" />}
       </button>
       <dialog
         ref={dialogRef}
@@ -77,8 +79,9 @@ export function MobileMenu({ user }: { user: HeaderUser | null }) {
               <ul className="flex flex-col gap-1">
                 {accountLinks(user).map((link) => (
                   <li key={link.href}>
-                    <NavLink href={link.href} className={linkClasses} activeClassName={activeLinkClasses}>
+                    <NavLink href={link.href} className={`${linkClasses} justify-between gap-2`} activeClassName={activeLinkClasses}>
                       {link.label}
+                      {link.badge && <UnreadBadge initial={user.unread} />}
                     </NavLink>
                   </li>
                 ))}

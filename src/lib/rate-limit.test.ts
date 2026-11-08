@@ -67,3 +67,17 @@ describe("tooManyAttemptsMessage", () => {
     expect(tooManyAttemptsMessage(14 * 60 + 1)).toBe("Too many attempts. Try again in 15 minutes.");
   });
 });
+
+describe("messaging limits (prompt S15 decision 15)", () => {
+  it("allows 60 messages an hour per user, then refuses", async () => {
+    const limiter = createMemoryLimiter(() => 0);
+    for (let i = 0; i < 60; i++) expect((await limiter.limit(POLICIES.messagePerUser, "u")).ok).toBe(true);
+    expect((await limiter.limit(POLICIES.messagePerUser, "u")).ok).toBe(false);
+  });
+
+  it("sets report, block and poll limits", () => {
+    expect(POLICIES.messageReportPerUser).toMatchObject({ limit: 10, windowSeconds: 3600 });
+    expect(POLICIES.blockPerUser).toMatchObject({ limit: 20, windowSeconds: 3600 });
+    expect(POLICIES.messagePollPerUser).toMatchObject({ limit: 600, windowSeconds: 3600 });
+  });
+});

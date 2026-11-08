@@ -28,6 +28,11 @@ export const POLICIES = {
   inquiryPerUser: { name: "inquiry:user", limit: 10, windowSeconds: 60 * 60 },
   reportPerUser: { name: "report:user", limit: 10, windowSeconds: 60 * 60 },
   favoritePerUser: { name: "favorite:user", limit: 120, windowSeconds: 60 * 60 },
+  // In-app messaging (prompt S15 decision 15).
+  messagePerUser: { name: "message:user", limit: 60, windowSeconds: 60 * 60 },
+  messageReportPerUser: { name: "message-report:user", limit: 10, windowSeconds: 60 * 60 },
+  blockPerUser: { name: "block:user", limit: 20, windowSeconds: 60 * 60 },
+  messagePollPerUser: { name: "message-poll:user", limit: 600, windowSeconds: 60 * 60 },
   verificationUploadPerUser: { name: "verification-upload:user", limit: 30, windowSeconds: 60 * 60 },
   verificationSubmitPerUser: { name: "verification-submit:user", limit: 10, windowSeconds: 60 * 60 },
   /** Not abuse protection: counts one property view per visitor and listing per 30 minutes (S13). */

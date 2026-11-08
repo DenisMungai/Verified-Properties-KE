@@ -1,7 +1,14 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { approveListingAction, dismissReportAction, rejectListingAction, takeDownAction } from "@/app/admin/actions";
+import {
+  approveListingAction,
+  dismissMessageReportAction,
+  dismissReportAction,
+  rejectListingAction,
+  removeMessageAction,
+  takeDownAction,
+} from "@/app/admin/actions";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { useFocusFirstError } from "@/components/forms/useFocusFirstError";
 import { Button, Field, Textarea } from "@/components/ui";
@@ -32,6 +39,7 @@ function ReasonDecision({
   label,
   fieldLabel,
   hint,
+  extra,
 }: {
   action: Action;
   idName: string;
@@ -39,15 +47,20 @@ function ReasonDecision({
   label: string;
   fieldLabel: string;
   hint: string;
+  /** Extra hidden fields, e.g. `close` for "Remove and close". */
+  extra?: Record<string, string>;
 }) {
   const [state, formAction, pending] = useActionState(action, INITIAL_ACTION_STATE);
   const [length, setLength] = useState(state.values?.reason?.length ?? 0);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);
-  const fieldId = `${idName}-${id}-reason`;
+  const fieldId = `${idName}-${id}-${extra?.close ?? ""}-reason`;
   return (
     <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-3">
       <input type="hidden" name={idName} value={id} />
+      {Object.entries(extra ?? {}).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <FormAlert state={state} />
       <Field id={fieldId} label={fieldLabel} hint={hint} error={state.fieldErrors?.reason} required>
         {(control) => (
@@ -103,6 +116,27 @@ export function TakeDownForm({ reportId }: { reportId: string }) {
       label="Take listing down"
       fieldLabel="Reason for taking it down"
       hint={REASON_HINT}
+    />
+  );
+}
+
+export function DismissMessageReportForm({ reportId }: { reportId: string }) {
+  return <SimpleDecision action={dismissMessageReportAction} idName="reportId" id={reportId} label="Dismiss report" variant="secondary" />;
+}
+
+const MESSAGE_REASON_HINT = `Kept in the moderation log. ${DECISION_REASON_MIN}–${DECISION_REASON_MAX} characters.`;
+
+/** Remove the reported message, or remove it and close the conversation (prompt S15 decision 13). */
+export function RemoveMessageForm({ reportId, close }: { reportId: string; close: boolean }) {
+  return (
+    <ReasonDecision
+      action={removeMessageAction}
+      idName="reportId"
+      id={reportId}
+      extra={{ close: close ? "1" : "0" }}
+      label={close ? "Remove and close conversation" : "Remove message"}
+      fieldLabel={close ? "Reason for removing and closing" : "Reason for removing"}
+      hint={MESSAGE_REASON_HINT}
     />
   );
 }

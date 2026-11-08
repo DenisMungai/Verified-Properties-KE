@@ -1,14 +1,16 @@
 import "server-only";
-import { and, count, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { inquiries, listerProfiles, properties } from "@/db/schema";
 import type { ListerContact } from "@/lib/listings/contact";
 import type { InquiryInput } from "@/lib/validation/engagement";
 import { manageableBy } from "./listings";
+import { appendMessage, isBlockedBetween, startOrReuseConversation } from "./messaging";
 
 /**
- * Inquiries (prompt S8 decisions 1, 2 and 11). The recipient always comes from the property row.
- * Listers read inquiries for listings they can manage (`manageableBy`), never by id alone.
+ * Inquiries (prompt S8 decisions 1 and 2). The recipient always comes from the property row.
+ * Since S15 each inquiry also starts (or continues) the in-app conversation with the listing
+ * owner, where the lister reads and replies (prompt S15 decisions 1 and 6).
  */
 
 const p = properties;
@@ -18,11 +20,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** At most this many inquiries per sender per listing in 24 hours. */
 export const MAX_INQUIRIES_PER_LISTING_PER_DAY = 3;
-export const INBOX_LIMIT = 200;
 
 export type InquiryResult =
-  | { ok: true }
-  | { ok: false; reason: "unavailable" | "own_listing" | "too_many" | "duplicate" };
+  | { ok: true; conversationId: string }
+  | { ok: false; reason: "unavailable" | "own_listing" | "too_many" | "duplicate" | "blocked" | "closed" };
 
 /**
  * Must run in a transaction: an advisory lock per sender and listing serialises the 24-hour count,
@@ -45,6 +46,7 @@ export async function createInquiry(
     .limit(1);
   if (!property) return { ok: false, reason: "unavailable" };
   if (property.mine) return { ok: false, reason: "own_listing" };
+  if (await isBlockedBetween(tx, senderId, property.ownerUserId)) return { ok: false, reason: "blocked" };
 
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const recent = await tx
@@ -54,6 +56,10 @@ export async function createInquiry(
   if (recent.some((row) => row.message === input.message)) return { ok: false, reason: "duplicate" };
   if (recent.length >= MAX_INQUIRIES_PER_LISTING_PER_DAY) return { ok: false, reason: "too_many" };
 
+  // A moderator closed this conversation (so it already existed): nothing new is recorded.
+  const conversation = await startOrReuseConversation(tx, senderId, propertyId, property.ownerUserId);
+  if (conversation.closed) return { ok: false, reason: "closed" };
+
   await tx.insert(i).values({
     propertyId,
     senderUserId: senderId,
@@ -62,8 +68,12 @@ export async function createInquiry(
     phone: input.phone,
     email: input.email,
     message: input.message,
+    // The same instant as its message, so the two rows stay matched (and the 0009 backfill
+    // recognises it as already copied).
+    createdAt: now,
   });
-  return { ok: true };
+  await appendMessage(tx, conversation.id, senderId, input.message, now);
+  return { ok: true, conversationId: conversation.id };
 }
 
 export async function hasInquired(db: DbExecutor, userId: string, propertyId: string): Promise<boolean> {
@@ -86,54 +96,4 @@ export async function getListerContact(db: DbExecutor, ownerUserId: string): Pro
     .where(eq(listerProfiles.userId, ownerUserId))
     .limit(1);
   return row ?? { phone: null, email: null };
-}
-
-/** Inquiries about listings the user can manage, newest first. */
-export async function listReceived(db: DbExecutor, userId: string) {
-  return db
-    .select({
-      id: i.id,
-      fullName: i.fullName,
-      phone: i.phone,
-      email: i.email,
-      message: i.message,
-      readAt: i.readAt,
-      createdAt: i.createdAt,
-      propertyTitle: p.title,
-      propertySlug: p.slug,
-      propertyStatus: p.status,
-    })
-    .from(i)
-    .innerJoin(p, eq(p.id, i.propertyId))
-    .where(manageableBy(userId))
-    .orderBy(desc(i.createdAt), desc(i.id))
-    .limit(INBOX_LIMIT);
-}
-
-export type ReceivedInquiry = Awaited<ReturnType<typeof listReceived>>[number];
-
-export async function unreadCount(db: DbExecutor, userId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(i)
-    .innerJoin(p, eq(p.id, i.propertyId))
-    .where(and(manageableBy(userId), isNull(i.readAt)));
-  return row?.n ?? 0;
-}
-
-/** Marks one inquiry (or all of them) read, only within listings the user can manage. */
-export async function markRead(db: DbExecutor, userId: string, inquiryId?: string, now = new Date()): Promise<number> {
-  if (inquiryId !== undefined && !UUID.test(inquiryId)) return 0;
-  const updated = await db
-    .update(i)
-    .set({ readAt: now })
-    .where(
-      and(
-        isNull(i.readAt),
-        sql`${i.propertyId} in (select ${p.id} from ${p} where ${manageableBy(userId)})`,
-        inquiryId ? eq(i.id, inquiryId) : undefined,
-      ),
-    )
-    .returning({ id: i.id });
-  return updated.length;
 }
