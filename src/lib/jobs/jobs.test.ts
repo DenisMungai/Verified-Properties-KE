@@ -6,6 +6,7 @@ import { startOfNairobiDay } from "./reconciliation";
 import { reminderDue } from "./reminder-window";
 import { JOB_SCHEDULES, scheduleBaseUrl, scheduleIdFor } from "./schedules";
 import { verifyQstashSignature, type SigningKeys } from "./signature";
+import { runJob } from "./registry";
 import { JOB_NAMES, type JobDeps } from "./types";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -121,10 +122,26 @@ describe("verifyQstashSignature", () => {
   });
 });
 
+/**
+ * A stand-in Drizzle database: every builder call chains, and awaiting any chain resolves to no
+ * rows. Enough for storage-cleanup's prune and the run record (prompt S16) without a database.
+ */
+function emptyDb(calls: string[] = []): JobDeps["db"] {
+  const chain: unknown = new Proxy(() => chain, {
+    get(_target, prop) {
+      if (prop === "then") return (resolve: (rows: unknown[]) => void) => resolve([{ id: "run-1" }]);
+      calls.push(String(prop));
+      return () => chain;
+    },
+  });
+  return chain as JobDeps["db"];
+}
+
 describe("handleJobRequest", () => {
-  /** Never reached unless the signature passes; storage null makes storage-cleanup a no-op. */
+  /** Never reached unless the signature passes; storage null skips the storage sweep. */
   const deps = (): JobDeps =>
     ({
+      db: emptyDb(),
       now: () => new Date(),
       storage: null,
     }) as unknown as JobDeps;
@@ -158,7 +175,7 @@ describe("handleJobRequest", () => {
     const response = await post("storage-cleanup", qstashJwt(KEYS.current, ""));
     expect(response.status).toBe(200);
     const summary = (await response.json()) as { job: string; status: string };
-    expect(summary).toMatchObject({ job: "storage-cleanup", status: "skipped" });
+    expect(summary).toMatchObject({ job: "storage-cleanup", status: "ok", counts: { storageNotConfigured: 1 } });
   });
 
   it("returns 500 without details when the job throws", async () => {
@@ -172,5 +189,41 @@ describe("handleJobRequest", () => {
     );
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain("secret");
+  });
+});
+
+describe("runJob run records", () => {
+  it("records the start and the finish, and still returns the summary", async () => {
+    const calls: string[] = [];
+    const summary = await runJob("storage-cleanup", { db: emptyDb(calls), now: () => new Date(), storage: null } as unknown as JobDeps);
+    expect(summary.status).toBe("ok");
+    expect(calls).toContain("insert");
+    expect(calls).toContain("update");
+  });
+
+  it("runs the job even when recording fails", async () => {
+    const db = new Proxy(emptyDb(), {
+      get(target, prop) {
+        if (prop === "insert") throw new Error("job_runs missing");
+        return Reflect.get(target, prop) as unknown;
+      },
+    });
+    const summary = await runJob("storage-cleanup", { db, now: () => new Date(), storage: null } as unknown as JobDeps);
+    expect(summary.counts.storageNotConfigured).toBe(1);
+  });
+
+  it("rethrows a job failure after recording it", async () => {
+    const calls: string[] = [];
+    const deps = { db: emptyDb(calls), now: () => new Date(), storage: null, appUrl: "https://app.example" } as unknown as JobDeps;
+    // review-reminders reads the queues through `select`; make that throw.
+    const broken = new Proxy(deps.db, {
+      get(target, prop) {
+        if (prop === "select") throw new TypeError("boom");
+        return Reflect.get(target, prop) as unknown;
+      },
+    });
+    await expect(runJob("review-reminders", { ...deps, db: broken })).rejects.toThrow("boom");
+    expect(calls).toContain("insert");
+    expect(calls).toContain("update");
   });
 });

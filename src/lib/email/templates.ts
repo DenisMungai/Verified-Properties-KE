@@ -252,3 +252,63 @@ export function verificationDecisionEmail(
     text: [body, "", ...rows.map(([label, value]) => `${label}: ${value}`), "", `${copy.action}: ${url}`, "", footnote].join("\n"),
   };
 }
+
+/** A listing title for a subject line: one line, at most 60 characters. */
+function subjectTitle(title: string): string {
+  const flat = title.replace(/\s+/g, " ").trim();
+  return flat.length > 60 ? `${flat.slice(0, 59).trimEnd()}…` : flat;
+}
+
+/**
+ * New-message alert (prompt S16 decision 7). Never the message text, the sender's name or any
+ * contact details: only the public listing title, the unread count and a link to sign in.
+ */
+export function messageAlertEmail(name: string, details: { listingTitle: string; unreadCount: number }, url: string): EmailContent {
+  const count = Math.max(1, details.unreadCount);
+  const messages = count === 1 ? "1 new message" : `${count} new messages`;
+  const title = details.listingTitle.replace(/\s+/g, " ").trim();
+  const body = `Hi ${firstName(name)}, you have ${messages} about ${title}. Sign in to read and reply.`;
+  const footnote = `You're getting this because someone messaged you on ${BRAND.name}. Replies sent by email aren't delivered: reply on the site.`;
+  return {
+    subject: `New message about ${subjectTitle(title)}`,
+    html: layout({ heading: "You have a new message", body, actionLabel: "Open conversation", url, footnote }),
+    text: [body, "", `Open conversation: ${url}`, "", footnote].join("\n"),
+  };
+}
+
+export interface ReviewQueueLine {
+  count: number;
+  /** "2 days", already formatted; null when the queue has nothing overdue. */
+  oldest: string | null;
+}
+
+/** Moderators' daily digest (prompt S16 decision 6). Counts and ages only, no lister names. */
+export function reviewDigestEmail(
+  name: string,
+  details: { listings: ReviewQueueLine; verifications: ReviewQueueLine; overdueHours: number },
+  urls: { listings: string; verification: string },
+): EmailContent {
+  const total = details.listings.count + details.verifications.count;
+  const items = total === 1 ? "1 item is" : `${total} items are`;
+  const body = `Hi ${firstName(name)}, ${items} waiting for review longer than ${details.overdueHours} hours.`;
+  const line = (q: ReviewQueueLine) => (q.oldest ? `${q.count} (oldest ${q.oldest})` : String(q.count));
+  const rows = [
+    [`Listings waiting over ${details.overdueHours} hours`, line(details.listings)],
+    [`Verifications waiting over ${details.overdueHours} hours`, line(details.verifications)],
+  ] as const;
+  const footnote = `Verification reviews aim for 2 working days. You get this digest once a day while something is waiting.`;
+  return {
+    subject: total === 1 ? "1 item waiting for review" : `${total} items waiting for review`,
+    html: layout({ heading: "Review queue reminder", body, actionLabel: "Open listings queue", url: urls.listings, footnote, details: rows }),
+    text: [
+      body,
+      "",
+      ...rows.map(([label, value]) => `${label}: ${value}`),
+      "",
+      `Listings queue: ${urls.listings}`,
+      `Verification queue: ${urls.verification}`,
+      "",
+      footnote,
+    ].join("\n"),
+  };
+}

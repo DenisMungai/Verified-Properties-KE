@@ -5,6 +5,9 @@ import type { DbExecutor } from "@/db/executor";
 import { getListingSubscription } from "@/db/queries/billing";
 import { getBillingOverview, getCardPaymentForUser, getPaymentStatusForUser, listInvoices } from "@/db/queries/billing-page";
 import { receiptForUser } from "@/db/queries/receipts";
+import { runNotifications } from "@/lib/jobs/notifications";
+import type { JobDeps } from "@/lib/jobs/types";
+import { sendPaymentReceipt } from "./receipts";
 import * as schema from "@/db/schema";
 import { cardSettingsFor } from "@/lib/card/config";
 import type { CardDeps } from "@/lib/card/deps";
@@ -42,6 +45,7 @@ describe.skipIf(!url)("Billing UI flows (integration)", { timeout: 60_000 }, () 
   let card: CardDeps;
   let gateway: FakeCardGateway;
   let receiptN = 0;
+  let failEmails = 0;
 
   beforeAll(async () => {
     await client.connect();
@@ -56,6 +60,7 @@ describe.skipIf(!url)("Billing UI flows (integration)", { timeout: 60_000 }, () 
     await insertPlan({ code: "t_ui_agency", name: "Agency", price_kes: 9000, listing_limit: 100, is_agency_plan: true });
     clock = new Date();
     emails = [];
+    failEmails = 0;
     const env = parseServerEnv({
       DATABASE_URL: "postgres://unused",
       MPESA_CALLBACK_TOKEN: "x".repeat(32),
@@ -68,6 +73,12 @@ describe.skipIf(!url)("Billing UI flows (integration)", { timeout: 60_000 }, () 
       now: () => clock,
       rateLimiter: createMemoryLimiter(),
       email: async (message: EmailMessage) => {
+        if (failEmails > 0) {
+          failEmails -= 1;
+          const error = new Error("down");
+          error.name = "ResendDown";
+          throw error;
+        }
         emails.push(message);
       },
       appUrl: "https://app.example",
@@ -198,6 +209,40 @@ describe.skipIf(!url)("Billing UI flows (integration)", { timeout: 60_000 }, () 
 
     expect(await settleStkPayment(mpesa, first.started.paymentId)).toEqual({ outcome: "already_confirmed" });
     expect(emails).toHaveLength(2);
+  });
+
+  it("records a failed receipt, never sends it twice, and the notifications job retries it (S16)", async () => {
+    const userId = await insertUser("ui_receipt_retry");
+    failEmails = 1;
+    const { started, outcome } = await payMpesa(userId, "t_ui_starter", 1000);
+    // The payment is confirmed even though the receipt email failed.
+    expect(outcome).toMatchObject({ outcome: "confirmed" });
+    expect(emails).toHaveLength(0);
+    const row = () =>
+      one<{ status: string; attempts: number; last_error: string | null }>(
+        `select status, attempts, last_error from notification_deliveries where kind = 'payment_receipt' and ref = $1 and recipient_user_id = $2`,
+        [started.paymentId, userId],
+      );
+    expect(await row()).toEqual({ status: "failed", attempts: 1, last_error: "ResendDown" });
+
+    // A second send for the same payment (a replay) claims nothing and sends nothing.
+    expect(await sendPaymentReceipt(mpesa, started.paymentId)).toBe(0);
+    expect(emails).toHaveLength(0);
+
+    const jobDeps = { ...mpesa, sms: async () => ({ status: "not_configured" }), payments: null, card: null, storage: null } as unknown as JobDeps;
+    // Not before the 10-minute backoff.
+    expect((await runNotifications(jobDeps)).counts.retriesDue ?? 0).toBe(0);
+    clock = new Date(clock.getTime() + 11 * 60_000);
+    const result = await runNotifications(jobDeps);
+    expect(result.counts.retriesSent).toBe(1);
+    expect(emails).toHaveLength(1);
+    expect(emails[0].subject).toContain(started.invoiceNumber);
+    expect(await row()).toMatchObject({ status: "sent", attempts: 2, last_error: null });
+
+    // Sent rows are never retried.
+    clock = new Date(clock.getTime() + 60 * 60_000);
+    await runNotifications(jobDeps);
+    expect(emails).toHaveLength(1);
   });
 
   it("restarts a lapsed subscription on another plan from the payment, without credit", async () => {

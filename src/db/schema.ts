@@ -1065,3 +1065,68 @@ export const billingAuditLog = pgTable(
     index("billing_audit_log_created_idx").on(t.createdAt.desc()),
   ],
 );
+
+/* -------------------------------------------------------------------------- */
+/* Notifications and job runs (prompt S16)                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Message alerts, payment receipts and review digests (prompt S16 decisions 3–6): one row per
+ * kind, reference, recipient and channel, claimed before sending so a retry, an overlapping run or
+ * a replayed callback never sends twice. Ids, statuses and error names only, never contact data.
+ */
+export const notificationDeliveries = pgTable(
+  "notification_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** "message_alert", "payment_receipt" or "review_digest". */
+    kind: text("kind").notNull(),
+    /** First unread message id, payment id or Nairobi date (YYYY-MM-DD). */
+    ref: text("ref").notNull(),
+    recipientUserId: text("recipient_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull().default("email"),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(1),
+    /** The error's name or the skip reason, never an error message. */
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("notification_deliveries_once").on(t.kind, t.ref, t.recipientUserId, t.channel),
+    check("notification_deliveries_kind_valid", sql`${t.kind} in ('message_alert', 'payment_receipt', 'review_digest')`),
+    check("notification_deliveries_ref_length", sql`char_length(${t.ref}) between 1 and 64`),
+    check("notification_deliveries_channel_valid", sql`${t.channel} in ('email')`),
+    check("notification_deliveries_status_valid", sql`${t.status} in ('pending', 'sent', 'failed', 'skipped')`),
+    check("notification_deliveries_attempts_positive", sql`${t.attempts} >= 1`),
+    check("notification_deliveries_error_length", sql`${t.lastError} is null or char_length(${t.lastError}) <= 100`),
+    index("notification_deliveries_retry_idx").on(t.updatedAt).where(sql`${t.status} in ('failed', 'pending')`),
+    index("notification_deliveries_created_idx").on(t.createdAt),
+  ],
+);
+
+/** One row per job run (prompt S16 decision 8), for the admin Jobs & emails page. Counts only. */
+export const jobRuns = pgTable(
+  "job_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    job: text("job").notNull(),
+    status: text("status").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    durationMs: integer("duration_ms"),
+    counts: jsonb("counts").$type<Record<string, number>>().notNull().default({}),
+    /** The error's name only. */
+    error: text("error"),
+  },
+  (t) => [
+    check("job_runs_job_length", sql`char_length(${t.job}) between 1 and 40`),
+    check("job_runs_status_valid", sql`${t.status} in ('running', 'ok', 'skipped', 'failed')`),
+    check("job_runs_duration_nonneg", sql`${t.durationMs} is null or ${t.durationMs} >= 0`),
+    check("job_runs_error_length", sql`${t.error} is null or char_length(${t.error}) <= 100`),
+    index("job_runs_job_started_idx").on(t.job, t.startedAt.desc()),
+    index("job_runs_status_started_idx").on(t.status, t.startedAt.desc()),
+  ],
+);

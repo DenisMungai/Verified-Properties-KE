@@ -2,7 +2,8 @@ import type { JobName } from "./types";
 
 /**
  * QStash schedules (prompt S9 decision 14). Crons are UTC; Nairobi is UTC+3 with no daylight
- * saving. About 150 deliveries a day. Registered by `npm run jobs:schedule`.
+ * saving. About 440 deliveries a day since S16 (288 of them `notifications`), within QStash's free
+ * 1,000 a day. Registered by `npm run jobs:schedule`.
  */
 export const JOB_SCHEDULES: Record<JobName, { cron: string; nairobi: string }> = {
   "grace-expiry": { cron: "5 * * * *", nairobi: "hourly at :05" },
@@ -12,6 +13,24 @@ export const JOB_SCHEDULES: Record<JobName, { cron: string; nairobi: string }> =
   reconciliation: { cron: "0 22 * * *", nairobi: "01:00" },
   "storage-cleanup": { cron: "0 0 * * *", nairobi: "03:00" },
   "verification-lifecycle": { cron: "5 4 * * *", nairobi: "07:05" },
+  notifications: { cron: "*/5 * * * *", nairobi: "every 5 minutes" },
+  "review-reminders": { cron: "0 5 * * *", nairobi: "08:00" },
+};
+
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+
+/** How often each job runs, for the admin page's "Overdue" check (2× this with no finished run). */
+export const JOB_INTERVAL_MS: Record<JobName, number> = {
+  "grace-expiry": HOUR,
+  "plan-changes": HOUR,
+  "payment-checks": 15 * MINUTE,
+  "renewal-reminders": 24 * HOUR,
+  reconciliation: 24 * HOUR,
+  "storage-cleanup": 24 * HOUR,
+  "verification-lifecycle": 24 * HOUR,
+  notifications: 5 * MINUTE,
+  "review-reminders": 24 * HOUR,
 };
 
 export const SCHEDULE_ID_PREFIX = "vpk-";

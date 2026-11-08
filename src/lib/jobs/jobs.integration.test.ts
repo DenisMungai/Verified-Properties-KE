@@ -518,7 +518,10 @@ describe.skipIf(!url)("Background jobs (integration)", { timeout: 60_000 }, () =
     store.objects.set(`uploads/u/${randomUUID()}/a`, { body: Buffer.from("x"), contentType: "image/jpeg", lastModified: old });
     store.objects.set(`uploads/u/${randomUUID()}/b`, { body: Buffer.from("x"), contentType: "image/jpeg", lastModified: clock });
     const result = await runStorageCleanup(deps);
-    expect(result.counts).toEqual({ uploadsDeleted: 1, imagesDeleted: 0, avatarsDeleted: 0, documentsDeleted: 0 });
+    // Since S16 the job also prunes old job runs and deliveries first.
+    expect(result.counts).toMatchObject({ uploadsDeleted: 1, imagesDeleted: 0, avatarsDeleted: 0, documentsDeleted: 0 });
+    expect(result.counts).toHaveProperty("jobRunsPruned");
+    expect(result.counts).toHaveProperty("deliveriesPruned");
     expect(store.objects.size).toBe(1);
   });
 });

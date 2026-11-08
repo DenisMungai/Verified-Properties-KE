@@ -113,13 +113,14 @@ export async function receiptForUser(db: DbExecutor, userId: string, invoiceNumb
 export async function receiptRecipients(
   db: DbExecutor,
   owner: { ownerUserId: string | null; ownerAgencyId: string | null },
-): Promise<{ email: string; name: string }[]> {
+): Promise<{ userId: string; email: string; name: string }[]> {
+  const columns = { userId: users.id, email: users.email, name: users.name };
   if (owner.ownerUserId) {
-    return db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, owner.ownerUserId));
+    return db.select(columns).from(users).where(eq(users.id, owner.ownerUserId));
   }
   if (!owner.ownerAgencyId) return [];
   return db
-    .select({ email: users.email, name: users.name })
+    .select(columns)
     .from(agencyMembers)
     .innerJoin(users, eq(users.id, agencyMembers.userId))
     .where(and(eq(agencyMembers.agencyId, owner.ownerAgencyId), eq(agencyMembers.role, "admin")));

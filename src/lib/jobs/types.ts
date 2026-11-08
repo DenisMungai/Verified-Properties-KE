@@ -17,6 +17,8 @@ export const JOB_NAMES = [
   "reconciliation",
   "storage-cleanup",
   "verification-lifecycle",
+  "notifications",
+  "review-reminders",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];
