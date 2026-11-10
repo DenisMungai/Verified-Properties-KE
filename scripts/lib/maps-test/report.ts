@@ -17,6 +17,7 @@ import {
   PROVIDERS_AGREE_KM,
   REFERENCE_DISAGREE_KM,
   SHORT_PREFIX,
+  SKIPPED_PROVIDERS,
   SPLIT_MARGIN,
   TOWN_KM,
   TRAFFIC,
@@ -215,7 +216,6 @@ function recommendation(results: Results): string[] {
   const r = evaluation.recommended;
   const single = evaluation.bestSingle;
   const split = evaluation.bestSplit;
-  const untested = providers.filter((p) => !p.tested).map((p) => NAME[p.id]);
   const tilesPending = providers.some((p) => p.tested && p.tiles === null);
   const out = [
     `**Recommended: ${r.search === r.tiles ? NAME[r.search] : `${NAME[r.search]} for search and geocoding, ${NAME[r.tiles]} for tiles`}** ` +
@@ -226,7 +226,15 @@ function recommendation(results: Results): string[] {
         `${split.total >= single.total + SPLIT_MARGIN ? "which clears" : "which does not clear"} the ${SPLIT_MARGIN}-point margin a second vendor must earn.`
       : `Only ${NAME[single.search]} was tested, so no split was compared.`,
   ];
-  if (untested.length) out.push("", `⚠️ Not tested: ${untested.join(", ")}. This is not a comparison until both run.`);
+  for (const p of providers.filter((x) => !x.tested)) {
+    const skipped = SKIPPED_PROVIDERS[p.id];
+    out.push(
+      "",
+      skipped
+        ? `⚠️ ${NAME[p.id]} was not tested: ${skipped} The recommendation rests on ${NAME[r.search]}'s own scores, not a head-to-head comparison.`
+        : `⚠️ Not tested: ${NAME[p.id]}. This is not a comparison until both run.`,
+    );
+  }
   if (tilesPending) out.push("", "⚠️ Tile scores are not judged yet; tiles count as 0 for every candidate until they are.");
   out.push(
     "",

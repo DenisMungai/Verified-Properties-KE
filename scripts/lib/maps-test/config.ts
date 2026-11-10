@@ -15,6 +15,11 @@ export const TRAFFIC = {
 
 export const GROWTH_MULTIPLIER = 3;
 
+/** Providers deliberately left out, with the reason shown in the report (amendment A9). */
+export const SKIPPED_PROVIDERS: Partial<Record<"google" | "mapbox", string>> = {
+  google: "the owner chose on 2026-11-10 to skip it and go ahead with Mapbox, rather than wait for a Google Cloud key.",
+};
+
 /** Weighted score out of 100 (decision 9). */
 export const WEIGHTS = { autocomplete: 35, geocoding: 35, cost: 20, tiles: 10 } as const;
 

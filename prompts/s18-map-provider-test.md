@@ -248,6 +248,17 @@ decisions above, they win.
     right.
 
   No coordinate was typed in by hand.
+- **A9. Google skipped (owner decision, 2026-11-10).** The owner chose Mapbox without waiting
+  for a Google Cloud key.
+  - The report says so (`SKIPPED_PROVIDERS` in `config.ts`) and rests the recommendation on
+    Mapbox's own scores.
+  - The harness still supports a Google run later (`--run --only=google`) if the decision is
+    revisited.
+  - Findings S19 must design for:
+    - Mapbox geocoding falls back to the city centre for most Kisumu and Nakuru neighbourhoods.
+    - Geocoding v6 has no POIs (malls miss by 15–31 km).
+    - So the lister-confirmed pin is the source of truth, and geocoding only proposes a
+      starting point.
 
 ## The 50 locations
 
