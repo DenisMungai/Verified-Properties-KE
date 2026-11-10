@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { AdminNav } from "@/components/admin/AdminNav";
@@ -5,6 +6,12 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Skeleton } from "@/components/ui";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
+
+/**
+ * One neutral title for every admin page (S19 finding F1): page-specific titles sit in the
+ * prerendered head, which anyone can request with a made-up session cookie.
+ */
+export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 async function AdminNavLoader() {
   const user = await requireRole(ADMIN_ROLES, "/admin");

@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ClipboardCheck } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
@@ -10,8 +10,6 @@ import { moderationQueue } from "@/db/queries/moderation";
 import { formatNairobiDateTime } from "@/lib/format";
 import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
-
-export const metadata: Metadata = { title: "Listings awaiting moderation", robots: { index: false } };
 
 const NOTICES: Record<string, string> = {
   approved: "Listing approved. It's live in search.",
@@ -68,11 +66,15 @@ async function Queue({ searchParams }: { searchParams: SearchParams }) {
 
 export default function ModerationQueuePage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <>
-      <PageHeading title="Listings awaiting moderation" description="Approve or reject listings from unverified listers. Oldest first." />
-      <Suspense fallback={<Skeleton className="h-64" />}>
-        <Queue searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-64" />}>
+      <AdminGate roles={["platform_admin"]} next="/admin/listings">
+        <>
+          <PageHeading title="Listings awaiting moderation" description="Approve or reject listings from unverified listers. Oldest first." />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <Queue searchParams={searchParams} />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

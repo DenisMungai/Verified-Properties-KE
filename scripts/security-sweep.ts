@@ -101,20 +101,33 @@ const status =
     allowed.includes(res.status) ? null : `status ${res.status}, expected ${allowed.join(" or ")}`;
 
 /**
- * Admin navigation and data sections that must never reach a non-admin, even in a streamed
- * shell. Page titles are reported separately as a warning (docs/SECURITY_TESTS.md, finding F1).
+ * Admin navigation, titles and data sections that must never reach a non-admin, even in a
+ * streamed shell (docs/SECURITY_TESTS.md, finding F1, fixed with `AdminGate`).
  */
-const ADMIN_MARKERS = ["Listings queue", "Verification queue", "Billing admin", "Flagged payments", "Failed runs (last 7 days)"];
+const ADMIN_MARKERS = [
+  "Listings queue",
+  "Verification queue",
+  "Billing admin",
+  "Flagged payments",
+  "Failed runs (last 7 days)",
+  "Platform overview",
+  "Listings awaiting moderation",
+  "Verification reviews",
+  "Record a Paybill payment",
+  "Unmatched Paybill payment",
+  "Reported conversation",
+  "Jobs &amp; emails",
+];
 
 function noAdminMarkup(res: SweepResponse): string | null {
   const found = ADMIN_MARKERS.filter((m) => res.text.includes(m));
   return found.length ? `shows admin markup: ${found.join(", ")}` : null;
 }
 
-/** Finding F1: the admin page's own <h1> in the prerendered shell. A warning, not a failure. */
-function shellHeading(res: SweepResponse): string | null {
+/** An admin page must not show any heading before its role check passes. */
+function noHeading(res: SweepResponse): string | null {
   const h1 = /<h1[^>]*>([^<]+)<\/h1>/.exec(res.text);
-  return h1 ? h1[1] : null;
+  return h1 ? `shows a page heading: ${h1[1]}` : null;
 }
 
 const both =
@@ -127,7 +140,9 @@ function checks(): Check[] {
   for (const forgedSession of [false, true]) {
     const who = forgedSession ? "forged session" : "signed out";
     for (const p of pageRoutes("account")) list.push({ name: `${who} ${p}`, method: "GET", path: p, expect: both(toSignIn, noAdminMarkup), forgedSession });
-    for (const p of pageRoutes("admin")) list.push({ name: `${who} ${p}`, method: "GET", path: p, expect: both(toSignIn, noAdminMarkup), forgedSession });
+    for (const p of pageRoutes("admin")) {
+      list.push({ name: `${who} ${p}`, method: "GET", path: p, expect: both(toSignIn, noAdminMarkup, noHeading), forgedSession });
+    }
   }
   list.push(
     {
@@ -211,15 +226,11 @@ async function main(): Promise<number> {
   const list = checks();
   console.info(`Security sweep: ${list.length} checks against ${args.base} (signed out, no credentials)`);
   const rows: { check: string; result: string }[] = [];
-  const warnings: string[] = [];
   let failed = 0;
   for (const check of list) {
     let problem: string | null;
     try {
-      const res = await send(args.base, check);
-      problem = check.expect(res);
-      const heading = check.forgedSession && check.path.startsWith("/admin") ? shellHeading(res) : null;
-      if (!problem && heading) warnings.push(`${check.path}: "${heading}"`);
+      problem = check.expect(await send(args.base, check));
     } catch (error) {
       problem = `request failed: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -227,10 +238,6 @@ async function main(): Promise<number> {
     rows.push({ check: `${check.method} ${check.name}`, result: problem ? `FAIL: ${problem}` : "pass" });
   }
   console.table(rows);
-  if (warnings.length) {
-    console.warn(`WARN (finding F1): ${warnings.length} admin pages show their title in the static shell to a forged session:`);
-    for (const w of warnings) console.warn(`  ${w}`);
-  }
   console.info(failed === 0 ? `All ${list.length} checks passed.` : `${failed} of ${list.length} checks failed.`);
   return failed === 0 ? 0 : 1;
 }

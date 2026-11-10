@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import { CircleCheck } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
@@ -9,6 +8,7 @@ import {
   JobTable,
   type JobRowView,
 } from "@/components/admin/jobs/JobTables";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
 import { failedRuns, jobOverview, type JobRunRow } from "@/db/queries/job-runs";
@@ -18,8 +18,6 @@ import { JOB_INTERVAL_MS, JOB_SCHEDULES } from "@/lib/jobs/schedules";
 import { JOB_NAMES } from "@/lib/jobs/types";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
-
-export const metadata: Metadata = { title: "Jobs & emails", robots: { index: false } };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LIST_LIMIT = 50;
@@ -90,11 +88,15 @@ async function JobsContent() {
 
 export default function JobsAdminPage() {
   return (
-    <>
-      <PageHeading title="Jobs & emails" description="Background job health and email delivery. Recipients are masked." />
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <JobsContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin/jobs">
+        <>
+          <PageHeading title="Jobs & emails" description="Background job health and email delivery. Recipients are masked." />
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <JobsContent />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

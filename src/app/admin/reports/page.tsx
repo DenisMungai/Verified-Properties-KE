@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Flag, MessageSquareWarning } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { DismissReportForm, TakeDownForm } from "@/components/admin/DecisionForms";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
@@ -16,8 +16,6 @@ import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
 import { REPORT_REASON_LABELS, type ReportReason } from "@/lib/validation/engagement";
 import { MESSAGE_REPORT_REASON_LABELS, type MessageReportReason } from "@/lib/validation/messaging";
-
-export const metadata: Metadata = { title: "Reports", robots: { index: false } };
 
 const NOTICES: Record<string, string> = {
   dismissed: "Report dismissed.",
@@ -139,11 +137,15 @@ async function Reports({ searchParams }: { searchParams: SearchParams }) {
 
 export default function ReportsPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <>
-      <PageHeading title="Reports" description="Listings and messages people reported. Dismiss a report, or act on it with a reason." />
-      <Suspense fallback={<Skeleton className="h-64" />}>
-        <Reports searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-64" />}>
+      <AdminGate roles={["platform_admin"]} next="/admin/reports">
+        <>
+          <PageHeading title="Reports" description="Listings and messages people reported. Dismiss a report, or act on it with a reason." />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <Reports searchParams={searchParams} />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

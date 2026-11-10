@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { StatCard } from "@/components/admin/StatCard";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
@@ -11,8 +11,6 @@ import { adminCounts } from "@/db/queries/moderation";
 import { verificationCounts } from "@/db/queries/verification";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
-
-export const metadata: Metadata = { title: "Admin console", robots: { index: false } };
 
 const QUICK_ACTIONS = [
   { href: "/admin/listings", label: "Review listings awaiting moderation" },
@@ -73,11 +71,15 @@ async function Overview() {
 
 export default function AdminPage() {
   return (
-    <>
-      <PageHeading title="Platform overview" description="Moderate listings and keep the marketplace trustworthy." />
-      <Suspense fallback={<Skeleton className="h-64" />}>
-        <Overview />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-64" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin">
+        <>
+          <PageHeading title="Platform overview" description="Moderate listings and keep the marketplace trustworthy." />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <Overview />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

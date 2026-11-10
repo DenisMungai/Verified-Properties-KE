@@ -1,14 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { recordPaybillAction } from "@/app/admin/billing/actions";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminActionForm } from "@/components/admin/billing/AdminActionForm";
 import { Skeleton } from "@/components/ui";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
-
-export const metadata: Metadata = { title: "Record a Paybill payment", robots: { index: false } };
 
 /**
  * Money on the M-Pesa statement with no callback (prompt S10 decision 9). When a callback did
@@ -37,15 +35,19 @@ async function RecordForm() {
 
 export default function RecordPaybillPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Back to billing
-      </Link>
-      <h1 className="text-display-sm">Record a Paybill payment</h1>
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <RecordForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin/billing/record">
+        <div className="flex flex-col gap-6">
+          <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Back to billing
+          </Link>
+          <h1 className="text-display-sm">Record a Paybill payment</h1>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <RecordForm />
+          </Suspense>
+        </div>
+      </AdminGate>
+    </Suspense>
   );
 }

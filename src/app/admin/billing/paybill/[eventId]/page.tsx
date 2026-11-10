@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { applyPaybillAction, refundPaybillAction } from "@/app/admin/billing/actions";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminActionForm } from "@/components/admin/billing/AdminActionForm";
 import { Facts } from "@/components/admin/billing/BillingTables";
 import { FormAlert } from "@/components/forms/FormAlert";
@@ -17,8 +17,6 @@ import { ADMIN_ROLES } from "@/lib/roles";
 import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
 import { idSchema } from "@/lib/validation/billing-admin";
-
-export const metadata: Metadata = { title: "Unmatched Paybill payment", robots: { index: false } };
 
 type Params = Promise<{ eventId: string }>;
 
@@ -123,15 +121,19 @@ async function Paybill({ params, searchParams }: { params: Params; searchParams:
 
 export default function PaybillEventPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Back to billing
-      </Link>
-      <h1 className="text-display-sm">Unmatched Paybill payment</h1>
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <Paybill params={params} searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin/billing">
+        <div className="flex flex-col gap-6">
+          <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Back to billing
+          </Link>
+          <h1 className="text-display-sm">Unmatched Paybill payment</h1>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <Paybill params={params} searchParams={searchParams} />
+          </Suspense>
+        </div>
+      </AdminGate>
+    </Suspense>
   );
 }

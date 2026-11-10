@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BadgeCheck } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { Badge, EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
@@ -12,8 +12,6 @@ import { LISTER_TYPE_LABELS } from "@/lib/roles";
 import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
 import { REVIEW_TARGET_WORKING_DAYS, requestNumber, workingDaysBetween } from "@/lib/verification/rules";
-
-export const metadata: Metadata = { title: "Verification reviews", robots: { index: false } };
 
 const TABS: { tab: QueueTab; label: string }[] = [
   { tab: "under_review", label: "To review" },
@@ -137,11 +135,15 @@ async function Queue({ searchParams }: { searchParams: SearchParams }) {
 
 export default function VerificationQueuePage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <>
-      <PageHeading title="Verification reviews" description="Check documents and approve only when the requirements are met. Aim for 2 working days." />
-      <Suspense fallback={<Skeleton className="h-64" />}>
-        <Queue searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-64" />}>
+      <AdminGate roles={["platform_admin"]} next="/admin/verification">
+        <>
+          <PageHeading title="Verification reviews" description="Check documents and approve only when the requirements are met. Aim for 2 working days." />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <Queue searchParams={searchParams} />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

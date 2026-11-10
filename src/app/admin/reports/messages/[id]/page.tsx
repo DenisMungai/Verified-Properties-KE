@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { DismissMessageReportForm, RemoveMessageForm } from "@/components/admin/DecisionForms";
 import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { MessageBubble, MessageThread } from "@/components/messaging/MessageThread";
@@ -15,8 +15,6 @@ import { OPEN_REPORT_STATUSES } from "@/db/queries/reports";
 import { formatNairobiDateTime } from "@/lib/format";
 import { requireRole } from "@/lib/session";
 import { MESSAGE_REPORT_REASON_LABELS, type MessageReportReason } from "@/lib/validation/messaging";
-
-export const metadata: Metadata = { title: "Reported conversation", robots: { index: false } };
 
 type Params = Promise<{ id: string }>;
 
@@ -153,15 +151,19 @@ async function ReportedConversation({ params }: { params: Params }) {
 
 export default function ReportedConversationPage({ params }: { params: Params }) {
   return (
-    <>
-      <Link href="/admin/reports" className="mb-2 inline-flex min-h-control items-center gap-2 text-small font-medium text-slate-700 hover:text-ink">
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Reports
-      </Link>
-      <PageHeading title="Reported conversation" description="Every view and decision here is written to the moderation log." />
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <ReportedConversation params={params} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={["platform_admin"]} next="/admin/reports">
+        <>
+          <Link href="/admin/reports" className="mb-2 inline-flex min-h-control items-center gap-2 text-small font-medium text-slate-700 hover:text-ink">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Reports
+          </Link>
+          <PageHeading title="Reported conversation" description="Every view and decision here is written to the moderation log." />
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <ReportedConversation params={params} />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }

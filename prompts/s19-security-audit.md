@@ -181,9 +181,14 @@ Also inspected:
   every payment callback without them, and the live site has them. The start command is
   `UPSTASH_REDIS_REST_URL=http://127.0.0.1:9 UPSTASH_REDIS_REST_TOKEN=sweep npx next start -p 3005`
   (observation O1 in `docs/SECURITY_TESTS.md`).
-- **A5. Finding F1 is reported, not fixed.** All 12 admin pages show their title and description
-  to a forged session. Fixing it changes what admins see while a page loads, so per decision 5 it
-  waits for your decision. The sweep prints it as a warning.
+- **A5. Finding F1 was first reported, not fixed.** All 12 admin pages showed their title and
+  description to a forged session, and fixing it changes what admins see while a page loads. Per
+  decision 5 it waited for your decision.
+- **A6. F1 fixed (you approved it, 2026-11-10):**
+  - `AdminGate` (a role check, then children) wraps each admin page body.
+  - Page titles were replaced by one neutral `"Admin"` layout title, because the prerendered
+    `<title>` leaked as well.
+  - The scan and the sweep now enforce both.
 
 ## Files likely to change
 

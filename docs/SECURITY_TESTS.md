@@ -10,13 +10,13 @@ Phase 4 exit (§12, and the launch-checklist line "Authorization tests passing")
 
 | Check | Result |
 |---|---|
-| `npm test` | 52 files, 501 tests passed (219 integration tests skipped without `TEST_DATABASE_URL`) |
+| `npm test` | 53 files, 504 tests passed (219 integration tests skipped without `TEST_DATABASE_URL`) |
 | `npm run test:integration` (Neon test branch `ep-frosty-sun-b96cfi03`) | 20 files, 219 tests passed |
-| `npm run security:sweep` (local production build) | 74 of 74 passed; 1 warning, finding F1 |
+| `npm run security:sweep` (local production build) | 74 of 74 passed, with no warnings, after the F1 fix |
 | `npm run typecheck`, `npm run lint`, `npm run build` | passed |
 
-Every rule is proven, except one: **F1 is open, awaiting your decision.** Admin page titles show
-to a forged session cookie. No data leaks with them.
+Every rule is proven, and the one finding the audit turned up, F1, is fixed. Admin page titles
+were visible to a forged session cookie.
 
 ## Matrix
 
@@ -60,8 +60,9 @@ patterns.
 
 | File | What it proves |
 |---|---|
-| `src/app/route-guards.test.ts` (unit, 12 tests) | <ul><li>Every admin and account page, route and Server Action calls its guard, or is a named public action with its reason</li><li>Admin guards use admin-only role sets</li><li>The abuse-prone actions apply their rate limits</li><li>The auth handler exports GET only</li><li>The listing owner id never reaches JSX</li></ul> |
+| `src/app/route-guards.test.ts` (unit, 13 tests) | <ul><li>Every admin and account page, route and Server Action calls its guard, or is a named public action with its reason</li><li>Admin guards use admin-only role sets</li><li>The abuse-prone actions apply their rate limits</li><li>The auth handler exports GET only</li><li>The listing owner id never reaches JSX</li><li>Every admin page renders inside `AdminGate`, with no title of its own (F1)</li></ul> |
 | `src/lib/session.test.ts` (unit, 11 tests) | <ul><li>`requireUser` sends signed-out and unverified users to sign-in</li><li>`requireRole` gives every non-admin role a 404 and keeps billing admins out of moderation</li><li>Only database roles count</li></ul> |
+| `src/components/admin/AdminGate.test.ts` (unit, 2 tests) | <ul><li>Children render only after the role check passes</li></ul> |
 | `src/lib/listings/contact.test.ts` (unit, 3 tests) | <ul><li>Unverified listers' details stay hidden until an inquiry</li><li>A verified lister's phone is public, their email is not</li></ul> |
 | `src/db/queries/public-exposure.integration.test.ts` (6 tests) | The marker guard over every public read (rule 7) |
 | `engagement.integration.test.ts` (+1 test) | Favourites isolation (rule 3b) |
@@ -80,7 +81,7 @@ Both changes were reverted.
 
 | # | Finding | Severity | Status |
 |---|---|---|---|
-| F1 | **Admin page titles show to a forged session.** `src/proxy.ts` only checks that a session cookie *exists*. With any made-up cookie, all 12 admin pages return their prerendered shell: the `<h1>` and description (for example "Billing", "Listings awaiting moderation"). The page's own guard then streams a redirect to sign-in. No admin data, navigation or tables are sent; those stay inside the role-guarded boundary. But `requireRole` is meant to stop admin URLs revealing that they exist ("404 … so admin URLs do not reveal that they exist"), and the shell partly defeats that. | Low | **Open, awaiting your decision.** The fix is to move each admin page's heading inside its guarded component (12 pages, no logic change). Admins would then see the heading arrive with the content, not first, so it changes what they see while a page loads |
+| F1 | **Admin page titles show to a forged session.** `src/proxy.ts` only checks that a session cookie *exists*. With any made-up cookie, all 12 admin pages return their prerendered shell: the `<h1>` and description (for example "Billing", "Listings awaiting moderation"). The page's own guard then streams a redirect to sign-in. No admin data, navigation or tables are sent; those stay inside the role-guarded boundary. But `requireRole` is meant to stop admin URLs revealing that they exist ("404 … so admin URLs do not reveal that they exist"), and the shell partly defeats that. | Low | **Fixed (you approved it, 2026-11-10).** <ul><li>A new `src/components/admin/AdminGate.tsx` runs `requireRole` before rendering anything. All 12 admin pages wrap their whole body in `<Suspense><AdminGate>`, and their data components keep their own `requireRole`.</li><li>Page titles moved to one neutral `"Admin"` title on the admin layout. The prerendered `<title>` was leaking too.</li><li>Admins now see a skeleton until the role check passes, then the heading and content. Their browser tabs read "Admin".</li><li>The scan (`route-guards.test.ts`) and the sweep (no `<h1>`, no admin titles) now fail if it comes back.</li></ul> |
 | O1 | **Local production builds need Upstash settings.** Without them, a local `next start` answers 500 to every payment callback: a production build refuses to run without a rate limiter, and the callbacks build it before checking the token. The live site has Upstash configured, so it is not affected. An Upstash *outage* doesn't trigger this either, because the client is only created and makes no network call. The sweep starts the build with placeholder Upstash values. | Info | Documented. Relevant to S21: an alert when callbacks stop arriving |
 | O2 | **The proxy is only a quick first check.** `src/proxy.ts` is cookie-presence only, as its comment says. Real enforcement is the page and action guards; the sweep's forged-session pass and the static scan prove both. | Info | As designed |
 

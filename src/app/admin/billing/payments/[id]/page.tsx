@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -11,6 +10,7 @@ import {
   goodwillCreditAction,
   refundPaymentAction,
 } from "@/app/admin/billing/actions";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminActionForm } from "@/components/admin/billing/AdminActionForm";
 import { AuditList, EventLog, Facts, PaymentStatusBadge, PaymentTable, phoneLabel } from "@/components/admin/billing/BillingTables";
 import { FormAlert } from "@/components/forms/FormAlert";
@@ -32,8 +32,6 @@ import { ADMIN_ROLES } from "@/lib/roles";
 import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
 import { idSchema } from "@/lib/validation/billing-admin";
-
-export const metadata: Metadata = { title: "Payment", robots: { index: false } };
 
 type Params = Promise<{ id: string }>;
 
@@ -291,15 +289,19 @@ async function PaymentDetail({ params, searchParams }: { params: Params; searchP
 
 export default function AdminPaymentPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Back to billing
-      </Link>
-      <h1 className="text-display-sm">Payment</h1>
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <PaymentDetail params={params} searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin/billing">
+        <div className="flex flex-col gap-6">
+          <Link href="/admin/billing" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Back to billing
+          </Link>
+          <h1 className="text-display-sm">Payment</h1>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <PaymentDetail params={params} searchParams={searchParams} />
+          </Suspense>
+        </div>
+      </AdminGate>
+    </Suspense>
   );
 }

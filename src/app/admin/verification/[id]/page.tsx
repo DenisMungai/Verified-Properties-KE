@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowLeft, ExternalLink, FileText, Image as ImageIcon } from "lucide-react";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { Badge, Skeleton, type BadgeTone } from "@/components/ui";
 import { ReviewPanel, SuspendPanel } from "@/components/verification/ReviewPanel";
 import { getDb } from "@/db";
@@ -20,8 +20,6 @@ import {
   type AuditAction,
   type VerificationStatus,
 } from "@/lib/verification/rules";
-
-export const metadata: Metadata = { title: "Verification review", robots: { index: false } };
 
 type Params = Promise<{ id: string }>;
 
@@ -194,15 +192,19 @@ async function Review({ params }: { params: Params }) {
 
 export default function VerificationReviewPage({ params }: { params: Params }) {
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/admin/verification" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Back to the queue
-      </Link>
-      <h1 className="text-display-sm">Verification review</h1>
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <Review params={params} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={["platform_admin"]} next="/admin/verification">
+        <div className="flex flex-col gap-6">
+          <Link href="/admin/verification" className="-my-3 inline-flex min-h-control items-center gap-1 self-start text-small font-medium text-emerald-700 hover:underline">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Back to the queue
+          </Link>
+          <h1 className="text-display-sm">Verification review</h1>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <Review params={params} />
+          </Suspense>
+        </div>
+      </AdminGate>
+    </Suspense>
   );
 }

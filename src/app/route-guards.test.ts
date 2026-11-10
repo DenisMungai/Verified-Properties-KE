@@ -81,14 +81,32 @@ describe("pages and routes", () => {
     expect(missing.map(rel), "account files without a session guard").toEqual([]);
   });
 
+  it("renders nothing of an admin page before its role check (finding F1)", () => {
+    const pages = under("src/app/admin/").filter((f) => f.endsWith("page.tsx"));
+    expect(pages.length).toBe(12);
+    const problems: string[] = [];
+    for (const file of pages) {
+      const source = read(file);
+      const body = source.slice(source.indexOf("export default function"));
+      const ret = body.slice(body.indexOf("return ("));
+      const gate = ret.indexOf("<AdminGate ");
+      if (!/^return \(\s*<Suspense fallback=\{[^]*?\}>\s*<AdminGate /.test(ret)) problems.push(`${rel(file)}: body is not <Suspense><AdminGate>`);
+      else if (/PageHeading|<h1|<Link/.test(ret.slice(0, gate))) problems.push(`${rel(file)}: renders before AdminGate`);
+      // Titles sit in the prerendered head, so admin pages share the layout's neutral "Admin".
+      if (/export (const metadata|(async )?function generateMetadata)/.test(source)) problems.push(`${rel(file)}: sets its own title`);
+    }
+    expect(read(path.join(APP, "admin", "layout.tsx"))).toMatch(/export const metadata: Metadata = \{ title: "Admin"/);
+    expect(problems).toEqual([]);
+  });
+
   it("admin guards pass only admin role sets", () => {
     const allowedLiterals = new Set(['["platform_admin"]', '["platform_admin", "billing_admin"]']);
     const constants: Record<string, string> = {};
     for (const file of ALL.filter((f) => rel(f).startsWith("src/app/admin/"))) {
       const source = read(file);
       for (const m of source.matchAll(/const (\w+) = (\[[^\]]*\]) as const;/g)) constants[m[1]] = m[2];
-      for (const m of source.matchAll(/requireRole\(\s*([^,)]+)/g)) {
-        const arg = m[1].trim();
+      for (const m of source.matchAll(/(?:requireRole\(\s*([^,)]+)|<AdminGate roles=\{(\[[^\]]*\]|\w+)\})/g)) {
+        const arg = (m[1] ?? m[2]).trim();
         const literal = arg === "ADMIN_ROLES" ? JSON.stringify([...ADMIN_ROLES]).replace(/,/g, ", ") : (constants[arg] ?? arg);
         expect(allowedLiterals.has(literal), `${rel(file)}: requireRole(${arg}) = ${literal}`).toBe(true);
       }

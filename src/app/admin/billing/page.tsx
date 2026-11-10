@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CircleCheck, SearchX } from "lucide-react";
 import { PageHeading } from "@/components/account/PageHeading";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { AuditList, PaybillTable, PaymentTable } from "@/components/admin/billing/BillingTables";
 import { ReconciliationCard } from "@/components/admin/billing/ReconciliationCard";
 import { FormAlert } from "@/components/forms/FormAlert";
@@ -22,8 +22,6 @@ import { ADMIN_ROLES } from "@/lib/roles";
 import { single, type SearchParams } from "@/lib/search-params";
 import { requireRole } from "@/lib/session";
 import { SEARCH_MAX, classifyBillingSearch, type BillingSearch } from "@/lib/validation/billing-admin";
-
-export const metadata: Metadata = { title: "Billing", robots: { index: false } };
 
 const NOTICES: Record<string, string> = {
   credit_added: "Credit added. The new period end is on the lister's billing page.",
@@ -178,11 +176,15 @@ async function Billing({ searchParams }: { searchParams: SearchParams }) {
 
 export default function BillingAdminPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <>
-      <PageHeading title="Billing" description="Find payments, resolve flags and unmatched Paybill money, and check the nightly reconciliation." />
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <Billing searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Skeleton className="h-96" />}>
+      <AdminGate roles={ADMIN_ROLES} next="/admin/billing">
+        <>
+          <PageHeading title="Billing" description="Find payments, resolve flags and unmatched Paybill money, and check the nightly reconciliation." />
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <Billing searchParams={searchParams} />
+          </Suspense>
+        </>
+      </AdminGate>
+    </Suspense>
   );
 }
