@@ -22,6 +22,7 @@
     "jobs:run": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-run.ts",
     "jobs:schedule": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-schedule.ts",
     "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.ts",
+    "security:sweep": "node --import tsx scripts/security-sweep.ts",
     "maps:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/maps-provider-test.ts"
   },
   "dependencies": {

@@ -325,6 +325,53 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     expect(result.items.map((card) => card.verified)).toEqual([true, false, false]);
   });
 
+  // Plan §12: "a user cannot … change their ranking" (prompt S19 decision 2.6). The tier comes
+  // only from `lister_verified_now`, so nothing a lister edits, and no payment alone, lifts them.
+  it("never lets edits or a payment alone lift an unverified listing above a verified one", async () => {
+    await insertLister("s19_verified", { verified: true });
+    await insertLister("s19_maxed");
+    await insertLister("s19_paid_only");
+    // Paid for both plans, but the review is still open: payment alone never verifies.
+    await client.query(
+      `insert into verification_requests (lister_user_id, status, submitted_at) values ('s19_paid_only', 'under_review', now())`,
+    );
+    for (const [kind, planId] of [
+      ["verification", verificationPlanId],
+      ["listing", listingPlanId],
+    ]) {
+      await client.query(
+        `insert into subscriptions (owner_user_id, kind, plan_id, status, current_period_start, current_period_end, grace_ends_at)
+         values ('s19_paid_only', $1, $2, 'active', now() - interval '1 day', now() + interval '29 days', now() + interval '32 days')`,
+        [kind, planId],
+      );
+    }
+
+    // Old and photo-less, but in Kilimani so it matches the location search below.
+    const verified = await insertListing({ owner: "s19_verified", ageDays: 120, photos: 0 });
+    // Everything a lister controls, at its best: newest, most photos, full details, matching title.
+    const maxed = await insertListing({
+      owner: "s19_maxed",
+      ageDays: 0.01,
+      photos: 20,
+      bedrooms: 4,
+      bathrooms: 3,
+      parkingSpaces: 3,
+      furnished: true,
+      title: "Kilimani verified premium featured top listing",
+    });
+    const paidOnly = await insertListing({ owner: "s19_paid_only", ageDays: 0.01, photos: 20 });
+
+    for (const filters of [{}, { q: "Kilimani" }, { types: ["house" as const] }]) {
+      const result = await search(filters);
+      expect(result.items.map((card) => card.id)[0], JSON.stringify(filters)).toBe(verified);
+      expect(result.items.find((card) => card.id === maxed)?.verified).toBe(false);
+      expect(result.items.find((card) => card.id === paidOnly)?.verified).toBe(false);
+    }
+    expect(await allIds({ verified: true })).toEqual([verified]);
+    const strip = (await search({ sort: "newest" })).verifiedStrip.map((card) => card.id);
+    expect(strip).toEqual([verified]);
+  });
+
   it("rotates the verified tier daily and keeps it stable within a day", async () => {
     await insertLister("s7_rot", { verified: true });
     for (let i = 0; i < 6; i++) await insertListing({ owner: `s7_rot`, ageDays: 2, photos: 3 });

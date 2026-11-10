@@ -171,6 +171,28 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
     expect(await savedIdsAmong(db, "s8e_buyer", [live.id])).toEqual(new Set());
   });
 
+  // Plan §12: "Buyer A cannot read Buyer B's … favorites" (prompt S19 decision 2.2).
+  it("keeps each buyer's saved listings to themselves", async () => {
+    const first = await insertListing("s8e_owner");
+    const second = await insertListing("s8e_owner");
+    await setFavorite(db, "s8e_buyer", first.id, true);
+    await setFavorite(db, "s8e_buyer", second.id, true);
+
+    expect(await savedListings(db, "s8e_other")).toEqual([]);
+    expect(await savedIdsAmong(db, "s8e_other", [first.id, second.id])).toEqual(new Set());
+
+    // Unsaving is scoped to the caller: another user's "unsave" leaves the buyer's saves alone.
+    expect(await setFavorite(db, "s8e_other", first.id, false)).toEqual({ ok: true, saved: false });
+    expect(await savedIdsAmong(db, "s8e_buyer", [first.id, second.id])).toEqual(new Set([first.id, second.id]));
+    expect((await savedListings(db, "s8e_buyer")).map((card) => card.id).sort()).toEqual([first.id, second.id].sort());
+
+    // Saving the same listing creates the other user's own row only.
+    await setFavorite(db, "s8e_other", first.id, true);
+    expect(await savedIdsAmong(db, "s8e_other", [first.id, second.id])).toEqual(new Set([first.id]));
+    const { rows } = await client.query<{ user_id: string }>(`select user_id from favorites where property_id = $1 order by user_id`, [first.id]);
+    expect(rows.map((r) => r.user_id)).toEqual(["s8e_buyer", "s8e_other"]);
+  });
+
   it("lists saved listings that are still published, most recently saved first", async () => {
     const first = await insertListing("s8e_owner");
     const second = await insertListing("s8e_owner");
