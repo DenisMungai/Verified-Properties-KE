@@ -150,7 +150,18 @@ async function ListingDetail({ params }: { params: Params }) {
             {!mine && <SaveButton {...saveProps(saveContext, listing.id)} />}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-            {listing.verified && <VerifiedBadge className="py-1.5" />}
+            {listing.verified && (
+              <span className="inline-flex flex-wrap items-center gap-x-2">
+                <VerifiedBadge className="py-1.5" />
+                {/* The badge's explanation (plan v2.0 §12 "linked from search and the badge"; S20). */}
+                <Link
+                  href="/how-it-works#verification"
+                  className="inline-flex min-h-control items-center text-small text-emerald-700 underline-offset-4 hover:underline"
+                >
+                  What this means<span className="sr-only">: Profile verified</span>
+                </Link>
+              </span>
+            )}
             <p className="text-small text-slate-600">
               {listingLocation(listing)}
               {listing.publishedAt && <> · Listed {formatNairobiDate(listing.publishedAt)}</>}

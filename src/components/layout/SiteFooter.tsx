@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { BRAND } from "@/lib/brand";
+import { LEGAL_PAGES } from "@/lib/legal";
 import { getCurrentUser } from "@/lib/session";
 import { PageContainer } from "./PageContainer";
 
@@ -48,17 +49,26 @@ export function SiteFooter() {
           <p className="text-title font-bold tracking-tight text-white">{BRAND.name}</p>
           <p className="text-small text-white/80">{BRAND.description}</p>
         </div>
-        <nav aria-label="Footer" className="md:justify-self-end">
-          {/* -mx-2 cancels the links' px-2 hit padding so their text lines up with the brand. */}
-          <ul className="-mx-2 grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-x-1">
-            {FOOTER_LINKS.map((link) => (
-              <FooterLink key={link.href} {...link} />
-            ))}
-            <Suspense fallback={null}>
-              <FooterAccount />
-            </Suspense>
-          </ul>
-        </nav>
+        <div className="flex flex-col gap-3 md:justify-self-end">
+          <nav aria-label="Footer">
+            {/* -mx-2 cancels the links' px-2 hit padding so their text lines up with the brand. */}
+            <ul className="-mx-2 grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-x-1">
+              {FOOTER_LINKS.map((link) => (
+                <FooterLink key={link.href} {...link} />
+              ))}
+              <Suspense fallback={null}>
+                <FooterAccount />
+              </Suspense>
+            </ul>
+          </nav>
+          <nav aria-label="Legal">
+            <ul className="-mx-2 grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-x-1">
+              {LEGAL_PAGES.map((link) => (
+                <FooterLink key={link.href} {...link} />
+              ))}
+            </ul>
+          </nav>
+        </div>
       </PageContainer>
       <div className="border-t border-white/10">
         <PageContainer className="py-3 text-micro text-white/70">© {BRAND.name}</PageContainer>

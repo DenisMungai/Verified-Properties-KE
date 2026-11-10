@@ -9,9 +9,12 @@ import {
   type DecisionResult,
 } from "@/db/queries/moderation";
 import { dismissMessageReport, removeReportedMessage, type MessageDecisionResult } from "@/db/queries/message-moderation";
+import { getDb } from "@/db";
+import { closeDataRequest, type CloseResult } from "@/db/queries/data-requests";
 import { withTransaction } from "@/db/tx";
-import type { ActionState } from "@/lib/action-state";
+import { fieldErrorsFrom, type ActionState } from "@/lib/action-state";
 import { requireRole } from "@/lib/session";
+import { closeDataRequestSchema } from "@/lib/validation/data-request";
 import { decisionReasonSchema } from "@/lib/validation/engagement";
 
 /**
@@ -128,4 +131,30 @@ export async function removeMessageAction(_prev: ActionState, formData: FormData
   );
   if (result !== "failed" && result.ok) redirect(`/admin/reports?notice=${close ? "conversation_closed" : "message_removed"}`);
   return { formError: messageRefusal(result), values };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Data requests (prompt S20 decision 7)                                      */
+/* -------------------------------------------------------------------------- */
+
+const CLOSE_REFUSALS: Record<Extract<CloseResult, { ok: false }>["reason"], string> = {
+  not_found: "We couldn't find that request.",
+  already_closed: "This request is already closed. Reload to see the latest.",
+};
+
+/** Close a privacy or billing request with the note the user sees. */
+export async function closeDataRequestAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const admin = await requireRole(MODERATOR, "/admin/data-requests");
+  const values = { requestId: formText(formData, "requestId"), note: formText(formData, "note") };
+  const parsed = closeDataRequestSchema.safeParse(values);
+  if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error), values };
+  let result: CloseResult;
+  try {
+    result = await closeDataRequest(getDb(), admin.id, parsed.data.requestId, parsed.data.note);
+  } catch (error) {
+    console.error("[data-request] close failed", error instanceof Error ? error.name : "unknown");
+    return { formError: GENERIC_FAILURE, values };
+  }
+  if (!result.ok) return { formError: CLOSE_REFUSALS[result.reason], values };
+  redirect("/admin/data-requests?notice=closed");
 }

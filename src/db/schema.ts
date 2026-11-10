@@ -1130,3 +1130,47 @@ export const jobRuns = pgTable(
     index("job_runs_status_started_idx").on(t.status, t.startedAt.desc()),
   ],
 );
+
+/* -------------------------------------------------------------------------- */
+/* Data requests (prompt S20)                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Privacy and billing requests from signed-in users (Data Protection Act rights; refund and
+ * dispute questions). Identity is the session. Platform admins close them with a note the user
+ * sees; a closed request is never reopened.
+ */
+export const dataRequests = pgTable(
+  "data_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    details: text("details").notNull(),
+    status: text("status").notNull().default("open"),
+    resolutionNote: text("resolution_note"),
+    closedBy: text("closed_by").references(() => users.id),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt,
+  },
+  (t) => [
+    check(
+      "data_requests_kind_valid",
+      sql`${t.kind} in ('access', 'correction', 'deletion', 'objection', 'billing', 'other')`,
+    ),
+    check("data_requests_status_valid", sql`${t.status} in ('open', 'closed')`),
+    check("data_requests_details_length", sql`char_length(${t.details}) between 10 and 2000`),
+    check(
+      "data_requests_note_length",
+      sql`${t.resolutionNote} is null or char_length(${t.resolutionNote}) between 1 and 1000`,
+    ),
+    check(
+      "data_requests_closed_complete",
+      sql`(${t.status} = 'closed') = (${t.closedBy} is not null and ${t.closedAt} is not null and ${t.resolutionNote} is not null)`,
+    ),
+    index("data_requests_status_created_idx").on(t.status, t.createdAt.desc()),
+    index("data_requests_user_idx").on(t.userId, t.createdAt.desc()),
+  ],
+);

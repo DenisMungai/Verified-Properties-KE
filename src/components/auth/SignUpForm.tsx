@@ -63,8 +63,15 @@ export function SignUpForm({ next, defaultIntent = "find" }: { next?: string; de
         {(control) => <PasswordInput {...control} name="password" autoComplete="new-password" />}
       </Field>
       <p className="text-micro text-slate-600">
-        By creating an account you agree to use VerifiedPropertiesKE honestly. Our terms and privacy notice will be
-        published before launch.
+        By creating an account you agree to our{" "}
+        <Link href="/terms" className="font-medium text-emerald-700 underline underline-offset-4 hover:no-underline">
+          Terms
+        </Link>{" "}
+        and confirm you&apos;ve read our{" "}
+        <Link href="/privacy" className="font-medium text-emerald-700 underline underline-offset-4 hover:no-underline">
+          Privacy notice
+        </Link>
+        .
       </p>
       <Button type="submit" size="lg" loading={pending} className="w-full">
         Create account

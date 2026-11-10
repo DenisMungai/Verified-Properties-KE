@@ -188,6 +188,13 @@ function checks(): Check[] {
     { name: "message poll without a session", method: "GET", path: "/api/messages/status", expect: status(401) },
     { name: "auth API refuses writes (actions only)", method: "POST", path: "/api/auth/sign-in/email", body: "{}", expect: status(404, 405) },
     {
+      name: "data request form needs a session",
+      method: "GET",
+      path: "/privacy/request",
+      expect: (res) => (res.status === 200 && !res.text.includes("Send request") ? null : `status ${res.status} or the form was shown`),
+      forgedSession: true,
+    },
+    {
       name: "unknown listing shows not found",
       method: "GET",
       path: "/properties/s19-sweep-no-such-listing",

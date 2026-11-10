@@ -85,6 +85,13 @@ Both changes were reverted.
 | O1 | **Local production builds need Upstash settings.** Without them, a local `next start` answers 500 to every payment callback: a production build refuses to run without a rate limiter, and the callbacks build it before checking the token. The live site has Upstash configured, so it is not affected. An Upstash *outage* doesn't trigger this either, because the client is only created and makes no network call. The sweep starts the build with placeholder Upstash values. | Info | Documented. Relevant to S21: an alert when callbacks stop arriving |
 | O2 | **The proxy is only a quick first check.** `src/proxy.ts` is cookie-presence only, as its comment says. Real enforcement is the page and action guards; the sweep's forged-session pass and the static scan prove both. | Info | As designed |
 
+## Later additions
+
+- **S20 (data requests):**
+  - `createDataRequestAction` (`requireUser`, `POLICIES.dataRequestPerUser`) and `closeDataRequestAction` (`requireRole(["platform_admin"])`) are covered by `route-guards.test.ts`.
+  - `/admin/data-requests` is the 13th admin page under `AdminGate`.
+  - The sweep has 77 checks. The new one: signed out, or with a forged session, `/privacy/request` never shows the form.
+
 ## How to run
 
 ```

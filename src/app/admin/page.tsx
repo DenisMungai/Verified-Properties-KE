@@ -7,6 +7,7 @@ import { StatCard } from "@/components/admin/StatCard";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { getDb } from "@/db";
 import { billingAttentionCounts } from "@/db/queries/billing-admin";
+import { countOpenDataRequests } from "@/db/queries/data-requests";
 import { adminCounts } from "@/db/queries/moderation";
 import { verificationCounts } from "@/db/queries/verification";
 import { ADMIN_ROLES } from "@/lib/roles";
@@ -16,6 +17,7 @@ const QUICK_ACTIONS = [
   { href: "/admin/listings", label: "Review listings awaiting moderation" },
   { href: "/admin/verification", label: "Review verification requests" },
   { href: "/admin/reports", label: "Review reported listings and messages" },
+  { href: "/admin/data-requests", label: "Answer privacy and billing requests" },
   { href: "/admin/billing", label: "Payments and refunds" },
 ] as const;
 
@@ -38,14 +40,19 @@ async function Overview() {
       </div>
     );
   }
-  const [counts, verification] = await Promise.all([adminCounts(getDb()), verificationCounts(getDb())]);
+  const [counts, verification, dataRequests] = await Promise.all([
+    adminCounts(getDb()),
+    verificationCounts(getDb()),
+    countOpenDataRequests(getDb()),
+  ]);
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Published listings" value={counts.published} note="Live in search" />
         <StatCard label="Pending review" value={counts.pending} note="Needs moderation" href="/admin/listings" />
         <StatCard label="Open reports" value={counts.openReports} note="Reported by users" href="/admin/reports" />
         <StatCard label="Verification reviews" value={verification.underReview} note="Check documents" href="/admin/verification" />
+        <StatCard label="Open data requests" value={dataRequests} note="Privacy and billing" href="/admin/data-requests" />
       </div>
       <section aria-labelledby="quick-actions" className="flex flex-col gap-3 rounded-lg bg-mint-50 p-5 md:p-6">
         <h2 id="quick-actions" className="text-title text-emerald-700">

@@ -5,6 +5,7 @@ const MODERATION_LINKS = [
   { href: "/admin/listings", label: "Listings queue", exact: false },
   { href: "/admin/verification", label: "Verification", exact: false },
   { href: "/admin/reports", label: "Reports", exact: false },
+  { href: "/admin/data-requests", label: "Data requests", exact: false },
 ] as const;
 /** Billing and platform admins both work on billing (prompt S10 decision 1). */
 const BILLING = { href: "/admin/billing", label: "Billing", exact: false } as const;

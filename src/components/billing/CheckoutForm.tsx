@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Lock } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/app/account/billing/actions";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { Button, Field, Input, SegmentedControl } from "@/components/ui";
+import { BILLING_PERIOD_DAYS } from "@/lib/billing/constants";
 import type { PlanChangeKind } from "@/lib/billing/plan-change";
 import { cn } from "@/lib/cn";
 import { formatKes } from "@/lib/format";
@@ -228,6 +230,13 @@ export function CheckoutForm({
         <Button type="submit" size="lg" loading={busy} className="w-full sm:w-auto sm:self-start">
           {submitLabel}
         </Button>
+        <p className="text-micro text-slate-600">
+          Plans renew manually every {BILLING_PERIOD_DAYS} days. See our{" "}
+          <Link href="/subscription-policy" className="font-medium text-emerald-700 underline underline-offset-4 hover:no-underline">
+            subscription and refund policy
+          </Link>
+          .
+        </p>
       </div>
     </form>
   );

@@ -83,7 +83,7 @@ describe("pages and routes", () => {
 
   it("renders nothing of an admin page before its role check (finding F1)", () => {
     const pages = under("src/app/admin/").filter((f) => f.endsWith("page.tsx"));
-    expect(pages.length).toBe(12);
+    expect(pages.length).toBe(13);
     const problems: string[] = [];
     for (const file of pages) {
       const source = read(file);
