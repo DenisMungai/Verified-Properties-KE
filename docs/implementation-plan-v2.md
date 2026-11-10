@@ -459,6 +459,11 @@ listers can message each other. Estimate: 2 to 2.5 weeks.
 
 ## 11. Phase 3: Location experience
 
+> **Skipped by owner decision (2026-11-10).** Only the provider test ran (S18,
+> `docs/PHASE3_PROVIDER_TEST.md`: Mapbox chosen, Google not tested). PostGIS, the location pin,
+> autocomplete and map search are not built; the unapproved S19 design is kept in
+> `prompts/s19-postgis-location-pin.md`. Location stays as county, town and neighbourhood text.
+
 Goal: search by place and by map without exposing owners' exact locations. The map provider is
 chosen by test at the start of the phase. Estimate: 1.5 to 2 weeks.
 
@@ -527,8 +532,8 @@ from sandbox to production. Estimate: 1.5 to 2 weeks.
 
 - Playwright end-to-end flows: visitor searches and opens a property; buyer registers and saves;
   agent subscribes, creates and submits; admin approves; listing appears; agent buys verification
-  and moves to the top; buyer inquires and agent replies; plan lapses and listing pauses; mobile
-  List to Map keeps filters; invalid forms show accessible errors and keep values.
+  and moves to the top; buyer inquires and agent replies; plan lapses and listing pauses;
+  invalid forms show accessible errors and keep values. (Mobile List to Map was dropped with Phase 3.)
 - Accessibility audit: keyboard access, visible focus, contrast, labelled controls, 44px targets,
   200% zoom, 320px width.
 - Performance pass on images, query plans (ranking query especially) and layout shift.
@@ -621,6 +626,8 @@ Every box is ticked before public launch.
 - [ ] Rate limits configured, including STK Push
 
 **Maps**
+
+Not applicable at launch: Phase 3 was skipped (section 11). Only the first item is partly done.
 
 - [ ] Provider chosen by test; keys restricted by origin and API
 - [ ] List/Map switch preserves state
