@@ -11,7 +11,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     // Integration tests talk to a remote Neon branch; hooks open connections and transactions.
     hookTimeout: 30_000,
   },

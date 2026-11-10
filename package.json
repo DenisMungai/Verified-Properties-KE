@@ -21,7 +21,8 @@
     "mpesa:register-c2b": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/mpesa-register-c2b.ts",
     "jobs:run": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-run.ts",
     "jobs:schedule": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-schedule.ts",
-    "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.ts"
+    "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.ts",
+    "maps:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/maps-provider-test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1159.0",

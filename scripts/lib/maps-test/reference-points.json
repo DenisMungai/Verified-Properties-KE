@@ -1,0 +1,404 @@
+[
+  {
+    "id": 1,
+    "source": "osm",
+    "lat": -1.2960146,
+    "lng": 36.7817791,
+    "osmId": "node/13566448227",
+    "type": "suburb"
+  },
+  {
+    "id": 2,
+    "source": "osm",
+    "lat": -1.2924701,
+    "lng": 36.781503,
+    "osmId": "way/713602705",
+    "type": "secondary"
+  },
+  {
+    "id": 3,
+    "source": "osm",
+    "lat": -1.2767338,
+    "lng": 36.7879011,
+    "osmId": "node/30405983",
+    "type": "suburb"
+  },
+  {
+    "id": 4,
+    "source": "osm",
+    "lat": -1.2740678,
+    "lng": 36.7762269,
+    "osmId": "node/5422065886",
+    "type": "suburb"
+  },
+  {
+    "id": 5,
+    "source": "osm",
+    "lat": -1.2465281,
+    "lng": 36.7860759,
+    "osmId": "relation/16246696",
+    "type": "city_district"
+  },
+  {
+    "id": 6,
+    "source": "osm",
+    "lat": -1.2630616,
+    "lng": 36.8106288,
+    "osmId": "node/30402770",
+    "type": "suburb"
+  },
+  {
+    "id": 7,
+    "source": "osm",
+    "lat": -1.3141724,
+    "lng": 36.8376708,
+    "osmId": "node/10271121690",
+    "type": "suburb"
+  },
+  {
+    "id": 8,
+    "source": "osm",
+    "lat": -1.3188367,
+    "lng": 36.8278221,
+    "osmId": "node/30031480",
+    "type": "suburb"
+  },
+  {
+    "id": 9,
+    "source": "osm",
+    "lat": -1.2992254,
+    "lng": 36.8886888,
+    "osmId": "node/482840488",
+    "type": "suburb"
+  },
+  {
+    "id": 10,
+    "source": "osm",
+    "lat": -1.2834369,
+    "lng": 36.8928409,
+    "osmId": "node/11407583720",
+    "type": "suburb"
+  },
+  {
+    "id": 11,
+    "source": "osm",
+    "lat": -1.3076101,
+    "lng": 36.934159,
+    "osmId": "relation/16248854",
+    "type": "city_district"
+  },
+  {
+    "id": 12,
+    "source": "osm",
+    "lat": -1.2124598,
+    "lng": 36.8829731,
+    "osmId": "relation/16247557",
+    "type": "city_district"
+  },
+  {
+    "id": 13,
+    "source": "osm",
+    "lat": -1.2188396,
+    "lng": 36.8867392,
+    "osmId": "node/4194272131",
+    "type": "suburb"
+  },
+  {
+    "id": 14,
+    "source": "osm",
+    "lat": -1.1863052,
+    "lng": 36.9068145,
+    "osmId": "node/2393090122",
+    "type": "suburb"
+  },
+  {
+    "id": 15,
+    "source": "osm",
+    "lat": -1.3283746,
+    "lng": 36.7049676,
+    "osmId": "node/30031183",
+    "type": "suburb"
+  },
+  {
+    "id": 16,
+    "source": "osm",
+    "lat": -1.3163563,
+    "lng": 36.7894391,
+    "osmId": "way/883143367",
+    "type": "residential"
+  },
+  {
+    "id": 17,
+    "source": "osm",
+    "lat": -1.2182119,
+    "lng": 36.8089887,
+    "osmId": "node/272712144",
+    "type": "suburb"
+  },
+  {
+    "id": 18,
+    "source": "osm",
+    "lat": -1.2254096,
+    "lng": 36.83993,
+    "osmId": "way/164584978",
+    "type": "shop"
+  },
+  {
+    "id": 19,
+    "source": "osm",
+    "lat": -1.293069,
+    "lng": 36.7877525,
+    "osmId": "way/26772773",
+    "type": "shop"
+  },
+  {
+    "id": 20,
+    "source": "osm",
+    "lat": -1.2327165,
+    "lng": 36.8785436,
+    "osmId": "way/1212822215",
+    "type": "shop"
+  },
+  {
+    "id": 21,
+    "source": "osm",
+    "lat": -1.3005158,
+    "lng": 36.7792423,
+    "osmId": "way/561265468",
+    "type": "shop"
+  },
+  {
+    "id": 22,
+    "source": "osm",
+    "lat": -1.205646,
+    "lng": 36.7844571,
+    "osmId": "way/683043587",
+    "type": "town"
+  },
+  {
+    "id": 23,
+    "source": "osm",
+    "lat": -1.3777194,
+    "lng": 36.9285287,
+    "osmId": "node/3953399342",
+    "type": "suburb"
+  },
+  {
+    "id": 24,
+    "source": "osm",
+    "lat": -1.4745409,
+    "lng": 36.9589935,
+    "osmId": "node/2956137647",
+    "type": "town"
+  },
+  {
+    "id": 25,
+    "source": "osm",
+    "lat": -1.395968,
+    "lng": 36.7520106,
+    "osmId": "way/100345251",
+    "type": "town"
+  },
+  {
+    "id": 26,
+    "source": "osm",
+    "lat": -1.3666,
+    "lng": 36.65,
+    "osmId": "node/44924787",
+    "type": "town"
+  },
+  {
+    "id": 27,
+    "source": "osm",
+    "lat": -1.2438129,
+    "lng": 36.6646904,
+    "osmId": "node/6350067090",
+    "type": "town"
+  },
+  {
+    "id": 28,
+    "source": "osm",
+    "lat": -1.1472712,
+    "lng": 36.9604486,
+    "osmId": "node/1847281563",
+    "type": "town"
+  },
+  {
+    "id": 29,
+    "source": "osm",
+    "lat": -1.159854,
+    "lng": 36.9342698,
+    "osmId": "node/4344463196",
+    "type": "suburb"
+  },
+  {
+    "id": 30,
+    "source": "osm",
+    "lat": -1.1508144,
+    "lng": 36.9010616,
+    "osmId": "node/4949979181",
+    "type": "suburb"
+  },
+  {
+    "id": 31,
+    "source": "osm",
+    "lat": -1.1014905,
+    "lng": 37.0159462,
+    "osmId": "way/363925777",
+    "type": "town"
+  },
+  {
+    "id": 32,
+    "source": "osm",
+    "lat": -1.036648,
+    "lng": 37.077523,
+    "osmId": "node/1141424596",
+    "type": "town"
+  },
+  {
+    "id": 33,
+    "source": "osm",
+    "lat": -1.4481149,
+    "lng": 36.971587,
+    "osmId": "way/677845201",
+    "type": "town"
+  },
+  {
+    "id": 34,
+    "source": "osm",
+    "lat": -1.3935069,
+    "lng": 36.9430384,
+    "osmId": "way/324758442",
+    "type": "town"
+  },
+  {
+    "id": 35,
+    "source": "osm",
+    "lat": -4.0465321,
+    "lng": 39.7035201,
+    "osmId": "node/2249896631",
+    "type": "suburb"
+  },
+  {
+    "id": 36,
+    "source": "osm",
+    "lat": -4,
+    "lng": 39.7166,
+    "osmId": "node/45006858",
+    "type": "village"
+  },
+  {
+    "id": 37,
+    "source": "osm",
+    "lat": -3.9750332,
+    "lng": 39.743498,
+    "osmId": "node/10243334865",
+    "type": "suburb"
+  },
+  {
+    "id": 38,
+    "source": "osm",
+    "lat": -4.0346285,
+    "lng": 39.6643337,
+    "osmId": "node/10243361045",
+    "type": "quarter"
+  },
+  {
+    "id": 39,
+    "source": "osm",
+    "lat": -3.947402,
+    "lng": 39.742359,
+    "osmId": "node/2252299828",
+    "type": "village"
+  },
+  {
+    "id": 40,
+    "source": "osm",
+    "lat": -4.3124919,
+    "lng": 39.5793598,
+    "osmId": "relation/16249276",
+    "type": "beach"
+  },
+  {
+    "id": 41,
+    "source": "osm",
+    "lat": -0.1146589,
+    "lng": 34.7524675,
+    "osmId": "node/10591514863",
+    "type": "suburb"
+  },
+  {
+    "id": 42,
+    "source": "osm",
+    "lat": -0.0606822,
+    "lng": 34.7825431,
+    "osmId": "node/10233156591",
+    "type": "suburb"
+  },
+  {
+    "id": 43,
+    "source": "none",
+    "lat": null,
+    "lng": null,
+    "osmId": null,
+    "type": null,
+    "note": "no OSM result"
+  },
+  {
+    "id": 44,
+    "source": "osm",
+    "lat": -0.1332336,
+    "lng": 34.7454895,
+    "osmId": "relation/15986024",
+    "type": "city_district"
+  },
+  {
+    "id": 45,
+    "source": "osm",
+    "lat": -0.1033885,
+    "lng": 34.7525542,
+    "osmId": "way/102270265",
+    "type": "secondary"
+  },
+  {
+    "id": 46,
+    "source": "none",
+    "lat": null,
+    "lng": null,
+    "osmId": "node/9737148864",
+    "type": "village",
+    "note": "OSM top result is a different Milimani near Lanet Umoja, about 11 km east of Nakuru town (confirmed on the static image); rejected by hand"
+  },
+  {
+    "id": 47,
+    "source": "osm",
+    "lat": -0.2860967,
+    "lng": 36.0932959,
+    "osmId": "node/9433066508",
+    "type": "village"
+  },
+  {
+    "id": 48,
+    "source": "osm",
+    "lat": -0.3042161,
+    "lng": 36.1380317,
+    "osmId": "node/8988367472",
+    "type": "neighbourhood"
+  },
+  {
+    "id": 49,
+    "source": "osm",
+    "lat": -0.2886758,
+    "lng": 36.1027159,
+    "osmId": "node/9455349262",
+    "type": "village"
+  },
+  {
+    "id": 50,
+    "source": "osm",
+    "lat": -0.2844591,
+    "lng": 36.0691126,
+    "osmId": "node/9433105417",
+    "type": "village"
+  }
+]
