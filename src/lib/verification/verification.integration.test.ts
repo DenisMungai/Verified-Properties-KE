@@ -11,7 +11,9 @@ import { confirmPayment } from "@/lib/mpesa/confirm";
 import { DEFAULT_FILTERS } from "@/lib/search/params";
 import { createMemoryStore } from "@/test/memory-store";
 import { approveRequest, rejectRequest, requestChanges, suspendRequest, type DecisionDeps } from "./decisions";
+import { openDocumentForAdmin, type DocumentViewDeps, type DocumentViewer } from "./document-view";
 import { finalizeDocument, removeDocument, requestDocumentUpload, submitForReview, type ListerDeps } from "./lister";
+import { RENEWAL_REASON } from "./purchase";
 
 /**
  * S12 verification against the Neon test branch (TEST_DATABASE_URL). Each test runs in a
@@ -91,7 +93,7 @@ describe.skipIf(!url)("verification (integration)", { timeout: 90_000 }, () => {
   }
 
   /** Checkout for the verification plan, then a confirmed STK payment for it. */
-  async function payForVerification(userId: string): Promise<{ invoiceId: string }> {
+  async function payForVerification(userId: string): Promise<{ invoiceId: string; paymentId: string; receipt: string }> {
     const purchase = await resolvePurchase(db, userId, "t_ver_verify", clock);
     if (!purchase.ok) throw new Error(`purchase refused: ${purchase.code}`);
     const prepared = await preparePlanInvoice(billingDeps, purchase.pool, purchase.plan);
@@ -106,7 +108,7 @@ describe.skipIf(!url)("verification (integration)", { timeout: 90_000 }, () => {
     const receipt = `TV${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`;
     const confirmed = await confirmPayment(db, payment.id, { receipt, paidAmount: prepared.invoice.amountKes, confirmedAt: clock });
     expect(confirmed.outcome).toBe("confirmed");
-    return { invoiceId: prepared.invoice.id };
+    return { invoiceId: prepared.invoice.id, paymentId: payment.id, receipt };
   }
 
   async function upload(userId: string, documentType: "national_id" | "earb_certificate" | "business_registration"): Promise<string> {
@@ -263,10 +265,26 @@ describe.skipIf(!url)("verification (integration)", { timeout: 90_000 }, () => {
     );
     expect(await verifiedNow(lister)).toBe(false);
 
-    await payForVerification(lister);
+    const renewal = await payForVerification(lister);
     expect(await verifiedNow(lister)).toBe(true);
     expect(await countRequests(lister)).toBe(1);
     expect((await requestOf(lister)).status).toBe("verified");
+
+    // The renewal is on the review's audit log (S17 exit fix F2); the first payment has no reason.
+    const payRows = async () =>
+      (
+        await client.query<{ reason: string | null }>(
+          `select reason from verification_audit_log where request_id = $1 and action = 'pay' order by created_at, id`,
+          [requestId],
+        )
+      ).rows.map((r) => r.reason);
+    expect(await auditActions(requestId)).toEqual(["start", "pay", "upload", "upload", "submit", "approve", "pay"]);
+    expect(await payRows()).toEqual([null, RENEWAL_REASON]);
+
+    // A repeated confirmation changes nothing.
+    const again = await confirmPayment(db, renewal.paymentId, { receipt: renewal.receipt, paidAmount: 1, confirmedAt: clock });
+    expect(again.outcome).toBe("already_confirmed");
+    expect(await payRows()).toEqual([null, RENEWAL_REASON]);
   });
 
   it("request changes sends it back with the reason; the lister can re-upload", async () => {
@@ -374,6 +392,58 @@ describe.skipIf(!url)("verification (integration)", { timeout: 90_000 }, () => {
       ok: false,
       code: "no_request",
     });
+  });
+
+  it("audits every admin document view and hides documents from everyone else", async () => {
+    const lister = await insertLister("ver_m", "agent");
+    const other = await insertLister("ver_n", "agent");
+    const requestId = await submitted(lister);
+    const doc = await one<{ id: string; document_type: string; storage_key: string }>(
+      `select id, document_type, storage_key from verification_documents where request_id = $1 order by uploaded_at, id limit 1`,
+      [requestId],
+    );
+    const viewDeps: DocumentViewDeps = { db, withTransaction: listerDeps.withTransaction, privateStore: () => store };
+    const asAdmin: DocumentViewer = { id: admin, emailVerified: true, roles: ["platform_admin"] };
+    const viewRows = async () =>
+      (
+        await client.query<{ actor_user_id: string; reason: string }>(
+          `select actor_user_id, reason from verification_audit_log where request_id = $1 and action = 'view_document' order by created_at, id`,
+          [requestId],
+        )
+      ).rows;
+
+    // Everyone but a verified-email platform admin gets not_found, and nothing is logged.
+    const refused: Array<[DocumentViewer | null, string]> = [
+      [{ id: lister, emailVerified: true, roles: [] }, doc.id],
+      [{ id: other, emailVerified: true, roles: [] }, doc.id],
+      [null, doc.id],
+      [{ id: admin, emailVerified: false, roles: ["platform_admin"] }, doc.id],
+      [asAdmin, randomUUID()],
+      [asAdmin, "not-a-uuid"],
+    ];
+    for (const [viewer, documentId] of refused) {
+      expect(await openDocumentForAdmin(viewDeps, viewer, documentId)).toEqual({ ok: false, code: "not_found" });
+    }
+    expect(await viewRows()).toEqual([]);
+
+    // The admin gets a short presigned link, and each view is its own audit row.
+    const opened = await openDocumentForAdmin(viewDeps, asAdmin, doc.id);
+    expect(opened).toEqual({ ok: true, url: `memory://${doc.storage_key}?get=1&expires=60` });
+    expect(await viewRows()).toEqual([{ actor_user_id: admin, reason: `${doc.document_type} ${doc.id}` }]);
+    await openDocumentForAdmin(viewDeps, asAdmin, doc.id);
+    expect(await viewRows()).toHaveLength(2);
+
+    // A storage failure is reported as unavailable, never as a link.
+    const broken: DocumentViewDeps = {
+      ...viewDeps,
+      privateStore: () => ({
+        ...store,
+        presignGet: async () => {
+          throw new Error("storage down");
+        },
+      }),
+    };
+    expect(await openDocumentForAdmin(broken, asAdmin, doc.id)).toEqual({ ok: false, code: "unavailable" });
   });
 
   it("keeps the audit log append-only", async () => {

@@ -16,6 +16,9 @@ import { subscriptionPhase } from "@/lib/billing/periods";
  * review (or, with an unexpired approved review, only renews the badge subscription).
  */
 
+/** Audit reason on the `pay` row a renewal writes. */
+export const RENEWAL_REASON = "Renewal";
+
 export type VerificationPurchaseRefusal =
   | "listing_plan_required"
   | "verification_in_progress"
@@ -62,10 +65,17 @@ export async function attachVerificationInvoice(tx: DbExecutor, userId: string, 
 /**
  * Inside the payment-confirmation transaction for a verification plan: the request moves on to
  * `documents_pending`. Idempotent: a repeated callback finds nothing left to move. With no open
- * request (a Paybill payment against the invoice), one is created.
+ * request (a Paybill payment against the invoice), one is created. A lister with an unexpired
+ * approved review is only renewing: the review is untouched and a `pay` row with reason "Renewal"
+ * goes on that review's audit log (S17 exit fix F2). Repeated callbacks never get here twice:
+ * `confirmPayment` stops at a payment that is no longer pending.
  */
 export async function onVerificationPaid(tx: DbExecutor, userId: string, invoiceId: string, confirmedAt: Date): Promise<void> {
-  if (await getUnexpiredVerifiedRequest(tx, userId, confirmedAt)) return;
+  const verified = await getUnexpiredVerifiedRequest(tx, userId, confirmedAt);
+  if (verified) {
+    await insertAudit(tx, { requestId: verified.id, actorUserId: userId, action: "pay", reason: RENEWAL_REASON });
+    return;
+  }
   // A suspended lister never reopens verification by paying; support has to lift it first.
   // (Suspension voids open invoices, so this is a second line of defence.)
   if ((await getLatestRequest(tx, userId))?.status === "suspended") return;

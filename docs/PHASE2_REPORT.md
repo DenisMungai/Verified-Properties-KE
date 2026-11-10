@@ -1,7 +1,7 @@
 # Phase 2 exit report
 
-**Status: all five Phase 2 exit criteria passed.** There are three findings at the end, none of
-which blocks Phase 3:
+**Status: all five Phase 2 exit criteria passed.** The run found three issues, none blocking
+Phase 3, and all three were fixed in `s17-exit-fixes` (see "Findings"):
 
 - F1: document views are recorded, but no test covers it and this run never exercised it
 - F2: renewing verification writes no verification audit row
@@ -273,6 +273,41 @@ Neon project has only `production`, `test` and `dev`.
 | F2 | **Renewing verification writes no verification audit row.** The first verification payment logs `pay`, but the renewal (`SIMG309BH0`) added nothing to `verification_audit_log`. It is recorded in `payment_events` and billing. Plan §10 lists "pay" among the actions to audit. | Low | Decide whether renewals belong in the verification audit. If they do, write a `pay` row (reason "renewal") where a verification payment is confirmed for an approved request. |
 | F3 | **One sample listing's title is wrong.** "Sample: PENDING REVIEW, should never appear publicly" is `published` and shows in search and on home. It was approved by an admin on 5 Nov at 09:43:09, seven seconds before the S11 walkthrough listing, so this is data, not a leak. It does make the "never public" sample useless and looks alarming. | Low | Re-run `npm run db:seed -- --remove` and then `npm run db:seed` on dev, or set that listing back to `pending_review`. |
 
+### Closed in `s17-exit-fixes` (10 November 2026)
+
+- **F1, fixed.**
+  - **Code:** the document route's logic moved into `openDocumentForAdmin`
+    (`src/lib/verification/document-view.ts`). The route now only reads the session and maps the
+    result to 303, 404 or 503. Behaviour is unchanged, and the private store is still opened only
+    for an admin, after the audit row.
+  - **Test:** "audits every admin document view and hides documents from everyone else" checks
+    that:
+    - each admin view writes one `view_document` row and returns a 60 s link
+    - the lister, another lister, signed out, an unverified-email admin, an unknown id and a
+      non-UUID all get `not_found` with no row
+    - a storage failure gives `unavailable`
+  - **Still to do:** one live view on dev, by you as admin, to record the row in the report.
+- **F2, fixed.** A verification payment by a lister with an unexpired approved review now writes a
+  `pay` row with reason "Renewal" in the confirmation transaction. The admin history shows it as
+  "Payment confirmed — Renewal". The review itself is untouched. The renewal test now checks:
+  - the audit order `start, pay, upload, upload, submit, approve, pay`
+  - the reasons `[none, "Renewal"]`
+  - that a repeated confirmation (`already_confirmed`) adds nothing
+- **F3, fixed on dev.** Re-seeding wouldn't have worked: `--remove` archives a moderated sample
+  listing, and a re-seed skips its slug, so it would have stayed archived. Instead, one update on
+  the dev branch only set `sample-pending-listing` (`d7f7517d-…`) back to `pending_review` and
+  cleared `published_at` and `reviewed_at`. Exactly one row matched. The 5 Nov approval stays in
+  the append-only moderation log.
+- **Checks after the fixes:**
+
+  | Command | Result |
+  |---|---|
+  | `npm run typecheck` | clean |
+  | `npm run lint` | clean |
+  | `npm test` | 444 passed |
+  | `npm run test:integration` | 19 files, **211 tests** pass |
+  | `npm run build` | passes |
+
 **Observations, no action needed:**
 - the 22 s reply delay is within the design
 - the "Also block" default caught out the script, not a user
@@ -292,8 +327,6 @@ Neon project has only `production`, `test` and `dev`.
 
 ## Next steps
 
-1. Close F1: open one document as admin, then add the route test.
-2. Decide F2.
-3. Fix F3 by re-seeding dev.
-4. **Phase 3, location experience:** the maps provider test (Google Maps vs Mapbox on 50 real
+1. Open one document as admin on dev to record the live F1 audit row.
+2. **Phase 3, location experience:** the maps provider test (Google Maps vs Mapbox on 50 real
    Kenyan addresses), PostGIS, List and Map search, and location privacy.
