@@ -1,5 +1,6 @@
 import "server-only";
 import Link from "next/link";
+import { connection } from "next/server";
 import { buttonClasses, type ButtonVariant } from "@/components/ui";
 import type { ButtonSize } from "@/components/ui/Button";
 import { getDb } from "@/db";
@@ -17,6 +18,8 @@ import { VERIFICATION_PATH } from "@/lib/verification/app-deps";
 
 /** The active verification plan's price, or null when none is on sale. Read from `plans`, never hard-coded. */
 export async function activeVerificationPriceKes(): Promise<number | null> {
+  // Request time only: the prerender pass stops here, before getDb() needs DATABASE_URL.
+  await connection();
   const plans = await getActivePlans(getDb(), "verification");
   const plan = plans.find((candidate) => candidate.priceKes > 0);
   return plan?.priceKes ?? null;

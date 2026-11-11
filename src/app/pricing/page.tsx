@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { PlanCard } from "@/components/billing/PlanCard";
 import { planTermsLine } from "@/components/billing/plan-copy";
@@ -25,6 +26,8 @@ export const metadata: Metadata = {
  * Prices and limits come from the database; the CTA returns to the checkout after sign-in.
  */
 async function Plans() {
+  // Request time only: the prerender pass stops here, before getDb() needs DATABASE_URL.
+  await connection();
   const [plans, user] = await Promise.all([getActivePlans(getDb(), "listing"), getCurrentUser()]);
   const visible = plans.filter((plan) => plan.priceKes > 0);
   const terms = planTermsLine(cardPaymentsEnabled());

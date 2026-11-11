@@ -33,6 +33,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # next-env.d.ts (image and route types) is gitignored and only written by next dev/build.
+      - name: Generate Next.js types
+        run: npx next typegen
       - run: npm run typecheck
       - run: npm run lint
       - name: Migrations apply cleanly
