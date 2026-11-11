@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -16,4 +17,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry (prompt S21 decision 4). Source maps are uploaded only once SENTRY_AUTH_TOKEN (build
+ * time, server only) is set; until then nothing is uploaded and the build needs no Sentry account.
+ */
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

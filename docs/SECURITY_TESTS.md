@@ -91,6 +91,10 @@ Both changes were reverted.
   - `createDataRequestAction` (`requireUser`, `POLICIES.dataRequestPerUser`) and `closeDataRequestAction` (`requireRole(["platform_admin"])`) are covered by `route-guards.test.ts`.
   - `/admin/data-requests` is the 13th admin page under `AdminGate`.
   - The sweep has 77 checks. The new one: signed out, or with a forged session, `/privacy/request` never shows the form.
+- **S21 (monitoring):**
+  - `route-guards.test.ts`: the ops health route compares `OPS_HEALTH_TOKEN` in constant time and 404s otherwise; the public health route returns only `{ status }`.
+  - `src/lib/log-hygiene.test.ts`: no `console.*` call under `src/` logs an error's `.message`, a raw error or provider string, or an unmasked email or phone.
+  - The sweep has 79 checks. The new ones: `/api/health` returns exactly `{"status":"ok"}`; `/api/health/ops/<wrong token>` returns 404 with no body.
 
 ## How to run
 

@@ -6,6 +6,7 @@ import { grantRoles } from "@/db/queries/roles";
 import type { EmailTransport } from "@/lib/email/send";
 import { maskEmail } from "@/lib/email/send";
 import { passwordResetEmail, verificationEmail } from "@/lib/email/templates";
+import { errorName } from "@/lib/notifications/deps";
 import { SIGN_UP_ROLE } from "@/lib/roles";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/validation/auth";
 
@@ -41,7 +42,7 @@ export function createAuth({ db, secret, baseURL, sendEmail, production, plugins
   /** Fire-and-forget: response timing must not reveal whether an account exists. */
   function deliver(kind: string, to: string, content: Parameters<EmailTransport>[0]) {
     void sendEmail(content).catch((error: unknown) => {
-      console.error(`[auth] ${kind} email to ${maskEmail(to)} failed:`, error instanceof Error ? error.message : "unknown");
+      console.error(`[auth] ${kind} email to ${maskEmail(to)} failed:`, errorName(error));
     });
   }
 

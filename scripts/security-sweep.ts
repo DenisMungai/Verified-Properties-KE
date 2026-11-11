@@ -186,6 +186,18 @@ function checks(): Check[] {
     { name: "unsigned card webhook", method: "POST", path: "/api/payments/card/webhook", body: "{}", expect: status(400, 401, 403, 404) },
     { name: "unsigned QStash job call", method: "POST", path: "/api/jobs/reconcile", body: "{}", expect: status(401, 403, 404) },
     { name: "message poll without a session", method: "GET", path: "/api/messages/status", expect: status(401) },
+    {
+      name: "public health returns only a status",
+      method: "GET",
+      path: "/api/health",
+      expect: (res) => (res.status === 200 && res.text === '{"status":"ok"}' ? null : `status ${res.status} body ${res.text.slice(0, 80)}`),
+    },
+    {
+      name: "ops health with a wrong token",
+      method: "GET",
+      path: "/api/health/ops/wrong-token-0000000000000",
+      expect: (res) => (res.status === 404 && res.text === "" ? null : `status ${res.status}, expected 404 with no body`),
+    },
     { name: "auth API refuses writes (actions only)", method: "POST", path: "/api/auth/sign-in/email", body: "{}", expect: status(404, 405) },
     {
       name: "data request form needs a session",

@@ -289,6 +289,18 @@ describe("api routes", () => {
     expect(route("api/jobs/[job]")).toMatch(/signature|verify/i);
     expect(route("api/payments/card/webhook")).toMatch(/signature/i);
   });
+
+  it("compares the ops health token in constant time and 404s otherwise (S21)", () => {
+    const source = route("api/health/ops/[token]");
+    expect(source).toMatch(/tokenMatches\(token, expected\)/);
+    expect(source).toMatch(/status: 404/);
+  });
+
+  it("returns only a status from the public health route (S21)", () => {
+    const source = route("api/health");
+    const bodies = [...source.matchAll(/Response\.json\((\{[^}]*\})/g)].map((m) => m[1]);
+    expect(bodies).toEqual(['{ status: "ok" }', '{ status: "down" }']);
+  });
 });
 
 describe("server-only values", () => {

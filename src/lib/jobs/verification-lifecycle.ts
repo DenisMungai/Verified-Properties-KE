@@ -16,6 +16,7 @@ import { maskEmail } from "@/lib/email/send";
 import { rereviewDueEmail, rereviewDueSms, verificationExpiredEmail } from "@/lib/email/templates";
 import { formatNairobiDate } from "@/lib/format";
 import { maskPhone } from "@/lib/kenya";
+import { providerCode } from "@/lib/monitoring/log-safe";
 import { isPurgeDue } from "@/lib/verification/retention";
 import { canTransition, rereviewReminderDue } from "@/lib/verification/rules";
 import { Counter } from "./counter";
@@ -72,7 +73,7 @@ async function sendSms(deps: JobDeps, requestId: string, recipient: LifecycleRec
   const result = await deps.sms({ to: recipient.phone, text });
   if (result.status === "sent") return { status: "sent" };
   if (result.status === "not_configured") return { status: "skipped", error: "sms_not_configured" };
-  console.error(`[jobs] verification-lifecycle sms failed request=${requestId} to=${maskPhone(recipient.phone)} error=${result.error}`);
+  console.error(`[jobs] verification-lifecycle sms failed request=${requestId} to=${maskPhone(recipient.phone)} error=${providerCode(result.error)}`);
   return { status: "failed", error: result.error };
 }
 

@@ -5,6 +5,7 @@ import { IN_FLIGHT_SECONDS } from "@/lib/billing/constants";
 import { PURCHASE_MESSAGES, preparePlanInvoice, resolvePurchase, type PurchaseRefusal } from "@/lib/billing/prepare-invoice";
 import { formatKes } from "@/lib/format";
 import { maskPhone, normalizeKenyanPhone } from "@/lib/kenya";
+import { providerCode } from "@/lib/monitoring/log-safe";
 import { POLICIES, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { CALLBACK_PATHS, callbackUrl } from "./config";
 import type { PaymentDeps } from "./deps";
@@ -96,7 +97,7 @@ export async function startPlanPayment(
       invoiceId: invoice.id,
       payload: { error: pushed.error, phone: maskPhone(phone.e164), amountKes: invoice.amountKes },
     });
-    console.error(`[mpesa] stk push failed invoice=${invoice.invoiceNumber} phone=${maskPhone(phone.e164)} error=${pushed.error}`);
+    console.error(`[mpesa] stk push failed invoice=${invoice.invoiceNumber} phone=${maskPhone(phone.e164)} error=${providerCode(pushed.error)}`);
     return {
       ok: false,
       code: "daraja_rejected",

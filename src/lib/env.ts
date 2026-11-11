@@ -55,6 +55,9 @@ const serverSchema = z.object({
   /** Comma-separated IPv4 CIDRs allowed to call the card webhook; defaults to Paystack's IPs with a live key. */
   PAYSTACK_WEBHOOK_ALLOWED_IPS: z.string().optional(),
 
+  /** Secret path segment of the ops health URL UptimeRobot polls (prompt S21 decision 3). */
+  OPS_HEALTH_TOKEN: z.string().min(24, { error: "must be at least 24 characters" }).optional(),
+
   AT_USERNAME: z.string().optional(),
   AT_API_KEY: z.string().optional(),
   AT_SENDER_ID: z.string().optional(),

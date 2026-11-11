@@ -13,6 +13,8 @@ import { maskEmail } from "@/lib/email/send";
 import { renewalReminderEmail, renewalReminderSms } from "@/lib/email/templates";
 import { formatKes, formatNairobiDate } from "@/lib/format";
 import { maskPhone } from "@/lib/kenya";
+import { providerCode } from "@/lib/monitoring/log-safe";
+import { errorName } from "@/lib/notifications/deps";
 import { Counter } from "./counter";
 import { REMINDER_LEAD_DAYS, reminderDue, type DueReminder } from "./reminder-window";
 import type { JobDeps, JobResult } from "./types";
@@ -51,8 +53,8 @@ async function sendEmails(deps: JobDeps, candidate: ReminderCandidate, reminder:
       await deps.email({ to: recipient.email, ...renewalReminderEmail(recipient.name, details, renewUrl(deps, candidate)) });
       sent += 1;
     } catch (e) {
-      error = e instanceof Error ? e.name : "unknown";
-      console.error(`[jobs] renewal-reminders email failed subscription=${candidate.subscriptionId} to=${maskEmail(recipient.email)} error=${error}`);
+      error = errorName(e);
+      console.error(`[jobs] renewal-reminders email failed subscription=${candidate.subscriptionId} to=${maskEmail(recipient.email)} error=${errorName(e)}`);
     }
   }
   return sent > 0 ? { status: "sent" } : { status: "failed", error };
@@ -71,7 +73,7 @@ async function sendSms(deps: JobDeps, candidate: ReminderCandidate, recipients: 
     else if (result.status === "not_configured") notConfigured += 1;
     else {
       error = result.error;
-      console.error(`[jobs] renewal-reminders sms failed subscription=${candidate.subscriptionId} to=${maskPhone(to)} error=${error}`);
+      console.error(`[jobs] renewal-reminders sms failed subscription=${candidate.subscriptionId} to=${maskPhone(to)} error=${providerCode(error)}`);
     }
   }
   if (sent > 0) return { status: "sent" };

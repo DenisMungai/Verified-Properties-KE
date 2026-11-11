@@ -23,6 +23,7 @@
     "jobs:schedule": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-schedule.ts",
     "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.ts",
     "security:sweep": "node --import tsx scripts/security-sweep.ts",
+    "sentry:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/sentry-test.ts",
     "maps:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/maps-provider-test.ts"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1159.0",
     "@fontsource/poppins": "^5.3.0",
     "@neondatabase/serverless": "^1.2.0",
+    "@sentry/nextjs": "10.77.1",
     "@upstash/qstash": "^2.12.1",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.40.0",

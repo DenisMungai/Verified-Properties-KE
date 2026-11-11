@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { insertCardPayment, recordPaymentEvent } from "@/db/queries/payments";
 import type { PlanChangeKind } from "@/lib/billing/plan-change";
 import { PURCHASE_MESSAGES, preparePlanInvoice, resolvePurchase, type PurchaseRefusal } from "@/lib/billing/prepare-invoice";
+import { providerCode } from "@/lib/monitoring/log-safe";
 import { POLICIES, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { CARD_RETURN_PATH, cardReference, isPaystackCheckoutUrl } from "./config";
 import type { CardDeps } from "./deps";
@@ -59,7 +60,7 @@ export async function startCardPayment(
       invoiceId: invoice.id,
       payload: { reference, error, amountKes: invoice.amountKes },
     });
-    console.error(`[card] init failed invoice=${invoice.invoiceNumber} reference=${reference} error=${error}`);
+    console.error(`[card] init failed invoice=${invoice.invoiceNumber} reference=${reference} error=${providerCode(error)}`);
     return fail("gateway_unavailable");
   }
 

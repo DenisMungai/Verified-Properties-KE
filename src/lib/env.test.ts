@@ -36,6 +36,14 @@ describe("parseServerEnv", () => {
     expect(message).not.toContain("s3cret-value");
   });
 
+  it("requires OPS_HEALTH_TOKEN to be at least 24 characters when set", () => {
+    expect(parseServerEnv({ DATABASE_URL: DB }).OPS_HEALTH_TOKEN).toBeUndefined();
+    expect(parseServerEnv({ DATABASE_URL: DB, OPS_HEALTH_TOKEN: "" }).OPS_HEALTH_TOKEN).toBeUndefined();
+    expect(() => parseServerEnv({ DATABASE_URL: DB, OPS_HEALTH_TOKEN: "short-token" })).toThrow(/OPS_HEALTH_TOKEN/);
+    const token = "a".repeat(24);
+    expect(parseServerEnv({ DATABASE_URL: DB, OPS_HEALTH_TOKEN: token }).OPS_HEALTH_TOKEN).toBe(token);
+  });
+
   it("validates the M-Pesa shortcode format", () => {
     expect(() => parseServerEnv({ DATABASE_URL: DB, MPESA_SHORTCODE: "abc" })).toThrow(
       /MPESA_SHORTCODE/,
