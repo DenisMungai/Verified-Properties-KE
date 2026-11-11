@@ -136,28 +136,41 @@ rollback note in the slice prompt before applying it.
 
 ## 4. Restore from backup
 
-Neon keeps a change history for the project (**restore window** = the history retention setting:
-Neon console → project → **Settings** → **Storage** / history retention). Any point inside that
-window can be restored.
+Two kinds of backup exist:
 
-**Rehearsal record** (requirement 8 of the S21 prompt):
+- **History (point in time):** any moment in the last **6 hours** (project history retention,
+  21,600 s on the free plan; Neon console → project → **Settings**).
+- **Snapshots:** the free plan keeps **one** manual snapshot. Today that is
+  `production-manual-2026-11-10` (taken 2026-11-10 18:33 UTC). Replace it after big changes:
+  delete the old one, then take a new one.
+
+**Rehearsal record** (2026-11-11, S21):
 
 | Item | Value |
 | --- | --- |
-| Restore window | **Pending:** read from project settings during the rehearsal |
-| Rehearsal branch | **Pending:** `restore-rehearsal-<date>`, from `production` one hour back |
-| Time from request to queryable branch | **Pending** |
-| Row counts compared | **Pending:** `users`, `properties`, `property_images`, `subscriptions`, `invoices`, `payments`, `payment_events`, `verification_requests`, `messages`, `data_requests`; latest `created_at` of `payment_events` and `job_runs` |
-| Rehearsal branch deleted | **Pending** |
+| Restore window | 6 hours of history, plus the one manual snapshot |
+| Source | Snapshot `production-manual-2026-11-10` (production as of 2026-11-10 18:33 UTC). A point-in-time snapshot couldn't be taken because the free plan's one snapshot slot was in use |
+| Time from request to queryable branch | **13 seconds** (requested 07:48:39 UTC, first query answered 07:48:52) |
+| Row counts compared | `users` 1, `properties` 1, `property_images` 13, `subscriptions` 1, `invoices` 2, `payments` 2, `verification_requests` 0, `messages` 0, `data_requests` 0: identical. `payment_events` 18 vs 19 and `job_runs` 902 vs 1145: exactly the 1 `reconciliation` event and 243 job runs recorded after the snapshot |
+| Problem found | The restore was **finalized** (the tool's default for a new branch). Neon swapped the restored copy in as `production` for about 3 minutes. See the incident note `docs/incidents/2026-11-11-restore-rehearsal-swap.md`. Put back by hand; no data lost except one job-run log row |
+| Rehearsal branch deleted | Yes, after production was put back |
 
-### Rehearse (read only; production is never written)
+### Rehearse (production is never written)
+
+**Always restore unfinalized.** A finalized restore moves production's compute onto the restored
+copy and renames the branches, so the live site runs on the backup. In the Neon console, choose
+"restore to a new branch" and do **not** tick finalize / "replace"; with the CLI or API, pass
+`finalize: false`.
 
 1. Neon console → **Branches** → **Create branch**. Parent `production`, **Point in time** one
-   hour ago, name `restore-rehearsal-<date>`, with a compute. Note the time you click Create and the
-   time the branch's SQL Editor first answers `select 1`.
-2. In the SQL Editor, run the same row counts and latest timestamps on the rehearsal branch and on
-   `production`. Every difference must be explained by activity in the last hour.
-3. Delete the rehearsal branch. Record the results in the table above.
+   hour ago (or restore the snapshot to a new branch, unfinalized), name `restore-rehearsal-<date>`,
+   with its own compute. Note the time you click Create and the time the branch's SQL Editor first
+   answers `select 1`.
+2. Check **production is still default** and still has endpoint `ep-summer-morning-b9otl4v9`
+   (Branches list). If not, stop and follow the incident note's fix.
+3. In the SQL Editor, run the same row counts and latest timestamps on the rehearsal branch and on
+   `production`. Every difference must be explained by activity since the restore point.
+4. Delete the rehearsal branch. Record the results in the table above.
 
 ### Restore for real
 
@@ -168,9 +181,11 @@ window can be restored.
 3. **Preferred: restore `production` in place.** Neon → Branches → `production` → **Restore** →
    point in time. Neon keeps the pre-restore state as a backup branch. The connection string and
    endpoint stay the same, so Vercel needs no change.
-   - Neon Object Storage branches with the database (`STORAGE_*` points at the production
-     branch's storage endpoint). Check listing photos still load after the restore; if not,
-     re-upload is the fallback.
+   - **Photos stay on the old branch.** Storage buckets belong to the branch *id*
+     (`br-mute-star-b92vpkso`), and Vercel's `STORAGE_*` values name that id. The rehearsal's
+     restored branch had no buckets. After a finalized restore the old branch is renamed (e.g.
+     `production (old)`) but still holds every photo: **don't delete it**. Photos keep loading
+     because Vercel still points at it.
 4. **Alternative: restore to a new branch** and point the app at it: create a branch from the point
    in time, then in Vercel set `DATABASE_URL` (pooled), and the `STORAGE_*` endpoint if photos
    should come from that branch, to the new branch's values. Redeploy **from Git** (Vercel's
@@ -180,8 +195,11 @@ window can be restored.
    receipts with no `payments` row and record them in admin billing.
 6. Write the incident note.
 
-**Protect the production branch:** Neon → Branches → `production` → **Protect**. This blocks
-accidental deletes and resets. (Recommended in S21; it was unprotected when checked.)
+**Protected branches** would block accidental deletes and resets, but the free plan allows none
+(checked 2026-11-11: "maximum number of protected branches for your current plan"). Turn it on
+for `production` if the plan is upgraded. Until then, never run delete or reset on
+`br-mute-star-b92vpkso`: it is production, it holds the photo storage buckets, and `dev` and
+`test` are its children.
 
 ---
 
