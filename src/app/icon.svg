@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <title>Verified Properties KE</title>
+  <rect width="512" height="512" rx="96" fill="#FFFFFF"/>
   <g fill="none" stroke="#064B2B" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
     <path d="M72 234 256 82l184 152"/>
     <path d="M125 218v190h262V218"/>
     <path d="M215 408h-90"/>
     <path d="M387 408h-90"/>
   </g>
-  <path d="M197 265h118v95H197z" fill="#064B2B" rx="8"/>
+  <path d="M197 265h118v95H197z" fill="#064B2B"/>
   <path d="m177 322 65 65 116-126" fill="none" stroke="#064B2B" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
