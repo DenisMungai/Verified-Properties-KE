@@ -37,6 +37,8 @@ const detailColumns = {
   neighbourhood: p.neighbourhood,
   publishedAt: p.publishedAt,
   listerName: sql<string | null>`coalesce(${agencies.name}, ${listerProfiles.displayName})`,
+  /** For the "View agency" link (prompt S23 decision 12); the agency page exists while this listing is published. */
+  agencySlug: agencies.slug,
   listerAvatarKey: listerAvatarKeySql,
   listerType: listerProfiles.listerType,
   verified: sql<boolean>`lister_verified_now(${p.ownerUserId})`,

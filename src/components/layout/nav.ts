@@ -33,6 +33,7 @@ export function accountLinks(user: Pick<HeaderUser, "isLister" | "isAdmin">): Ac
           { href: "/account/listings", label: "My listings" },
           { href: "/account/verification", label: "Verification" },
           { href: "/account/billing", label: "Subscription & billing" },
+          { href: "/account/agency", label: "Agency" },
         ]
       : []),
     { href: "/account/saved", label: "Saved properties" },

@@ -9,6 +9,8 @@ import { AVATAR_SIZES, VARIANT_WIDTHS, variantSuffix } from "./limits";
  * - Avatar uploads (private bucket): `uploads/<userId>/avatar/<uuid>`
  * - Avatars (public bucket): base key `avatars/<userId>/<uuid>`, variants `<base>-128.webp` and
  *   `<base>-384.webp`
+ * - Agency logos use the avatar keys with the owner segment `agency-<agencyId>` (prompt S23
+ *   decision 9), so they share the avatar pipeline, public route and orphan sweep.
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -81,6 +83,12 @@ export function isOwnAvatarUploadKey(key: string, userId: string): boolean {
 export function newAvatarBaseKey(userId: string): string {
   if (!SAFE_SEGMENT.test(userId)) throw new Error("Unsafe storage key segment");
   return `${AVATARS_PREFIX}${userId}/${randomUUID()}`;
+}
+
+/** The avatar-store owner segment for an agency's logo; Better Auth user ids never contain "-". */
+export function agencyLogoOwner(agencyId: string): string {
+  if (!UUID.test(agencyId)) throw new Error("Unsafe storage key segment");
+  return `agency-${agencyId.toLowerCase()}`;
 }
 
 export function avatarVariantKeys(baseKey: string): string[] {

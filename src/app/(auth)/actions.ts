@@ -83,8 +83,14 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
   if (refusal) return { formError: refusal, values };
 
   const next = safeNextPath(formData.get("next"));
-  // Listers verify, then land on onboarding; everyone else returns where they came from.
-  const callbackURL = parsed.data.intent === "list" ? "/account/onboarding" : next;
+  // Listers verify, then land on onboarding; everyone else returns where they came from. A lister
+  // who came from somewhere (an agency invite, prompt S23) goes back there after onboarding.
+  const callbackURL =
+    parsed.data.intent === "list"
+      ? next === DEFAULT_SIGNED_IN_PATH
+        ? "/account/onboarding"
+        : `/account/onboarding?next=${encodeURIComponent(next)}`
+      : next;
   try {
     // Only these three fields reach Better Auth; roles are granted server-side (buyer_tenant).
     // A duplicate email returns the same generic success (requireEmailVerification).

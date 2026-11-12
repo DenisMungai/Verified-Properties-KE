@@ -43,7 +43,7 @@ const SECTIONS: LegalSection[] = [
           { title: "Your account", body: "Name, email address and a password (stored only as a one-way hash). The IP address and browser of each signed-in session." },
           {
             title: "Your lister profile (if you list)",
-            body: "Display name, whether you are an agent, owner or developer, phone number, optional WhatsApp number, optional public email, short bio, profile photo and agency. For agencies, the office phone, WhatsApp and email an agency admin adds.",
+            body: "Display name, whether you are an agent, owner or developer, phone number, optional WhatsApp number, optional public email, short bio, profile photo and agency. For agencies, the office phone, WhatsApp and email an agency admin adds, and the email addresses an agency admin invites.",
           },
           { title: "Your listings", body: "Everything you enter about a property, its photos, and its county, town, area and address label." },
           {
@@ -104,6 +104,7 @@ const SECTIONS: LegalSection[] = [
           items={[
             "Listings show the lister's display name, photo or agency logo, and the listing details. Exact addresses and coordinates are never shown.",
             "A verified lister's phone, WhatsApp and public email are shown to every visitor. Other listers' contact details are shown only to signed-in visitors. On an agency's listings, the agency's office contacts follow the same rule.",
+            "An agency's page shows its name, logo, description and website, and the display name, photo and verification badge of each member with a published listing. Its office contacts are shown only to signed-in visitors.",
             "Messages are seen only by the two people in the conversation. Our moderators can open a conversation when it is reported.",
             "Verification documents are seen only by our platform admins, and every view is logged.",
           ]}
@@ -145,6 +146,7 @@ const SECTIONS: LegalSection[] = [
           `Verification documents: deleted ${RETENTION_DAYS_AFTER_END} days after a review ends, ${RETENTION_DAYS_AFTER_REJECTION} days after a review is declined, and ${RETENTION_MONTHS_AFTER_SUSPENSION} months after a suspension. The review decision itself is kept.`,
           `Payment records, invoices and receipts: at least ${PAYMENT_RECORD_YEARS} years, as Kenyan tax law requires. They cannot be deleted early.`,
           "Records of admin actions on billing, verification and moderation: kept so decisions can be checked later.",
+          "Agency invites: the invited email address is kept until 90 days after the invite is accepted, cancelled, declined or expires.",
           "Rate-limit counters: hashed and expire within a day.",
         ]}
       />

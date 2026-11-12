@@ -34,13 +34,23 @@ function Edge({ href, label, children }: { href: string | null; label: string; c
   );
 }
 
-export function Pagination({ filters, page, pageCount }: { filters: SearchFilters; page: number; pageCount: number }) {
+/** Search results pass `filters`; other lists (an agency's page, prompt S23) pass `hrefFor`. */
+export function Pagination({
+  filters,
+  hrefFor,
+  page,
+  pageCount,
+}: {
+  page: number;
+  pageCount: number;
+} & ({ filters: SearchFilters; hrefFor?: never } | { filters?: never; hrefFor: (page: number) => string })) {
   if (pageCount <= 1) return null;
+  const href = (n: number) => (hrefFor ? hrefFor(n) : pageHref(filters!, n));
   return (
     <nav aria-label="Pagination">
       <ul className="flex flex-wrap items-center justify-center gap-1.5">
         <li>
-          <Edge href={page > 1 ? pageHref(filters, page - 1) : null} label="Previous page">
+          <Edge href={page > 1 ? href(page - 1) : null} label="Previous page">
             <ChevronLeft aria-hidden="true" className="size-4" />
             <span className="hidden sm:inline">Previous</span>
           </Edge>
@@ -53,7 +63,7 @@ export function Pagination({ filters, page, pageCount }: { filters: SearchFilter
                 {n}
               </span>
             ) : (
-              <Link href={pageHref(filters, n)} className={cn(itemClasses, "border-line-strong bg-white text-ink hover:border-ink")}>
+              <Link href={href(n)} className={cn(itemClasses, "border-line-strong bg-white text-ink hover:border-ink")}>
                 <span className="sr-only">Page </span>
                 {n}
               </Link>
@@ -61,7 +71,7 @@ export function Pagination({ filters, page, pageCount }: { filters: SearchFilter
           </li>
         ))}
         <li>
-          <Edge href={page < pageCount ? pageHref(filters, page + 1) : null} label="Next page">
+          <Edge href={page < pageCount ? href(page + 1) : null} label="Next page">
             <span className="hidden sm:inline">Next</span>
             <ChevronRight aria-hidden="true" className="size-4" />
           </Edge>

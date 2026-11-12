@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EmailNotConfiguredError, createTransport, maskEmail } from "./send";
-import { firstName, passwordResetEmail, paymentReceiptEmail, verificationEmail } from "./templates";
+import { agencyInviteEmail, agencyRemovedEmail, firstName, passwordResetEmail, paymentReceiptEmail, verificationEmail } from "./templates";
 
 const url = "http://localhost:3000/api/auth/verify-email?token=abc&callbackURL=%2Faccount";
 
@@ -69,5 +69,31 @@ describe("createTransport", () => {
   it("refuses to send in production without Resend", async () => {
     const send = createTransport({ nodeEnv: "production" });
     await expect(send(message)).rejects.toBeInstanceOf(EmailNotConfiguredError);
+  });
+});
+
+describe("agency emails (prompt S23)", () => {
+  const link = "https://app.example/account/agency/invites/tok";
+
+  it("names the agency and inviter, escapes HTML and carries the link", () => {
+    const email = agencyInviteEmail({ agencyName: "Acme <b>Realty</b>", inviterName: "Wanjiru Kamau", role: "member", expiresOn: "19 Nov 2026" }, link);
+    expect(email.subject).toBe("Join Acme <b>Realty</b> on VerifiedPropertiesKE");
+    expect(email.html).toContain("Acme &lt;b&gt;Realty&lt;/b&gt;");
+    expect(email.html).not.toContain("<b>Realty</b>");
+    expect(email.text).toContain("as an agent");
+    expect(email.text).toContain("19 Nov 2026");
+    expect(email.text).toContain(link);
+  });
+
+  it("says when someone is invited as an admin", () => {
+    expect(agencyInviteEmail({ agencyName: "Acme", inviterName: "W", role: "admin", expiresOn: "x" }, link).text).toContain("as an admin");
+  });
+
+  it("tells a removed agent how many listings were paused, first name only", () => {
+    const email = agencyRemovedEmail("Brian Otieno", { agencyName: "Acme", pausedListings: 2 }, "https://app.example/account/billing/checkout");
+    expect(email.text).toContain("Hi Brian,");
+    expect(email.text).not.toContain("Otieno");
+    expect(email.text).toContain("2 listings are paused");
+    expect(agencyRemovedEmail("B", { agencyName: "Acme", pausedListings: 0 }, "u").text).toContain("stay in your account");
   });
 });

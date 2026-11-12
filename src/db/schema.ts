@@ -209,6 +209,11 @@ export const agencies = pgTable(
   (t) => [
     check("agencies_public_phone_format", sql`${t.publicPhone} is null or ${t.publicPhone} ~ ${sql.raw(`'${KENYAN_MOBILE_E164}'`)}`),
     check("agencies_whatsapp_format", sql`${t.whatsapp} is null or ${t.whatsapp} ~ ${sql.raw(`'${KENYAN_MOBILE_E164}'`)}`),
+    // Prompt S23 decisions 3 and 8: the app validates these too; the database backs it up.
+    check("agencies_name_length", sql`char_length(trim(${t.name})) between 2 and 80`),
+    check("agencies_slug_format", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${t.slug}) <= 64`),
+    check("agencies_description_length", sql`${t.description} is null or char_length(${t.description}) <= 1000`),
+    check("agencies_website_https", sql`${t.websiteUrl} is null or (${t.websiteUrl} ~ '^https://' and char_length(${t.websiteUrl}) <= 200)`),
   ],
 );
 
@@ -224,7 +229,44 @@ export const agencyMembers = pgTable(
     role: agencyMemberRole("role").notNull().default("member"),
     createdAt,
   },
-  (t) => [primaryKey({ columns: [t.agencyId, t.userId] }), index("agency_members_user_idx").on(t.userId)],
+  // One agency per lister (prompt S23 decision 1): `lister_profiles.agency_id` is the single link.
+  (t) => [primaryKey({ columns: [t.agencyId, t.userId] }), uniqueIndex("agency_members_one_agency_per_user").on(t.userId)],
+);
+
+/**
+ * Email invites to join an agency (prompt S23 decision 4). Only the SHA-256 of the token is
+ * stored; the raw token lives in the email link. An invite is open until it is accepted, revoked
+ * (or declined) or it expires. At most one open invite per agency and email.
+ */
+export const agencyInvites = pgTable(
+  "agency_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agencyId: uuid("agency_id")
+      .notNull()
+      .references(() => agencies.id, { onDelete: "cascade" }),
+    /** Lower-cased. */
+    email: text("email").notNull(),
+    role: agencyMemberRole("role").notNull().default("member"),
+    tokenHash: text("token_hash").notNull().unique(),
+    invitedBy: text("invited_by").references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedBy: text("accepted_by").references(() => users.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** True when the invitee declined (a decline is a revoke by the invitee). */
+    declined: boolean("declined").notNull().default(false),
+    createdAt,
+  },
+  (t) => [
+    check("agency_invites_email_lower", sql`${t.email} = lower(${t.email}) and char_length(${t.email}) between 3 and 254`),
+    check("agency_invites_token_hash_format", sql`${t.tokenHash} ~ '^[0-9a-f]{64}$'`),
+    check("agency_invites_one_outcome", sql`not (${t.acceptedAt} is not null and ${t.revokedAt} is not null)`),
+    uniqueIndex("agency_invites_one_open_per_email")
+      .on(t.agencyId, t.email)
+      .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
+    index("agency_invites_email_idx").on(t.email),
+  ],
 );
 
 /** Public identity for anyone who lists: agents, private owners, developers. */

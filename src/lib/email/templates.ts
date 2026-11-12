@@ -312,3 +312,42 @@ export function reviewDigestEmail(
     ].join("\n"),
   };
 }
+
+/** "Acme Realty" with whitespace collapsed and cut for a subject line. */
+function oneLine(value: string, max = 80): string {
+  const text = value.replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/**
+ * Agency invite (prompt S23 decision 13). The inviter's public display name and the agency name
+ * only; the link carries the token and works for the invited email address alone.
+ */
+export function agencyInviteEmail(details: { agencyName: string; inviterName: string; role: "admin" | "member"; expiresOn: string }, url: string): EmailContent {
+  const agency = oneLine(details.agencyName);
+  const inviter = oneLine(details.inviterName, 60);
+  const as = details.role === "admin" ? "an admin" : "an agent";
+  const body = `${inviter} invited you to join ${agency} on ${BRAND.name} as ${as}. Sign in or create an account with this email address, then accept the invite.`;
+  const footnote = `This invite expires on ${details.expiresOn} and works only for this email address. Joining moves your listings into the agency; you'll see exactly what changes before you accept. If you weren't expecting it, ignore this email.`;
+  return {
+    subject: `Join ${agency} on ${BRAND.name}`,
+    html: layout({ heading: `Join ${agency}`, body, actionLabel: "View invite", url, footnote }),
+    text: [body, "", `View invite: ${url}`, "", footnote].join("\n"),
+  };
+}
+
+/** Sent to an agent an admin removed (prompt S23 decision 7). */
+export function agencyRemovedEmail(name: string, details: { agencyName: string; pausedListings: number }, url: string): EmailContent {
+  const agency = oneLine(details.agencyName);
+  const paused =
+    details.pausedListings === 0
+      ? "Your listings are yours and stay in your account."
+      : `${details.pausedListings === 1 ? "1 listing is" : `${details.pausedListings} listings are`} paused until you have your own listing plan.`;
+  const body = `Hi ${firstName(name)}, you're no longer part of ${agency} on ${BRAND.name}. ${paused}`;
+  const footnote = "Your conversations with buyers stay in your Messages. Choose a listing plan to bring paused listings back.";
+  return {
+    subject: `You're no longer part of ${agency}`,
+    html: layout({ heading: `You've left ${agency}`, body, actionLabel: "Choose a listing plan", url, footnote }),
+    text: [body, "", `Choose a listing plan: ${url}`, "", footnote].join("\n"),
+  };
+}

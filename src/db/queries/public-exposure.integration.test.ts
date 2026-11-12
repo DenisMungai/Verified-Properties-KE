@@ -7,7 +7,8 @@ import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, type SearchFilters } from "@/lib/search/params";
 import { setFavorite } from "./favorites";
 import { getPublicListing } from "./listing-detail";
-import { homeSections, homeShowcase, savedListings, searchListings, similarListings } from "./public-listings";
+import { getPublicAgency, getPublicTeam } from "./public-agencies";
+import { agencyListings, homeSections, homeShowcase, savedListings, searchListings, similarListings } from "./public-listings";
 
 /**
  * Plan §12: "Public APIs never expose exact coordinates, verification documents, payment details
@@ -240,6 +241,21 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     const saved = await savedListings(db, "s19x_buyer", NOW);
     expect(saved).toHaveLength(2);
     expectNothingPrivate("saved", saved);
+  });
+
+  it("the agency page returns public fields only, with the agency id kept outside the public object", async () => {
+    const result = await getPublicAgency(db, "s19x-agency");
+    expect(result).not.toBeNull();
+    expect(Object.keys(result!).sort()).toEqual(["agency", "agencyId"]);
+    expectNothingPrivate("agency", result!.agency);
+
+    const team = await getPublicTeam(db, result!.agencyId);
+    expect(team.length).toBeGreaterThan(0);
+    expectNothingPrivate("agency team", team);
+
+    const page = await agencyListings(db, result!.agencyId, 1, NOW);
+    expect(page.items.map((c) => c.id)).toEqual([agencyListing.id]);
+    expectNothingPrivate("agency listings", page);
   });
 
   it("returns nothing at all for listings that are not published", async () => {

@@ -274,7 +274,9 @@ export type AuditAction =
   | "close_payment"
   | "credit_from_payment"
   | "credit_days"
-  | "verification_credit";
+  | "verification_credit"
+  /** A lister's own listing plan, cancelled when they joined an agency (prompt S23 decision 5). */
+  | "agency_join_plan_cancelled";
 
 /** Append-only (trigger); written in the same transaction as the action it records. */
 export async function insertBillingAudit(

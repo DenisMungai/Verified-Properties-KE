@@ -6,6 +6,7 @@ import {
   removeAvatarAction,
   requestAvatarUploadAction,
 } from "@/app/account/profile/avatar-actions";
+import { finalizeLogoUploadAction, removeLogoAction, requestLogoUploadAction } from "@/app/account/agency/logo-actions";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { Avatar, Button } from "@/components/ui";
 import type { ActionState } from "@/lib/action-state";
@@ -20,11 +21,33 @@ const STEP_TEXT: Record<Exclude<Step, "idle">, string> = {
   removing: "Removing…",
 };
 
+const KINDS = {
+  avatar: {
+    request: requestAvatarUploadAction,
+    finalize: finalizeAvatarUploadAction,
+    remove: removeAvatarAction,
+    heading: "Profile photo",
+    shownOn: "Shown on your listings.",
+    noun: "photo",
+  },
+  // Agency logo (prompt S23 decision 9): same pipeline, admin-only actions.
+  logo: {
+    request: requestLogoUploadAction,
+    finalize: finalizeLogoUploadAction,
+    remove: removeLogoAction,
+    heading: "Agency logo",
+    shownOn: "Shown on the agency's listings and page.",
+    noun: "logo",
+  },
+} as const;
+
 /**
- * "Profile photo" panel on Listing profile (prompt lister-avatars). Pre-checks type and size for
- * a quick message, then uploads straight to storage; the server re-checks everything.
+ * "Profile photo" panel on Listing profile (prompt lister-avatars), and the agency logo panel.
+ * Pre-checks type and size for a quick message, then uploads straight to storage; the server
+ * re-checks everything.
  */
-export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+export function AvatarUploader({ name, avatarUrl, kind = "avatar" }: { name: string; avatarUrl: string | null; kind?: keyof typeof KINDS }) {
+  const config = KINDS[kind];
   const [step, setStep] = useState<Step>("idle");
   const [notice, setNotice] = useState<ActionState>({});
   const [, startTransition] = useTransition();
@@ -41,11 +64,11 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
     if (file.size > MAX_UPLOAD_BYTES) return fail("Photos must be 8 MB or smaller.");
     setNotice({});
     setStep("uploading");
-    const request = await requestAvatarUploadAction({ contentType: file.type, size: file.size });
+    const request = await config.request({ contentType: file.type, size: file.size });
     if (!request.ok) return fail(request.error);
     if (!(await putFile(request.uploadUrl, file, () => undefined))) return fail("The upload didn't finish. Please try again.");
     setStep("processing");
-    const result = await finalizeAvatarUploadAction({ uploadKey: request.uploadKey });
+    const result = await config.finalize({ uploadKey: request.uploadKey });
     if (!result.ok) return fail(result.error);
     setNotice({ ok: true, message: result.message });
     setStep("idle");
@@ -61,7 +84,7 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
     setNotice({});
     setStep("removing");
     startTransition(async () => {
-      const result = await removeAvatarAction();
+      const result = await config.remove();
       if (!result.ok) return fail(result.error);
       setNotice({ ok: true, message: result.message });
       setStep("idle");
@@ -76,10 +99,10 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
         <div className="flex min-w-0 flex-col gap-2">
           <div>
             <h2 id="avatar-heading" className="text-small font-semibold text-ink">
-              Profile photo
+              {config.heading}
             </h2>
             <p className="text-micro text-slate-600">
-              JPEG, PNG or WebP · up to 8 MB · at least {MIN_AVATAR_SIDE} × {MIN_AVATAR_SIDE}. Shown on your listings.
+              JPEG, PNG or WebP · up to 8 MB · at least {MIN_AVATAR_SIDE} × {MIN_AVATAR_SIDE}. {config.shownOn}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -93,7 +116,7 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
               aria-hidden="true"
             />
             <Button type="button" variant="secondary" loading={step === "uploading" || step === "processing"} disabled={busy} onClick={() => input.current?.click()}>
-              {avatarUrl ? "Change photo" : "Upload photo"}
+              {avatarUrl ? `Change ${config.noun}` : `Upload ${config.noun}`}
             </Button>
             {avatarUrl && (
               <Button type="button" variant="quiet" loading={step === "removing"} disabled={busy} onClick={onRemove}>

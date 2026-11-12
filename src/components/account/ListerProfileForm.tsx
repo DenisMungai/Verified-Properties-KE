@@ -26,10 +26,13 @@ export function ListerProfileForm({
   defaults,
   redirectTo,
   submitLabel,
+  next,
 }: {
   defaults: ListerProfileDefaults;
   redirectTo: "overview" | "stay";
   submitLabel: string;
+  /** Onboarding only: a same-site path to return to, e.g. an agency invite (prompt S23 decision 4). */
+  next?: string;
 }) {
   const [state, action, pending] = useActionState(saveListerProfileAction, INITIAL_ACTION_STATE);
   const formRef = useRef<HTMLFormElement>(null);
@@ -45,6 +48,7 @@ export function ListerProfileForm({
     <form ref={formRef} action={action} noValidate className="flex max-w-2xl flex-col gap-6">
       <FormAlert state={state} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
+      {next && <input type="hidden" name="next" value={next} />}
       <div className="flex flex-col gap-2">
         <SegmentedControl
           key={listerType}

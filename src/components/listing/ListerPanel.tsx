@@ -62,6 +62,15 @@ export function ListerPanel({
             )}
           </div>
         </div>
+        {listing.agencySlug && (
+          // Prompt S23 decision 12: the agency page exists while this listing is published.
+          <Link
+            href={`/agencies/${listing.agencySlug}`}
+            className="inline-flex min-h-control items-center self-start text-small font-semibold text-emerald-700 underline underline-offset-4 hover:text-ink"
+          >
+            View agency<span className="sr-only"> {listerName}</span>
+          </Link>
+        )}
       </div>
 
       {contactShown && <ContactButtons contact={contact} listerName={listerName} listing={listingRef} />}

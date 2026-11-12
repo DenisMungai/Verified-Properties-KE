@@ -39,6 +39,12 @@ export const POLICIES = {
   dataRequestPerUser: { name: "data-request:user", limit: 3, windowSeconds: 24 * 60 * 60 },
   /** Agency office contacts (prompt lister-contact-buttons). */
   agencyContactPerUser: { name: "agency-contact:user", limit: 20, windowSeconds: 60 * 60 },
+  // Agencies (prompt S23 decision 14).
+  agencyCreatePerUser: { name: "agency-create:user", limit: 3, windowSeconds: 24 * 60 * 60 },
+  agencyInvitePerUser: { name: "agency-invite:user", limit: 20, windowSeconds: 60 * 60 },
+  agencyInviteAcceptPerUser: { name: "agency-invite-accept:user", limit: 10, windowSeconds: 60 * 60 },
+  agencyManagePerUser: { name: "agency-manage:user", limit: 60, windowSeconds: 60 * 60 },
+  agencyLogoUploadPerUser: { name: "agency-logo-upload:user", limit: 10, windowSeconds: 60 * 60 },
   /** Not abuse protection: counts one property view per visitor and listing per 30 minutes (S13). */
   listingViewPerVisitor: { name: "listing-view:visitor", limit: 1, windowSeconds: 30 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;

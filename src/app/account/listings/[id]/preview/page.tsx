@@ -24,6 +24,7 @@ export const metadata: Metadata = { title: "Preview listing" };
 const PAUSE_REASONS: Record<string, string> = {
   plan_lapsed: "Your listing plan lapsed, so this listing was paused and left search.",
   over_plan_limit: "This listing was paused because you were over your plan's limit.",
+  left_agency: "This listing was paused when you left your agency. It comes back once you have your own listing plan.",
 };
 
 const STATUS_NOTES: Partial<Record<EditableListing["status"], string>> = {

@@ -33,7 +33,8 @@ export type SubscriptionOwner = { kind: "user"; userId: string } | { kind: "agen
 const LIVE_STATUSES = ["pending", "active", "past_due", "paused"] as const;
 
 /** Billing pauses that a renewal undoes. Other pauses stay. */
-export const RESTORABLE_PAUSE_REASONS = ["plan_lapsed", "over_plan_limit"] as const;
+/** `left_agency` (prompt S23 decision 7): the agent's own plan brings back what leaving paused. */
+export const RESTORABLE_PAUSE_REASONS = ["plan_lapsed", "over_plan_limit", "left_agency"] as const;
 
 export function isUniqueViolation(error: unknown): boolean {
   for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {

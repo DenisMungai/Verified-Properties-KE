@@ -16,6 +16,7 @@ import {
   rateLimitKey,
   tooManyAttemptsMessage,
 } from "@/lib/rate-limit";
+import { safeNextPath } from "@/lib/safe-redirect";
 import { requireUser } from "@/lib/session";
 import { accountNameSchema, changePasswordSchema } from "@/lib/validation/auth";
 import { agencyContactSchema } from "@/lib/validation/agency-contact";
@@ -46,7 +47,8 @@ export async function saveListerProfileAction(_prev: ActionState, formData: Form
   // The lister role may have just been granted: refresh the account layout so its menu shows
   // "My listings" without a full reload.
   revalidatePath("/account", "layout");
-  if (formData.get("redirectTo") === "overview") redirect("/account?welcome=lister");
+  // A `next` (an agency invite, prompt S23) is honoured only if it is a safe same-site path.
+  if (formData.get("redirectTo") === "overview") redirect(safeNextPath(formData.get("next"), "/account?welcome=lister"));
   return { ok: true, message: "Listing profile saved.", values };
 }
 
@@ -57,7 +59,8 @@ const AGENCY_CONTACT_FIELDS = ["phone", "whatsappSameAsPhone", "whatsapp", "emai
  * caller's own profile on the server, and only its admins may save.
  */
 export async function saveAgencyContactAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireUser("/account/profile");
+  // The form lives on /account/agency since prompt S23 (decision 10).
+  const user = await requireUser("/account/agency");
   const values = keepValues(formData, AGENCY_CONTACT_FIELDS);
   const parsed = agencyContactSchema.safeParse(values);
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error), values };
@@ -79,7 +82,7 @@ export async function saveAgencyContactAction(_prev: ActionState, formData: Form
   }
   if (result !== "saved") return { formError: "Only an admin of your agency can change its contact details.", values };
 
-  revalidatePath("/account/profile");
+  revalidatePath("/account/agency");
   return { ok: true, message: "Agency contact details saved.", values };
 }
 

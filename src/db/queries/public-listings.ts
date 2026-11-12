@@ -341,3 +341,29 @@ export async function savedListings(db: DbExecutor, userId: string, now = new Da
       order by (select f.created_at from favorites f where f.property_id = matched.id and f.user_id = ${userId}) desc, id`,
   );
 }
+
+export const AGENCY_PAGE_SIZE = 24;
+
+/**
+ * One page of an agency's published listings for its public page (prompt S23 decision 11):
+ * newest first, no ranking tiers (one agency's list, not a search, so nothing paid to disclose).
+ */
+export async function agencyListings(
+  db: DbExecutor,
+  agencyId: string,
+  page: number,
+  now = new Date(),
+): Promise<{ items: PublicListingCard[]; total: number; page: number; pageCount: number }> {
+  const where = and(publishedOnly, eq(p.agencyId, agencyId))!;
+  const [row] = await rowsOf<{ total: number }>(db, sql`select count(*)::int as total from ${p} where ${where}`);
+  const total = row?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / AGENCY_PAGE_SIZE));
+  const shown = Math.min(Math.max(1, page), pageCount);
+  const items = await cards(
+    db,
+    sql`with matched as (${matchedSql(where, null, now)})
+      select ${cardSelect} from matched order by published desc, id
+      offset ${(shown - 1) * AGENCY_PAGE_SIZE} limit ${AGENCY_PAGE_SIZE}`,
+  );
+  return { items, total, page: shown, pageCount };
+}

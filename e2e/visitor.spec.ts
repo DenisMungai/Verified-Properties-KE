@@ -47,4 +47,10 @@ test.describe("visitor", () => {
     await gotoReady(page, "/properties/sample-draft-listing");
     await expectNotFound(page);
   });
+
+  test("shows the not-found page for an agency that doesn't exist or has nothing published", async ({ page }) => {
+    // Prompt S23 decision 11: agency pages exist only while the agency has a published listing.
+    await gotoReady(page, "/agencies/no-such-agency-e2e");
+    await expectNotFound(page);
+  });
 });

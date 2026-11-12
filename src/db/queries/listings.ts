@@ -260,7 +260,7 @@ export async function updateListing(
 }
 
 /** Serialises entitlement checks per listing pool for the rest of the transaction. */
-async function lockPool(tx: DbExecutor, pool: ListingPool): Promise<void> {
+export async function lockPool(tx: DbExecutor, pool: ListingPool): Promise<void> {
   const key = pool.kind === "agency" ? `pool:agency:${pool.agencyId}` : `pool:user:${pool.userId}`;
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
 }
