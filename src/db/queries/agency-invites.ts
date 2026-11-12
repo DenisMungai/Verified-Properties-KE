@@ -198,8 +198,17 @@ export async function getInvite(db: DbExecutor, lookup: InviteLookup, now: Date)
   return row ? toView(row, now) : null;
 }
 
-/** Open invites addressed to this (verified) email, for the account page. */
-export async function openInvitesFor(db: DbExecutor, email: string, now: Date): Promise<InviteView[]> {
+/** The invitee as the queries need them; an unverified email never matches an invite (prompt S24 decision 8). */
+export interface Invitee {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+}
+
+/** Open invites addressed to this user's verified email, for the account page. */
+export async function openInvitesFor(db: DbExecutor, user: Pick<Invitee, "email" | "emailVerified">, now: Date): Promise<InviteView[]> {
+  if (!user.emailVerified) return [];
+  const email = user.email;
   const rows = await inviteViewQuery(db)
     .where(
       and(eq(agencyInvites.email, email.toLowerCase()), isNull(agencyInvites.acceptedAt), isNull(agencyInvites.revokedAt), gt(agencyInvites.expiresAt, now)),
@@ -212,18 +221,19 @@ export async function openInvitesFor(db: DbExecutor, email: string, now: Date): 
 export type AcceptBlock = JoinBlock | "not_found" | "wrong_email" | "expired" | "revoked" | "declined" | "accepted";
 
 /** Locks the invite and checks it is open and addressed to this user. */
-async function lockInviteFor(tx: DbExecutor, lookup: InviteLookup, user: { email: string }, now: Date) {
+async function lockInviteFor(tx: DbExecutor, lookup: InviteLookup, user: Pick<Invitee, "email" | "emailVerified">, now: Date) {
   const [row] = await tx.select().from(agencyInvites).where(lookupWhere(lookup)).for("update").limit(1);
   if (!row) return { ok: false as const, reason: "not_found" as const };
   const state = inviteState(row, now);
   if (state !== "open") return { ok: false as const, reason: state };
-  if (row.email !== user.email.toLowerCase()) return { ok: false as const, reason: "wrong_email" as const };
+  // Callers already require a verified email; the query checks it too, for any future caller.
+  if (!user.emailVerified || row.email !== user.email.toLowerCase()) return { ok: false as const, reason: "wrong_email" as const };
   return { ok: true as const, invite: row };
 }
 
 export async function acceptInvite(
   tx: DbExecutor,
-  user: { id: string; email: string },
+  user: Invitee,
   lookup: InviteLookup,
   now: Date,
 ): Promise<{ ok: true; agencyName: string; plan: JoinPlan } | { ok: false; reason: AcceptBlock }> {
@@ -237,7 +247,7 @@ export async function acceptInvite(
 
 export async function declineInvite(
   tx: DbExecutor,
-  user: { email: string },
+  user: Pick<Invitee, "email" | "emailVerified">,
   lookup: InviteLookup,
   now: Date,
 ): Promise<{ ok: true } | { ok: false; reason: Exclude<AcceptBlock, JoinBlock> }> {

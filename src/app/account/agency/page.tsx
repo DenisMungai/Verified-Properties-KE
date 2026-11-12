@@ -79,7 +79,7 @@ function flashFor(params: Record<string, string | string[] | undefined>): Action
 /** Not in an agency: invites addressed to this email, then "Create an agency". */
 async function NoAgency({ user, now }: { user: CurrentUser; now: Date }) {
   const db = getDb();
-  const [invites, createPlan] = await Promise.all([openInvitesFor(db, user.email, now), previewJoin(db, user.id, null, now)]);
+  const [invites, createPlan] = await Promise.all([openInvitesFor(db, user, now), previewJoin(db, user.id, null, now)]);
   const previews = await Promise.all(invites.map((invite) => previewJoin(db, user.id, invite.agencyId, now)));
 
   return (

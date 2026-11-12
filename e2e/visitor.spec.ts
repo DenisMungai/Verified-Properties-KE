@@ -48,6 +48,15 @@ test.describe("visitor", () => {
     await expectNotFound(page);
   });
 
+  test("opens the agency directory from the main navigation", async ({ page, isMobile }) => {
+    // Prompt S24: "Agencies" sits in the header (desktop) and the menu (phones).
+    await gotoReady(page, "/");
+    if (isMobile) await page.getByRole("button", { name: /menu/i }).first().click();
+    await page.getByRole("link", { name: "Agencies", exact: true }).first().click();
+    await expect(page).toHaveURL(/\/agencies$/);
+    await expect(main(page).getByRole("heading", { level: 1, name: "Agencies" })).toBeVisible();
+  });
+
   test("shows the not-found page for an agency that doesn't exist or has nothing published", async ({ page }) => {
     // Prompt S23 decision 11: agency pages exist only while the agency has a published listing.
     await gotoReady(page, "/agencies/no-such-agency-e2e");

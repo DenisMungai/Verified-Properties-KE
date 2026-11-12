@@ -5,8 +5,8 @@ import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { hashInviteToken } from "@/lib/agencies/invite-token";
 import { createAgency, getMembership, leaveAgency, listMembers, previewJoin, removeMember, setAgencyLogo, setMemberRole, updateAgencyDetails } from "./agencies";
-import { acceptInvite, createInvite, declineInvite, getInvite, listAgencyInvites, pruneAgencyInvites, revokeInvite } from "./agency-invites";
-import { getPublicAgency, getPublicTeam } from "./public-agencies";
+import { acceptInvite, createInvite, declineInvite, getInvite, listAgencyInvites, openInvitesFor, pruneAgencyInvites, revokeInvite } from "./agency-invites";
+import { getPublicAgency, getPublicTeam, listAgencyDirectory } from "./public-agencies";
 
 /**
  * Agencies (prompt S23) against the Neon test branch (TEST_DATABASE_URL). Every test runs in a
@@ -58,7 +58,7 @@ describe.skipIf(!url)("agencies (integration)", { timeout: 180_000 }, () => {
       await client.query(`insert into lister_profiles (user_id, display_name) values ($1, $2)`, [id, `Lister ${id}`]);
       await client.query(`insert into user_roles (user_id, role) values ($1, 'agent')`, [id]);
     }
-    return { id, email: `${id}@s23.test` };
+    return { id, email: `${id}@s23.test`, emailVerified: true };
   }
 
   async function listing(ownerId: string, status: string, daysAgo: number) {
@@ -206,6 +206,19 @@ describe.skipIf(!url)("agencies (integration)", { timeout: 180_000 }, () => {
     expect(await acceptInvite(db, carol, byToken("x".repeat(43)), now)).toEqual({ ok: false, reason: "not_found" });
   });
 
+  it("refuses an unverified email even when it matches the invite (prompt S24 decision 8)", async () => {
+    const admin = await lister("s23_admin_unv");
+    await makeAgency(admin.id);
+    const kim = await lister("s23_kim");
+    const token = await invite(admin.id, kim.email);
+    const unverified = { ...kim, emailVerified: false };
+    expect(await acceptInvite(db, unverified, byToken(token), now)).toEqual({ ok: false, reason: "wrong_email" });
+    expect(await declineInvite(db, unverified, byToken(token), now)).toEqual({ ok: false, reason: "wrong_email" });
+    expect(await openInvitesFor(db, unverified, now)).toEqual([]);
+    expect((await openInvitesFor(db, kim, now)).map((i) => i.agencyName)).toEqual(["S23 Realty"]);
+    expect((await getInvite(db, byToken(token), now))?.state).toBe("open");
+  });
+
   it("re-inviting replaces the old link; declining closes it", async () => {
     const admin = await lister("s23_admin3");
     await makeAgency(admin.id);
@@ -341,6 +354,40 @@ describe.skipIf(!url)("agencies (integration)", { timeout: 180_000 }, () => {
     // Nothing private in the public shapes: exact keys above, and no emails or phone numbers.
     expect(JSON.stringify({ agency: result?.agency, team })).not.toMatch(/@|\+254/);
     expect(Object.keys(team[0]!).sort()).toEqual(["avatarKey", "displayName", "listerType", "verified"]);
+  });
+
+  it("lists agencies with published listings in the directory, most listings first (prompt S24)", async () => {
+    // Only this test's listings are live inside the rolled-back transaction.
+    await client.query(`update properties set status = 'archived' where status = 'published'`);
+    const publish = async (agencyId: string, owner: string, n: number) => {
+      for (let i = 0; i < n; i++) {
+        const id = await listing(owner, "published", i + 1);
+        await client.query(`update properties set agency_id = $1 where id = $2`, [agencyId, id]);
+      }
+    };
+    const a = await lister("s23_dir_a");
+    const b = await lister("s23_dir_b");
+    const c = await lister("s23_dir_c");
+    const d = await lister("s23_dir_d");
+    const big = await makeAgency(a.id, "S23 Zebra Homes");
+    const small = await makeAgency(b.id, "S23 Alpha Homes");
+    const tie = await makeAgency(c.id, "S23 Beta Homes");
+    const empty = await makeAgency(d.id, "S23 Empty Homes");
+    await publish(big.agencyId, a.id, 3);
+    await publish(small.agencyId, b.id, 1);
+    await publish(tie.agencyId, c.id, 1);
+    const paused = await listing(d.id, "paused", 1);
+    await client.query(`update properties set agency_id = $1 where id = $2`, [empty.agencyId, paused]);
+
+    const directory = await listAgencyDirectory(db, 1);
+    expect(directory.total).toBe(3);
+    expect(directory.items).toEqual([
+      { name: "S23 Zebra Homes", slug: big.slug, logoKey: null, listingCount: 3 },
+      { name: "S23 Alpha Homes", slug: small.slug, logoKey: null, listingCount: 1 },
+      { name: "S23 Beta Homes", slug: tie.slug, logoKey: null, listingCount: 1 },
+    ]);
+    // A page past the end shows the last page.
+    expect((await listAgencyDirectory(db, 99)).page).toBe(1);
   });
 
   it("prunes invites 90 days after they close", async () => {

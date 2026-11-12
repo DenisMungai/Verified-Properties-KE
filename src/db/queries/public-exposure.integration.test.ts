@@ -7,7 +7,7 @@ import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, type SearchFilters } from "@/lib/search/params";
 import { setFavorite } from "./favorites";
 import { getPublicListing } from "./listing-detail";
-import { getPublicAgency, getPublicTeam } from "./public-agencies";
+import { getPublicAgency, getPublicTeam, listAgencyDirectory } from "./public-agencies";
 import { agencyListings, homeSections, homeShowcase, savedListings, searchListings, similarListings } from "./public-listings";
 
 /**
@@ -252,6 +252,10 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     const team = await getPublicTeam(db, result!.agencyId);
     expect(team.length).toBeGreaterThan(0);
     expectNothingPrivate("agency team", team);
+
+    const directory = await listAgencyDirectory(db, 1);
+    expect(directory.items.map((a) => a.slug)).toEqual(["s19x-agency"]);
+    expectNothingPrivate("agency directory", directory);
 
     const page = await agencyListings(db, result!.agencyId, 1, NOW);
     expect(page.items.map((c) => c.id)).toEqual([agencyListing.id]);

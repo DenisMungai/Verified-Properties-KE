@@ -20,6 +20,7 @@ export const MESSAGES_HREF = "/account/messages";
 export const MAIN_NAV = [
   { href: "/", label: "Home" },
   { href: "/properties", label: "Explore" },
+  { href: "/agencies", label: "Agencies" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
 ] as const;

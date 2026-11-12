@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, exists, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNotNull, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
 import { agencies, agencyMembers, listerProfiles, properties } from "@/db/schema";
 import type { ContactPoint } from "@/lib/listings/contact";
@@ -88,4 +88,45 @@ export async function getAgencyOffice(db: DbExecutor, agencyId: string): Promise
     .where(eq(agencies.id, agencyId))
     .limit(1);
   return row ?? { name: "", phone: null, whatsapp: null, email: null };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Directory (prompt S24)                                                     */
+/* -------------------------------------------------------------------------- */
+
+export const AGENCY_DIRECTORY_PAGE_SIZE = 48;
+
+export interface AgencyDirectoryEntry {
+  name: string;
+  slug: string;
+  logoKey: string | null;
+  /** Published listings only. */
+  listingCount: number;
+}
+
+/**
+ * Agencies with at least one published listing, most listings first, then name (decisions 1–3).
+ * A plain count of live listings: no plan or verification input, so no paid placement.
+ */
+export async function listAgencyDirectory(
+  db: DbExecutor,
+  page: number,
+): Promise<{ items: AgencyDirectoryEntry[]; total: number; page: number; pageCount: number }> {
+  const live = db
+    .select({ agencyId: properties.agencyId, n: sql<number>`count(*)::int`.as("n") })
+    .from(properties)
+    .where(and(eq(properties.status, "published"), isNotNull(properties.agencyId)))
+    .groupBy(properties.agencyId)
+    .as("live");
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(live);
+  const pageCount = Math.max(1, Math.ceil(total / AGENCY_DIRECTORY_PAGE_SIZE));
+  const shown = Math.min(Math.max(1, page), pageCount);
+  const items = await db
+    .select({ name: agencies.name, slug: agencies.slug, logoKey: agencies.logoKey, listingCount: live.n })
+    .from(agencies)
+    .innerJoin(live, eq(live.agencyId, agencies.id))
+    .orderBy(desc(live.n), asc(agencies.name), asc(agencies.id))
+    .limit(AGENCY_DIRECTORY_PAGE_SIZE)
+    .offset((shown - 1) * AGENCY_DIRECTORY_PAGE_SIZE);
+  return { items, total, page: shown, pageCount };
 }
