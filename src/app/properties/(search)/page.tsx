@@ -6,6 +6,7 @@ import { SearchX } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { FilterDrawer } from "@/components/search/FilterDrawer";
 import { FilterPanel } from "@/components/search/FilterPanel";
+import { FloatingFiltersButton } from "@/components/search/FloatingFiltersButton";
 import { Pagination } from "@/components/search/Pagination";
 import { CARD_GRID, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { ResultsHeader } from "@/components/search/ResultsHeader";
@@ -142,6 +143,7 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
 
       {/* Keyed by the URL so the inputs reset after a chip, Clear all or pagination link. */}
       <SearchBar key={`bar:${href}`} filters={filters} activeCount={activeFilters(filters).length} />
+      <FloatingFiltersButton activeCount={activeFilters(filters).length} />
 
       <div className="grid gap-gutter md:grid-cols-[176px_minmax(0,1fr)]">
         <FilterDrawer key={`filters:${href}`} clearHref={clearFiltersHref(filters)}>
