@@ -8,6 +8,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Description } from "@/components/listing/Description";
 import { FactsList } from "@/components/listing/FactsList";
 import { Gallery } from "@/components/listing/Gallery";
+import { ContactBarButtons } from "@/components/listing/ContactButtons";
 import { ListerPanel, type Viewer } from "@/components/listing/ListerPanel";
 import { ReportForm } from "@/components/listing/ReportForm";
 import { SaveButton } from "@/components/listing/SaveButton";
@@ -17,13 +18,15 @@ import { PropertyCard, listingHref } from "@/components/search/PropertyCard";
 import { saveContextFor, saveProps, toCardData } from "@/components/search/card-data";
 import { Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
-import { getListerContact, hasInquired } from "@/db/queries/inquiries";
+import { getListingContact } from "@/db/queries/inquiries";
 import { getPublicListing, type PublicListingDetail } from "@/db/queries/listing-detail";
 import { conversationForListing } from "@/db/queries/messaging";
 import { getManageableListing } from "@/db/queries/listings";
 import { similarListings } from "@/db/queries/public-listings";
 import { formatKes, formatNairobiDate } from "@/lib/format";
-import { contactVisibility, visibleContact } from "@/lib/listings/contact";
+import { getServerEnv } from "@/lib/env";
+import { NO_CONTACT, contactVisibility, primaryContact, visibleContact } from "@/lib/listings/contact";
+import type { ListingRef } from "@/lib/listings/contact-links";
 import { conversationHref } from "@/lib/messaging/paths";
 import { signInPath } from "@/lib/safe-redirect";
 import { RENT_SUFFIX } from "@/lib/search/card";
@@ -107,24 +110,26 @@ async function ListingDetail({ params }: { params: Params }) {
   const { slug } = await params;
   const result = await loadListing(slug);
   if (!result) notFound();
-  const { listing, ownerUserId } = result;
+  const { listing } = result;
   const path = listingHref(listing.slug);
   const db = getDb();
 
   const user = await getCurrentUser();
   const signedIn = user?.emailVerified ? user : null;
-  const [mine, inquired, conversationId] = signedIn
+  const [mine, conversationId] = signedIn
     ? await Promise.all([
         getManageableListing(db, signedIn.id, listing.id).then(Boolean),
-        hasInquired(db, signedIn.id, listing.id),
         conversationForListing(db, signedIn.id, listing.id),
       ])
-    : [false, false, null];
+    : [false, null];
 
-  // The contact rule is applied here, on the server: hidden details never reach the page.
-  const visibility = contactVisibility({ listerVerified: listing.verified, viewerHasInquired: inquired });
+  // The contact rule is applied here, on the server: hidden details never reach the page
+  // (prompt lister-contact-buttons). The owner's own listing needs no contact buttons.
+  const visibility = contactVisibility({ listerVerified: listing.verified, viewerSignedIn: Boolean(signedIn) });
   const contact =
-    visibility === "hidden" || mine ? { phone: null, email: null } : visibleContact(await getListerContact(db, ownerUserId), visibility);
+    visibility === "hidden" || mine ? NO_CONTACT : visibleContact(await getListingContact(db, listing.id), visibility);
+  const listingRef: ListingRef = { title: listing.title, url: new URL(path, getServerEnv().NEXT_PUBLIC_APP_URL).toString() };
+  const barContact = primaryContact(contact);
 
   const viewer: Viewer = !signedIn
     ? { kind: "signed_out", signInHref: signInPath(path) }
@@ -193,6 +198,7 @@ async function ListingDetail({ params }: { params: Params }) {
           <aside aria-label="Price and contact" className="lg:sticky lg:top-24 lg:self-start">
             <ListerPanel
               listing={listing}
+              listingRef={listingRef}
               avatarUrl={publicImageBaseUrl(listing.listerAvatarKey)}
               contact={contact}
               visibility={visibility}
@@ -219,9 +225,13 @@ async function ListingDetail({ params }: { params: Params }) {
             {formatKes(listing.priceKes)}
             {listing.rentPeriod && <span className="text-small font-normal text-slate-600"> {RENT_SUFFIX[listing.rentPeriod]}</span>}
           </p>
-          <a href="#contact" className={buttonClasses()}>
-            Contact lister
-          </a>
+          {barContact.phone || barContact.whatsapp ? (
+            <ContactBarButtons point={barContact} who={barContact === contact.lister ? (listing.listerName ?? "the lister") : `${contact.agency?.name ?? "agency"} office`} listing={listingRef} />
+          ) : (
+            <a href="#contact" className={buttonClasses()}>
+              Contact lister
+            </a>
+          )}
         </div>
       </div>
     </>

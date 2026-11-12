@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
+import { saveAgencyContact } from "@/db/queries/agency-contacts";
 import { saveListerProfile } from "@/db/queries/lister-profiles";
 import { withTransaction } from "@/db/tx";
 import { type ActionState, fieldErrorsFrom, keepValues } from "@/lib/action-state";
@@ -17,10 +18,11 @@ import {
 } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/session";
 import { accountNameSchema, changePasswordSchema } from "@/lib/validation/auth";
+import { agencyContactSchema } from "@/lib/validation/agency-contact";
 import { listerProfileSchema } from "@/lib/validation/profile";
 
 const GENERIC_FAILURE = "Something went wrong. Please try again.";
-const PROFILE_FIELDS = ["listerType", "displayName", "phone", "publicEmail", "bio"] as const;
+const PROFILE_FIELDS = ["listerType", "displayName", "phone", "whatsappSameAsPhone", "whatsapp", "publicEmail", "bio"] as const;
 
 function apiErrorCode(error: unknown): string | undefined {
   return isAPIError(error) ? (error.body as { code?: string } | undefined)?.code : undefined;
@@ -30,7 +32,7 @@ function apiErrorCode(error: unknown): string | undefined {
 export async function saveListerProfileAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser("/account/onboarding");
   const values = keepValues(formData, PROFILE_FIELDS);
-  // Only the five profile fields are read; role, agency or verification fields are never parsed.
+  // Only the profile fields are read; role, agency or verification fields are never parsed.
   const parsed = listerProfileSchema.safeParse(values);
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error), values };
 
@@ -46,6 +48,39 @@ export async function saveListerProfileAction(_prev: ActionState, formData: Form
   revalidatePath("/account", "layout");
   if (formData.get("redirectTo") === "overview") redirect("/account?welcome=lister");
   return { ok: true, message: "Listing profile saved.", values };
+}
+
+const AGENCY_CONTACT_FIELDS = ["phone", "whatsappSameAsPhone", "whatsapp", "email"] as const;
+
+/**
+ * Agency office contacts (prompt lister-contact-buttons decision 10). The agency comes from the
+ * caller's own profile on the server, and only its admins may save.
+ */
+export async function saveAgencyContactAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser("/account/profile");
+  const values = keepValues(formData, AGENCY_CONTACT_FIELDS);
+  const parsed = agencyContactSchema.safeParse(values);
+  if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error), values };
+
+  try {
+    const limit = await checkRateLimits([[POLICIES.agencyContactPerUser, rateLimitKey(user.id)]]);
+    if (!limit.ok) return { formError: tooManyAttemptsMessage(limit.retryAfterSeconds), values };
+  } catch (error) {
+    if (error instanceof RateLimitUnavailableError) return { formError: "Saving is temporarily unavailable.", values };
+    throw error;
+  }
+
+  let result;
+  try {
+    result = await withTransaction((tx) => saveAgencyContact(tx, user.id, parsed.data));
+  } catch (error) {
+    console.error("[account] agency contact save failed", error instanceof Error ? error.name : "unknown");
+    return { formError: GENERIC_FAILURE, values };
+  }
+  if (result !== "saved") return { formError: "Only an admin of your agency can change its contact details.", values };
+
+  revalidatePath("/account/profile");
+  return { ok: true, message: "Agency contact details saved.", values };
 }
 
 export async function updateNameAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

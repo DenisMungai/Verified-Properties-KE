@@ -56,6 +56,7 @@ describe.skipIf(!url)("lister avatars (integration)", { timeout: 60_000 }, () =>
       listerType: "owner",
       displayName: "Renamed",
       phone: "+254712345678",
+      whatsapp: null,
       publicEmail: null,
       bio: null,
     });

@@ -306,8 +306,9 @@ describe("api routes", () => {
 describe("server-only values", () => {
   it("never passes the listing owner id into the public listing page's JSX", () => {
     const source = read(path.join(APP, "properties", "[slug]", "page.tsx"));
+    // Since lister-contact-buttons the page looks contacts up by listing id and may not mention the
+    // owner id at all; any line that does must keep it out of the JSX.
     const uses = source.split("\n").filter((line) => line.includes("ownerUserId"));
-    expect(uses.length).toBeGreaterThan(0);
     for (const line of uses) {
       expect(line, "ownerUserId as a JSX prop or child").not.toMatch(/\w+=\{[^}]*ownerUserId|\{ownerUserId\}\s*</);
       expect(line, "ownerUserId in a spread").not.toMatch(/\{\.\.\.[^}]*ownerUserId/);

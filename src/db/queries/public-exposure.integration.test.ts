@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -27,7 +27,7 @@ const NOW = new Date("2026-11-10T09:00:00Z");
 
 /** Keys that would mean a private column leaked into a public result. */
 const PRIVATE_KEY =
-  /email|phone|latitude|longitude|exact|coord|receipt|checkout|invoice|payment|password|reviewed|rejection|pause|addressLabel|owner|agencyId|userId|bio|document|fileName|inquir/i;
+  /email|phone|whatsapp|latitude|longitude|exact|coord|receipt|checkout|invoice|payment|password|reviewed|rejection|pause|addressLabel|owner|agencyId|userId|bio|document|fileName|inquir/i;
 
 /**
  * Allowed exceptions, outside the public objects themselves. `getPublicListing` returns
@@ -46,6 +46,12 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
   const markers: string[] = [];
   const mark = (what: string) => {
     const value = `S19MARK-${what}-${randomUUID().slice(0, 8)}`;
+    markers.push(value);
+    return value;
+  };
+  /** A unique, valid Kenyan mobile marker (contact columns are format-checked). */
+  const markPhone = () => {
+    const value = `+2547${String(randomInt(10_000_000, 99_999_999))}`;
     markers.push(value);
     return value;
   };
@@ -71,8 +77,8 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     const emailMarker = mark(`${id}-email`).toLowerCase();
     await client.query(`insert into users (id, name, email) values ($1, $2, $3)`, [id, mark(`${id}-name`), `${emailMarker}@example.test`]);
     await client.query(
-      `insert into lister_profiles (user_id, display_name, agency_id, phone, public_email, bio) values ($1, $2, $3, $4, $5, $6)`,
-      [id, `Lister ${id}`, opts.agencyId ?? null, mark(`${id}-phone`), mark(`${id}-public-email`), mark(`${id}-bio`)],
+      `insert into lister_profiles (user_id, display_name, agency_id, phone, whatsapp, public_email, bio) values ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, `Lister ${id}`, opts.agencyId ?? null, mark(`${id}-phone`), markPhone(), mark(`${id}-public-email`), mark(`${id}-bio`)],
     );
     if (opts.agencyRole) {
       await client.query(`insert into agency_members (agency_id, user_id, role) values ($1, $2, $3)`, [opts.agencyId, id, opts.agencyRole]);
@@ -118,8 +124,8 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     await client.query(`update properties set status = 'archived' where status = 'published'`);
 
     const agencyId = await one(
-      `insert into agencies (name, slug, public_email, public_phone, website_url) values ('S19X Agency', 's19x-agency', $1, $2, 'https://example.test') returning id`,
-      [mark("agency-public-email"), mark("agency-public-phone")],
+      `insert into agencies (name, slug, public_email, public_phone, whatsapp, website_url) values ('S19X Agency', 's19x-agency', $1, $2, $3, 'https://example.test') returning id`,
+      [mark("agency-public-email"), markPhone(), markPhone()],
     );
     await insertUser("s19x_owner");
     await insertUser("s19x_agent", { agencyId, agencyRole: "member" });

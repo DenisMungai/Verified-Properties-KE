@@ -1,31 +1,44 @@
 /**
- * The contact rule (plan §6 "Contact"; §12 "public APIs never expose … private columns"):
- * verified listers' phones are public, others stay hidden until the viewer has inquired, and an
- * email is never shown without an inquiry.
+ * The contact rule (owner decision 2026-11-12, prompt lister-contact-buttons): verified listers'
+ * contacts are open to every visitor; unverified listers' contacts only to signed-in visitors.
  */
 import { describe, expect, it } from "vitest";
-import { contactVisibility, visibleContact } from "./contact";
+import { NO_CONTACT, contactVisibility, primaryContact, visibleContact, type ListerContact } from "./contact";
 
-const contact = { phone: "+254712000111", email: "lister@example.test" };
+const lister = { phone: "+254712000111", whatsapp: "+254712000222", email: "lister@example.test" };
+const agency = { name: "Example Realty", phone: "+254722000333", whatsapp: null, email: "office@example.test" };
+const contact: ListerContact = { lister, agency };
 
 describe("contact rule", () => {
-  it("hides an unverified lister's details until the viewer inquires", () => {
-    const visibility = contactVisibility({ listerVerified: false, viewerHasInquired: false });
-    expect(visibility).toBe("hidden");
-    expect(visibleContact(contact, visibility)).toEqual({ phone: null, email: null });
-  });
-
-  it("shows a verified lister's phone, but not their email, before an inquiry", () => {
-    const visibility = contactVisibility({ listerVerified: true, viewerHasInquired: false });
-    expect(visibility).toBe("public");
-    expect(visibleContact(contact, visibility)).toEqual({ phone: contact.phone, email: null });
-  });
-
-  it("shows phone and email after the viewer's own inquiry, verified or not", () => {
-    for (const listerVerified of [true, false]) {
-      const visibility = contactVisibility({ listerVerified, viewerHasInquired: true });
-      expect(visibility).toBe("after_inquiry");
+  it("opens a verified lister's contacts to signed-out and signed-in visitors", () => {
+    for (const viewerSignedIn of [false, true]) {
+      const visibility = contactVisibility({ listerVerified: true, viewerSignedIn });
+      expect(visibility).toBe("public");
       expect(visibleContact(contact, visibility)).toEqual(contact);
     }
+  });
+
+  it("hides an unverified lister's contacts, agency included, from signed-out visitors", () => {
+    const visibility = contactVisibility({ listerVerified: false, viewerSignedIn: false });
+    expect(visibility).toBe("hidden");
+    expect(visibleContact(contact, visibility)).toEqual(NO_CONTACT);
+  });
+
+  it("shows an unverified lister's contacts to a signed-in visitor without an inquiry", () => {
+    const visibility = contactVisibility({ listerVerified: false, viewerSignedIn: true });
+    expect(visibility).toBe("signed_in");
+    expect(visibleContact(contact, visibility)).toEqual(contact);
+  });
+
+  it("drops an agency that has no contacts", () => {
+    const empty = { lister, agency: { name: "Quiet Agency", phone: null, whatsapp: null, email: null } };
+    expect(visibleContact(empty, "public").agency).toBeNull();
+  });
+
+  it("dials the agent's numbers, or the office's when the agent gave none", () => {
+    expect(primaryContact(contact)).toBe(lister);
+    const noAgentContacts = { lister: { phone: null, whatsapp: null, email: null }, agency };
+    expect(primaryContact(noAgentContacts)).toBe(agency);
+    expect(primaryContact(NO_CONTACT)).toEqual({ phone: null, whatsapp: null, email: null });
   });
 });

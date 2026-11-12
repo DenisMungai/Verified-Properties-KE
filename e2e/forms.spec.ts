@@ -53,6 +53,19 @@ test("lister forms: profile phone, listing basics, data request", async ({ page 
   await expect(profile.getByRole("textbox", { name: "Display name" })).toHaveValue("Form Lister Homes");
   await expect(profile.getByRole("radio", { name: /owner/i })).toBeChecked();
   await phone.fill("0700000123");
+
+  // A separate WhatsApp number that isn't one: its own error, and the unticked box stays unticked.
+  const sameAsPhone = profile.getByRole("checkbox", { name: /WhatsApp is on the same phone number/ });
+  await expect(sameAsPhone).toBeChecked();
+  await sameAsPhone.uncheck();
+  const whatsapp = profile.getByRole("textbox", { name: /WhatsApp number/ });
+  await whatsapp.fill("999");
+  await profile.getByRole("button", { name: "Save and continue" }).click();
+  await expectFieldError(whatsapp, /Enter a Kenyan mobile number/);
+  await expectFocused(page, whatsapp);
+  await expect(whatsapp).toHaveValue("999");
+  await expect(sameAsPhone).not.toBeChecked();
+  await whatsapp.fill("0700000124");
   await profile.getByRole("button", { name: "Save and continue" }).click();
   await expect(page).not.toHaveURL(/\/account\/onboarding/);
 

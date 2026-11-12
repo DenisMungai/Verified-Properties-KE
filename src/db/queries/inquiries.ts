@@ -1,8 +1,8 @@
 import "server-only";
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/db/executor";
-import { inquiries, listerProfiles, properties } from "@/db/schema";
-import type { ListerContact } from "@/lib/listings/contact";
+import { agencies, inquiries, listerProfiles, properties } from "@/db/schema";
+import { NO_CONTACT, type ListerContact } from "@/lib/listings/contact";
 import type { InquiryInput } from "@/lib/validation/engagement";
 import { manageableBy } from "./listings";
 import { appendMessage, isBlockedBetween, startOrReuseConversation } from "./messaging";
@@ -86,14 +86,33 @@ export async function hasInquired(db: DbExecutor, userId: string, propertyId: st
 }
 
 /**
- * The listing owner's phone and public email. Callers apply the contact rule
+ * A listing's contacts: the owner's phone, WhatsApp and public email, and, when the listing is an
+ * agency listing, the agency's name and office contacts. Callers apply the contact rule
  * (`src/lib/listings/contact.ts`) before anything reaches the page.
  */
-export async function getListerContact(db: DbExecutor, ownerUserId: string): Promise<ListerContact> {
+export async function getListingContact(db: DbExecutor, propertyId: string): Promise<ListerContact> {
+  if (!UUID.test(propertyId)) return NO_CONTACT;
   const [row] = await db
-    .select({ phone: listerProfiles.phone, email: listerProfiles.publicEmail })
-    .from(listerProfiles)
-    .where(eq(listerProfiles.userId, ownerUserId))
+    .select({
+      phone: listerProfiles.phone,
+      whatsapp: listerProfiles.whatsapp,
+      email: listerProfiles.publicEmail,
+      agencyName: agencies.name,
+      agencyPhone: agencies.publicPhone,
+      agencyWhatsapp: agencies.whatsapp,
+      agencyEmail: agencies.publicEmail,
+    })
+    .from(p)
+    .leftJoin(listerProfiles, eq(listerProfiles.userId, p.ownerUserId))
+    .leftJoin(agencies, eq(agencies.id, p.agencyId))
+    .where(eq(p.id, propertyId))
     .limit(1);
-  return row ?? { phone: null, email: null };
+  if (!row) return NO_CONTACT;
+  return {
+    lister: { phone: row.phone, whatsapp: row.whatsapp, email: row.email },
+    agency:
+      row.agencyName === null
+        ? null
+        : { name: row.agencyName, phone: row.agencyPhone, whatsapp: row.agencyWhatsapp, email: row.agencyEmail },
+  };
 }

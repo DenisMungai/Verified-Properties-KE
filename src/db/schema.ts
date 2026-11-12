@@ -186,17 +186,31 @@ export const userRoles = pgTable(
 /* Agencies and lister profiles                                               */
 /* -------------------------------------------------------------------------- */
 
-export const agencies = pgTable("agencies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  logoKey: text("logo_key"),
-  websiteUrl: text("website_url"),
-  publicEmail: text("public_email"),
-  publicPhone: text("public_phone"),
-  ...timestamps,
-});
+/** A Kenyan mobile number in E.164 (`+2547…` / `+2541…`), the only shape contact numbers take. */
+const KENYAN_MOBILE_E164 = "^\\+254[17][0-9]{8}$";
+
+export const agencies = pgTable(
+  "agencies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    logoKey: text("logo_key"),
+    websiteUrl: text("website_url"),
+    /** Office contacts, edited by an agency admin; shown under the agent's on agency listings. */
+    publicEmail: text("public_email"),
+    /** E.164 Kenyan mobile. */
+    publicPhone: text("public_phone"),
+    /** E.164 Kenyan mobile for WhatsApp click-to-chat. */
+    whatsapp: text("whatsapp"),
+    ...timestamps,
+  },
+  (t) => [
+    check("agencies_public_phone_format", sql`${t.publicPhone} is null or ${t.publicPhone} ~ ${sql.raw(`'${KENYAN_MOBILE_E164}'`)}`),
+    check("agencies_whatsapp_format", sql`${t.whatsapp} is null or ${t.whatsapp} ~ ${sql.raw(`'${KENYAN_MOBILE_E164}'`)}`),
+  ],
+);
 
 export const agencyMembers = pgTable(
   "agency_members",
@@ -214,20 +228,29 @@ export const agencyMembers = pgTable(
 );
 
 /** Public identity for anyone who lists: agents, private owners, developers. */
-export const listerProfiles = pgTable("lister_profiles", {
-  userId: text("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  listerType: listerType("lister_type").notNull().default("agent"),
-  displayName: text("display_name").notNull(),
-  /** E.164, e.g. +254712345678. Public only while the lister is verified (plan §16). */
-  phone: text("phone"),
-  publicEmail: text("public_email"),
-  avatarKey: text("avatar_key"),
-  agencyId: uuid("agency_id").references(() => agencies.id, { onDelete: "set null" }),
-  bio: text("bio"),
-  ...timestamps,
-});
+export const listerProfiles = pgTable(
+  "lister_profiles",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    listerType: listerType("lister_type").notNull().default("agent"),
+    displayName: text("display_name").notNull(),
+    /**
+     * E.164, e.g. +254712345678. Contacts are open to every visitor while the lister is verified,
+     * otherwise to signed-in visitors only (`src/lib/listings/contact.ts`).
+     */
+    phone: text("phone"),
+    /** E.164 Kenyan mobile for WhatsApp click-to-chat; null means no WhatsApp button. */
+    whatsapp: text("whatsapp"),
+    publicEmail: text("public_email"),
+    avatarKey: text("avatar_key"),
+    agencyId: uuid("agency_id").references(() => agencies.id, { onDelete: "set null" }),
+    bio: text("bio"),
+    ...timestamps,
+  },
+  (t) => [check("lister_profiles_whatsapp_format", sql`${t.whatsapp} is null or ${t.whatsapp} ~ ${sql.raw(`'${KENYAN_MOBILE_E164}'`)}`)],
+);
 
 /* -------------------------------------------------------------------------- */
 /* Properties                                                                 */

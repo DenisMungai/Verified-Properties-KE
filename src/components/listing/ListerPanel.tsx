@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Mail, MessageSquare, Phone } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Avatar, VerifiedBadge, buttonClasses } from "@/components/ui";
 import type { PublicListingDetail } from "@/db/queries/listing-detail";
 import { formatKes } from "@/lib/format";
-import { displayKenyanPhone } from "@/lib/kenya";
-import type { ContactVisibility, ListerContact } from "@/lib/listings/contact";
+import { hasAnyContact, type ContactVisibility, type ListerContact } from "@/lib/listings/contact";
+import type { ListingRef } from "@/lib/listings/contact-links";
 import { LISTER_TYPE_LABELS } from "@/lib/roles";
 import { RENT_SUFFIX } from "@/lib/search/card";
+import { ContactButtons } from "./ContactButtons";
 import { InquiryForm } from "./InquiryForm";
 
 export type Viewer =
@@ -16,48 +17,29 @@ export type Viewer =
 
 const PRICE_LABEL = { sale: "Sale price", rent: "Rent" } as const;
 
-/** Only what the contact rule allowed reaches this component (prompt S8 decision 1). */
-function ContactDetails({ contact, visibility, viewer }: { contact: ListerContact; visibility: ContactVisibility; viewer: Viewer }) {
-  const shown = [
-    contact.phone && (
-      <a key="phone" href={`tel:${contact.phone}`} className="inline-flex min-h-control items-center gap-2 text-body font-semibold text-emerald-700 underline-offset-4 hover:underline">
-        <Phone aria-hidden="true" className="size-4" />
-        {displayKenyanPhone(contact.phone)}
-      </a>
-    ),
-    contact.email && (
-      <a key="email" href={`mailto:${contact.email}`} className="inline-flex min-h-control items-center gap-2 break-all text-small text-emerald-700 hover:underline">
-        <Mail aria-hidden="true" className="size-4 shrink-0" />
-        {contact.email}
-      </a>
-    ),
-  ].filter(Boolean);
-
-  if (shown.length > 0) return <div className="flex flex-col">{shown}</div>;
-  if (visibility === "hidden" && viewer.kind !== "own") {
-    return <p className="text-small text-slate-600">The lister&apos;s phone number appears here after you send them a message.</p>;
-  }
-  if (visibility === "after_inquiry") {
-    return <p className="text-small text-slate-600">This lister hasn&apos;t added a phone number. They&apos;ll reply to the details you sent.</p>;
-  }
-  return null;
-}
-
-/** Price, lister identity, contact rule and the inquiry form (the design's sticky right card). */
+/**
+ * Price, lister identity, contact buttons and the inquiry form (the design's sticky right card).
+ * `contact` is already filtered by the server's contact rule (prompt lister-contact-buttons).
+ */
 export function ListerPanel({
   listing,
+  listingRef,
   avatarUrl,
   contact,
   visibility,
   viewer,
 }: {
   listing: PublicListingDetail;
+  /** Title and absolute URL, for the WhatsApp and Email messages. */
+  listingRef: ListingRef;
   /** The lister's avatar URL (resolved on the server; the storage key is not passed down). */
   avatarUrl: string | null;
   contact: ListerContact;
   visibility: ContactVisibility;
   viewer: Viewer;
 }) {
+  const listerName = listing.listerName ?? "Lister";
+  const contactShown = viewer.kind !== "own" && (hasAnyContact(contact.lister) || hasAnyContact(contact.agency));
   return (
     <div id="contact" className="flex scroll-mt-24 flex-col gap-5 rounded-xl border border-line bg-white p-5 md:p-6">
       <div className="flex flex-col gap-1 border-b border-line pb-5">
@@ -80,8 +62,9 @@ export function ListerPanel({
             )}
           </div>
         </div>
-        <ContactDetails contact={contact} visibility={visibility} viewer={viewer} />
       </div>
+
+      {contactShown && <ContactButtons contact={contact} listerName={listerName} listing={listingRef} />}
 
       {viewer.kind === "buyer" &&
         (viewer.conversationHref ? (
@@ -94,16 +77,29 @@ export function ListerPanel({
             <p className="text-micro text-slate-600">Your conversation about this property is in Messages.</p>
           </div>
         ) : (
-          <InquiryForm listingId={listing.id} defaults={viewer.defaults} />
+          <div className="flex flex-col gap-3">
+            {contactShown && (
+              <p className="border-t border-line pt-4 text-small font-medium text-ink">Or send a message on VerifiedPropertiesKE</p>
+            )}
+            <InquiryForm listingId={listing.id} defaults={viewer.defaults} />
+          </div>
         ))}
-      {viewer.kind === "signed_out" && (
-        <div className="flex flex-col gap-2">
-          <Link href={viewer.signInHref} className={buttonClasses({ size: "lg", className: "w-full" })}>
-            Sign in to contact this lister
-          </Link>
-          <p className="text-micro text-slate-600">It&apos;s free. You&apos;ll come straight back to this listing.</p>
-        </div>
-      )}
+      {viewer.kind === "signed_out" &&
+        (visibility === "hidden" ? (
+          <div className="flex flex-col gap-2">
+            <Link href={viewer.signInHref} className={buttonClasses({ size: "lg", className: "w-full" })}>
+              Sign in to see contact details
+            </Link>
+            <p className="text-micro text-slate-600">It&apos;s free. You&apos;ll come straight back to this listing.</p>
+          </div>
+        ) : (
+          <p className="text-small text-slate-600">
+            Prefer to message on the site?{" "}
+            <Link href={viewer.signInHref} className="font-semibold text-emerald-700 underline underline-offset-4">
+              Sign in to send a message
+            </Link>
+          </p>
+        ))}
       {viewer.kind === "own" && (
         <p className="rounded-md bg-mint-50 px-4 py-3 text-small text-emerald-700">
           This is your listing. Buyers&apos; messages appear in{" "}

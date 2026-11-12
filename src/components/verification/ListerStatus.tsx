@@ -109,7 +109,7 @@ export function ListerStatus({
         <Panel title={view.reapply ? "Verify your profile again" : "Get the verified badge"} badge={badge}>
           <p className="text-small text-ink">
             An admin checks your documents. Once approved, your listings show &ldquo;Profile verified&rdquo;, rank first in search and
-            go live without pre-review, and buyers see your phone number.{price ? ` Verification costs ${price}.` : ""} Paying alone
+            go live without pre-review, and every visitor can call, WhatsApp or email you without signing in.{price ? ` Verification costs ${price}.` : ""} Paying alone
             never makes anyone verified.
           </p>
           <WhatWeCheck required={required} />

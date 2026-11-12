@@ -5,6 +5,7 @@ import { saveListerProfileAction } from "@/app/account/actions";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { useFocusFirstError } from "@/components/forms/useFocusFirstError";
 import { Button, Field, Input, SegmentedControl, Textarea } from "@/components/ui";
+import { WhatsappFields } from "./WhatsappFields";
 import { INITIAL_ACTION_STATE } from "@/lib/action-state";
 import { LISTER_TYPES, LISTER_TYPE_LABELS, type ListerType } from "@/lib/roles";
 
@@ -12,6 +13,8 @@ export interface ListerProfileDefaults {
   listerType: ListerType;
   displayName: string;
   phone: string;
+  whatsappSameAsPhone: boolean;
+  whatsapp: string;
   publicEmail: string;
   bio: string;
 }
@@ -31,7 +34,9 @@ export function ListerProfileForm({
   const [state, action, pending] = useActionState(saveListerProfileAction, INITIAL_ACTION_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   useFocusFirstError(formRef, state);
-  const value = (name: keyof ListerProfileDefaults) => state.values?.[name] ?? defaults[name];
+  const value = (name: Exclude<keyof ListerProfileDefaults, "whatsappSameAsPhone">) => state.values?.[name] ?? defaults[name];
+  // After a submit, an absent checkbox means it was unticked.
+  const sameAsPhone = state.values ? state.values.whatsappSameAsPhone === "on" : defaults.whatsappSameAsPhone;
   const listerType = (LISTER_TYPES as readonly string[]).includes(value("listerType"))
     ? (value("listerType") as ListerType)
     : defaults.listerType;
@@ -67,7 +72,7 @@ export function ListerProfileForm({
       <Field
         id="phone"
         label="Phone number"
-        hint="Kenyan mobile, for example 0712 345 678. Shown to buyers after they send a signed-in inquiry."
+        hint="Kenyan mobile, for example 0712 345 678. Signed-in visitors can call you; once you're verified, every visitor can."
         error={state.fieldErrors?.phone}
         required
       >
@@ -82,10 +87,11 @@ export function ListerProfileForm({
           />
         )}
       </Field>
+      <WhatsappFields idPrefix="" sameAsPhone={sameAsPhone} value={value("whatsapp")} error={state.fieldErrors?.whatsapp} />
       <Field
         id="publicEmail"
         label="Public email"
-        hint="Leave blank to keep your account email private."
+        hint="Buyers tap Email to write to you. Leave blank for no Email button; your account email stays private."
         error={state.fieldErrors?.publicEmail}
       >
         {(control) => (

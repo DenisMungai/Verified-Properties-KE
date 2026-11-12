@@ -196,7 +196,11 @@ entitlement, verification or ranking.
   Paid placement is always disclosed.
 - **Public visibility**: only `published` listings, only public fields. Never return exact
   coordinates, verification documents, payment details or private contact details publicly.
-- **Contact**: verified listers' phones are public; others are hidden until a signed-in inquiry.
+- **Contact** (owner decision 2026-11-12, `prompts/lister-contact-buttons.md`, replacing plan
+  §16): a verified lister's phone, WhatsApp and public email are open to every visitor; other
+  listers' contacts show only to signed-in visitors with a verified email. An agency listing's
+  office contacts follow the listing owner's rule. Decided on the server in
+  `src/lib/listings/contact.ts`; hidden contacts never reach the page.
 - **Moderation**: only unverified listers' listings go to `pending_review`.
 - **Lapse**: 3-day grace, then listings move to `paused`; on renewal they return up to the plan limit.
 - **Trust signals**: never fake or infer verification, reviews, availability or locations.

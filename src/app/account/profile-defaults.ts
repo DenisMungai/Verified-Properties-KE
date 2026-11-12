@@ -7,6 +7,9 @@ export function profileDefaults(profile: ListerProfile | null, fallbackName: str
     listerType: profile?.listerType ?? "agent",
     displayName: profile?.displayName ?? fallbackName,
     phone: profile?.phone ? displayKenyanPhone(profile.phone) : "",
+    // New profiles default to "same as phone"; existing ones only when the numbers already match.
+    whatsappSameAsPhone: profile ? Boolean(profile.whatsapp) && profile.whatsapp === profile.phone : true,
+    whatsapp: profile?.whatsapp && profile.whatsapp !== profile.phone ? displayKenyanPhone(profile.whatsapp) : "",
     publicEmail: profile?.publicEmail ?? "",
     bio: profile?.bio ?? "",
   };

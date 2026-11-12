@@ -26,6 +26,7 @@ export async function saveListerProfile(
     listerType: input.listerType,
     displayName: input.displayName,
     phone: input.phone,
+    whatsapp: input.whatsapp,
     publicEmail: input.publicEmail,
     bio: input.bio,
   };

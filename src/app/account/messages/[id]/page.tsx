@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
+import { ContactButtons } from "@/components/listing/ContactButtons";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { BlockControls, UnblockButton } from "@/components/messaging/BlockControls";
 import { MessageBubble, MessageThread } from "@/components/messaging/MessageThread";
@@ -13,9 +14,10 @@ import { ScrollToLatest } from "@/components/messaging/ScrollToLatest";
 import { listingHref } from "@/components/search/PropertyCard";
 import { Avatar, Skeleton, VerifiedBadge } from "@/components/ui";
 import { getDb } from "@/db";
-import { getListerContact, hasInquired } from "@/db/queries/inquiries";
+import { getListingContact } from "@/db/queries/inquiries";
 import { buyerContactFor, getThread, markThreadRead, type Thread } from "@/db/queries/messaging";
 import { displayKenyanPhone } from "@/lib/kenya";
+import { getServerEnv } from "@/lib/env";
 import { contactVisibility, visibleContact, type ListerContact } from "@/lib/listings/contact";
 import { requireUser } from "@/lib/session";
 import { publicImageBaseUrl } from "@/lib/storage";
@@ -25,7 +27,13 @@ export const metadata: Metadata = { title: "Conversation", robots: { index: fals
 type Params = Promise<{ id: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
-function ContactLinks({ contact }: { contact: ListerContact }) {
+/** The buyer's details from their latest inquiry, shown to the lister. */
+interface BuyerContact {
+  phone: string | null;
+  email: string | null;
+}
+
+function BuyerContactLinks({ contact }: { contact: BuyerContact }) {
   if (!contact.phone && !contact.email) return null;
   return (
     <div className="flex flex-wrap items-center gap-x-5">
@@ -45,18 +53,20 @@ function ContactLinks({ contact }: { contact: ListerContact }) {
   );
 }
 
-/** Lister: the buyer's details from their latest inquiry. Buyer: the S8 contact rule, unchanged. */
-async function contactFor(thread: Thread, userId: string): Promise<ListerContact> {
+type ThreadContact = { kind: "buyer"; contact: BuyerContact } | { kind: "lister"; contact: ListerContact };
+
+/**
+ * Lister: the buyer's details from their latest inquiry. Buyer: the listing's contacts under the
+ * contact rule (prompt lister-contact-buttons). Being here means signed in with a verified email.
+ */
+async function contactFor(thread: Thread): Promise<ThreadContact> {
   const db = getDb();
-  if (thread.role === "lister") return buyerContactFor(db, thread.buyerUserId, thread.propertyId);
-  const visibility = contactVisibility({
-    listerVerified: thread.listerVerified,
-    viewerHasInquired: await hasInquired(db, userId, thread.propertyId),
-  });
-  return visibility === "hidden" ? { phone: null, email: null } : visibleContact(await getListerContact(db, thread.listerUserId), visibility);
+  if (thread.role === "lister") return { kind: "buyer", contact: await buyerContactFor(db, thread.buyerUserId, thread.propertyId) };
+  const visibility = contactVisibility({ listerVerified: thread.listerVerified, viewerSignedIn: true });
+  return { kind: "lister", contact: visibleContact(await getListingContact(db, thread.propertyId), visibility) };
 }
 
-function ThreadHeader({ thread, contact }: { thread: Thread; contact: ListerContact }) {
+function ThreadHeader({ thread, contact }: { thread: Thread; contact: ThreadContact }) {
   const live = thread.propertyStatus === "published";
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg border border-line bg-white p-4 md:p-5">
@@ -78,7 +88,16 @@ function ThreadHeader({ thread, contact }: { thread: Thread; contact: ListerCont
             <span className="font-medium text-ink">{thread.propertyTitle}</span>
           )}
         </p>
-        <ContactLinks contact={contact} />
+        {contact.kind === "buyer" ? (
+          <BuyerContactLinks contact={contact.contact} />
+        ) : (
+          <ContactButtons
+            contact={contact.contact}
+            listerName={thread.otherName}
+            listing={{ title: thread.propertyTitle, url: new URL(listingHref(thread.propertySlug), getServerEnv().NEXT_PUBLIC_APP_URL).toString() }}
+            className="mt-1"
+          />
+        )}
       </div>
       {!thread.closed && <BlockControls conversationId={thread.id} name={thread.otherName} blockedByMe={thread.blockedByMe} />}
     </div>
@@ -108,7 +127,7 @@ async function Conversation({ params, searchParams }: { params: Params; searchPa
   await markThreadRead(db, user.id, id);
   const thread = await getThread(db, user.id, id);
   if (!thread) notFound();
-  const contact = await contactFor(thread, user.id);
+  const contact = await contactFor(thread);
   const now = new Date();
   const latest = thread.messages.at(-1) ?? null;
   const canSend = !thread.closed && !thread.blockedByMe && !thread.blockedByOther;

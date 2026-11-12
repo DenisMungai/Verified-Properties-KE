@@ -43,7 +43,7 @@ const SECTIONS: LegalSection[] = [
           { title: "Your account", body: "Name, email address and a password (stored only as a one-way hash). The IP address and browser of each signed-in session." },
           {
             title: "Your lister profile (if you list)",
-            body: "Display name, whether you are an agent, owner or developer, phone number, optional public email, short bio, profile photo and agency.",
+            body: "Display name, whether you are an agent, owner or developer, phone number, optional WhatsApp number, optional public email, short bio, profile photo and agency. For agencies, the office phone, WhatsApp and email an agency admin adds.",
           },
           { title: "Your listings", body: "Everything you enter about a property, its photos, and its county, town, area and address label." },
           {
@@ -103,7 +103,7 @@ const SECTIONS: LegalSection[] = [
         <Bullets
           items={[
             "Listings show the lister's display name, photo or agency logo, and the listing details. Exact addresses and coordinates are never shown.",
-            "A verified lister's phone number is public. Other listers' phone numbers and emails are shown only to a signed-in person who has sent them an inquiry.",
+            "A verified lister's phone, WhatsApp and public email are shown to every visitor. Other listers' contact details are shown only to signed-in visitors. On an agency's listings, the agency's office contacts follow the same rule.",
             "Messages are seen only by the two people in the conversation. Our moderators can open a conversation when it is reported.",
             "Verification documents are seen only by our platform admins, and every view is logged.",
           ]}

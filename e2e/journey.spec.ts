@@ -187,6 +187,17 @@ test("3. an agent signs up, pays for Starter, creates a listing and submits it",
     .toBe("pending_review");
 });
 
+/** Call and WhatsApp reach the agent's number (WhatsApp defaults to "same as phone"). */
+async function expectContactButtons(page: Page) {
+  const e164 = `+254${PHONE.slice(1)}`;
+  await expect(main(page).getByRole("link", { name: /^Call/ }).first()).toHaveAttribute("href", `tel:${e164}`);
+  const whatsapp = main(page).getByRole("link", { name: /^WhatsApp/ }).first();
+  const href = await whatsapp.getAttribute("href");
+  expect(href).toMatch(new RegExp(`^https://wa\.me/${e164.slice(1)}\?text=`));
+  expect(new URL(href!).searchParams.get("text")).toContain(listingTitle);
+  await expect(whatsapp).toHaveAttribute("target", "_blank");
+}
+
 test("4. an admin approves the listing and it appears in search", async ({ browser }) => {
   const page = await adminPage(browser);
   await gotoReady(page, "/admin/listings");
@@ -204,7 +215,19 @@ test("4. an admin approves the listing and it appears in search", async ({ brows
   await expect(cards(results(anon)).filter({ hasText: listingTitle })).toHaveCount(1);
   await gotoReady(anon, `/properties/${listing.slug}`);
   await expect(main(anon).getByRole("heading", { level: 1, name: listingTitle })).toBeVisible();
+
+  // Contact rule, unverified lister (prompt lister-contact-buttons): a signed-out visitor gets a
+  // sign-in prompt, and the number is nowhere in the page, RSC payload included.
+  await expect(main(anon).getByRole("link", { name: "Sign in to see contact details" })).toBeVisible();
+  await expect(main(anon).getByRole("link", { name: /^Call/ })).toHaveCount(0);
+  expect(await anon.content()).not.toContain(PHONE.slice(1));
   await visitor.close();
+
+  // Any signed-in visitor (here the admin) gets the buttons without sending a message first.
+  const signedIn = await adminPage(browser);
+  await gotoReady(signedIn, `/properties/${listing.slug}`);
+  await expectContactButtons(signedIn);
+  await signedIn.context().close();
 });
 
 test("5. the agent pays for verification, is approved and ranks with the verified tier", async ({ browser }) => {
@@ -262,6 +285,13 @@ test("5. the agent pays for verification, is approved and ranks with the verifie
   await gotoReady(page, `${SEARCH}&sort=newest`);
   const strip = main(page).locator("section").filter({ has: page.getByRole("heading", { name: "Verified listers" }) });
   await expect(strip).toBeVisible();
+
+  // Verified: the contact buttons are open to every visitor, signed out included.
+  const visitor = await browser.newContext();
+  const anon = await visitor.newPage();
+  await gotoReady(anon, `/properties/${listing.slug}`);
+  await expectContactButtons(anon);
+  await visitor.close();
 });
 
 test("6. a buyer inquires and the agent replies", async ({ browser }) => {

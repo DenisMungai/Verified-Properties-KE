@@ -85,6 +85,13 @@
       "when": 1794327526667,
       "tag": "0011_data_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794483201389,
+      "tag": "0012_lister_contact_whatsapp",
+      "breakpoints": true
     }
   ]
 }

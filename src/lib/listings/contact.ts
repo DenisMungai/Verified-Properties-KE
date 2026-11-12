@@ -1,40 +1,63 @@
 /**
- * Who may see a lister's phone and public email (plan v2.0 §16 default; prompt S8 decision 1).
- * Decided on the server; the page only ever receives what this allows.
+ * Who may see a lister's contacts (owner decision 2026-11-12, prompt lister-contact-buttons,
+ * replacing the plan §16 default). Decided on the server; the page only ever receives what this
+ * allows.
+ *
+ * | Lister       | Signed-out visitor | Signed-in visitor (verified email) |
+ * |--------------|--------------------|------------------------------------|
+ * | Verified     | all contacts       | all contacts                       |
+ * | Not verified | none               | all contacts                       |
+ *
+ * The listing's agency contacts follow the same rule: the badge belongs to the listing owner.
  */
 
 export type ContactVisibility =
-  /** Verified lister: the phone is public. */
+  /** Verified lister: contacts are open to every visitor. */
   | "public"
-  /** This signed-in viewer has sent an inquiry about the listing. */
-  | "after_inquiry"
+  /** Unverified lister, viewed by a signed-in user with a verified email. */
+  | "signed_in"
   | "hidden";
 
 export function contactVisibility({
   listerVerified,
-  viewerHasInquired,
+  viewerSignedIn,
 }: {
   listerVerified: boolean;
-  viewerHasInquired: boolean;
+  /** Signed in with a verified email address. */
+  viewerSignedIn: boolean;
 }): ContactVisibility {
-  if (viewerHasInquired) return "after_inquiry";
   if (listerVerified) return "public";
+  if (viewerSignedIn) return "signed_in";
   return "hidden";
 }
 
-export interface ListerContact {
+/** One person's or office's contacts. Phone numbers are E.164; null means "not given". */
+export interface ContactPoint {
   phone: string | null;
+  whatsapp: string | null;
   email: string | null;
 }
 
-/** The contact details this viewer may see. A verified lister's email still needs an inquiry. */
+/** What a listing offers: the lister's own contacts and, for agency listings, the office's. */
+export interface ListerContact {
+  lister: ContactPoint;
+  agency: (ContactPoint & { name: string }) | null;
+}
+
+export const NO_CONTACT_POINT: ContactPoint = { phone: null, whatsapp: null, email: null };
+export const NO_CONTACT: ListerContact = { lister: NO_CONTACT_POINT, agency: null };
+
+export function hasAnyContact(point: ContactPoint | null): boolean {
+  return Boolean(point && (point.phone || point.whatsapp || point.email));
+}
+
+/** The contacts this viewer may see: everything, or nothing. */
 export function visibleContact(contact: ListerContact, visibility: ContactVisibility): ListerContact {
-  switch (visibility) {
-    case "public":
-      return { phone: contact.phone, email: null };
-    case "after_inquiry":
-      return contact;
-    case "hidden":
-      return { phone: null, email: null };
-  }
+  if (visibility === "hidden") return NO_CONTACT;
+  return { lister: contact.lister, agency: hasAnyContact(contact.agency) ? contact.agency : null };
+}
+
+/** The numbers the mobile bar dials: the agent's, or the office's when the agent gave none. */
+export function primaryContact(contact: ListerContact): ContactPoint {
+  return hasAnyContact(contact.lister) ? contact.lister : (contact.agency ?? NO_CONTACT_POINT);
 }

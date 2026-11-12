@@ -55,7 +55,7 @@ const SECTIONS: LegalSection[] = [
         items={[
           `Listing plan: for ${GRACE_DAYS} days after it ends your listings stay live with a reminder. After that they are paused and leave search. Drafts, photos and inquiries are kept.`,
           "When you renew, paused listings come back on their own, up to your plan's limit.",
-          `Verification plan: the badge stays for ${GRACE_DAYS} days. After that the badge, priority ranking, featured slots and public phone number are removed. They return as soon as you renew, without a new review, if your last passed review is still within its ${REVIEW_VALID_MONTHS} months.`,
+          `Verification plan: the badge stays for ${GRACE_DAYS} days. After that the badge, priority ranking, featured slots and contact details open to every visitor are removed. They return as soon as you renew, without a new review, if your last passed review is still within its ${REVIEW_VALID_MONTHS} months.`,
           "The badge also needs an active listing plan, so it goes when listings are paused and returns when both plans are paid.",
         ]}
       />

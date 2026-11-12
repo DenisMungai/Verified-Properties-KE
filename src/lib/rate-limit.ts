@@ -37,6 +37,8 @@ export const POLICIES = {
   verificationSubmitPerUser: { name: "verification-submit:user", limit: 10, windowSeconds: 60 * 60 },
   /** Privacy and billing requests (prompt S20 decision 7). */
   dataRequestPerUser: { name: "data-request:user", limit: 3, windowSeconds: 24 * 60 * 60 },
+  /** Agency office contacts (prompt lister-contact-buttons). */
+  agencyContactPerUser: { name: "agency-contact:user", limit: 20, windowSeconds: 60 * 60 },
   /** Not abuse protection: counts one property view per visitor and listing per 30 minutes (S13). */
   listingViewPerVisitor: { name: "listing-view:visitor", limit: 1, windowSeconds: 30 * 60 },
 } as const satisfies Record<string, RateLimitPolicy>;

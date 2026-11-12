@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { contactVisibility, visibleContact } from "@/lib/listings/contact";
 import { DEFAULT_INQUIRY_MESSAGE, PHONE_ERROR, decisionReasonSchema, inquirySchema, reportSchema } from "./engagement";
 
 const valid = { fullName: "Amina Otieno", phone: "0712 345 678", email: "", message: DEFAULT_INQUIRY_MESSAGE };
@@ -53,24 +52,4 @@ describe("decisionReasonSchema", () => {
   });
 });
 
-describe("contact rule", () => {
-  const contact = { phone: "+254712345678", email: "lister@example.com" };
-
-  it("shows a verified lister's phone to everyone, but not their email", () => {
-    const visibility = contactVisibility({ listerVerified: true, viewerHasInquired: false });
-    expect(visibility).toBe("public");
-    expect(visibleContact(contact, visibility)).toEqual({ phone: contact.phone, email: null });
-  });
-
-  it("shows an unverified lister's details only after this viewer's inquiry", () => {
-    expect(visibleContact(contact, contactVisibility({ listerVerified: false, viewerHasInquired: false }))).toEqual({
-      phone: null,
-      email: null,
-    });
-    expect(visibleContact(contact, contactVisibility({ listerVerified: false, viewerHasInquired: true }))).toEqual(contact);
-  });
-
-  it("gives an inquirer everything, verified or not", () => {
-    expect(contactVisibility({ listerVerified: true, viewerHasInquired: true })).toBe("after_inquiry");
-  });
-});
+// The contact rule's tests live in src/lib/listings/contact.test.ts.

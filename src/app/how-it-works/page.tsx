@@ -112,7 +112,7 @@ export default function HowItWorksPage() {
           <p>If a review is declined, the first month’s verification fee is credited to the lister’s listing plan.</p>
           <p>
             Each payment covers {BILLING_PERIOD_DAYS} days. If a payment lapses, the badge stays for a {GRACE_DAYS}-day
-            grace period. After that, the badge, the higher ranking, featured placement and the public phone number are
+            grace period. After that, the badge, the higher ranking, featured placement and the open contact details are
             removed. They come back as soon as the lister pays again, as long as their review is still valid.
           </p>
           <p>We can remove a badge at any time for fraud or abuse, whether or not the lister has paid.</p>

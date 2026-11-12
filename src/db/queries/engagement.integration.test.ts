@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { savedIdsAmong, setFavorite } from "./favorites";
-import { createInquiry, getListerContact, hasInquired } from "./inquiries";
+import { createInquiry, getListingContact, hasInquired } from "./inquiries";
 import { listConversations, unreadTotal } from "./messaging";
 import { getPublicListing } from "./listing-detail";
 import { savedListings, similarListings } from "./public-listings";
@@ -219,7 +219,21 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
     ]);
     expect(await hasInquired(db, "s8e_buyer", id)).toBe(true);
     expect(await hasInquired(db, "s8e_other", id)).toBe(false);
-    expect(await getListerContact(db, "s8e_owner")).toEqual({ phone: "+254712000111", email: "owner@example.test" });
+    expect(await getListingContact(db, id)).toEqual({
+      lister: { phone: "+254712000111", whatsapp: null, email: "owner@example.test" },
+      agency: null,
+    });
+  });
+
+  it("returns an agency listing's office contacts next to the agent's", async () => {
+    await client.query(`update agencies set public_phone = '+254722000444', whatsapp = '+254722000555', public_email = 'office@example.test' where id = $1`, [agencyId]);
+    const { id } = await insertListing("s8e_agent", { agencyId });
+    expect(await getListingContact(db, id)).toEqual({
+      lister: { phone: null, whatsapp: null, email: null },
+      agency: { name: "S8E Agency", phone: "+254722000444", whatsapp: "+254722000555", email: "office@example.test" },
+    });
+    await client.query(`update agencies set public_phone = null, whatsapp = null, public_email = null where id = $1`, [agencyId]);
+    expect(await getListingContact(db, "not-a-uuid")).toEqual({ lister: { phone: null, whatsapp: null, email: null }, agency: null });
   });
 
   it("refuses own listings (owner or agency admin), unpublished listings, repeats and a 4th in a day", async () => {
