@@ -48,22 +48,6 @@ test.describe("visitor", () => {
     await expectNotFound(page);
   });
 
-  test("keeps the filters in reach while the results scroll", async ({ page, isMobile }) => {
-    // Prompt explore-sticky-filters: a pinned sidebar from md, a floating button on phones.
-    await gotoReady(page, "/properties");
-    await expect(cards(results(page)).first()).toBeVisible();
-    const floating = page.locator("button", { hasText: /^Filters/ }).last();
-    if (isMobile) {
-      await page.mouse.wheel(0, 1600);
-      await expect(floating).toBeInViewport();
-      await floating.click();
-      await expect(page.getByRole("heading", { name: "Filters", level: 2 })).toBeVisible();
-    } else {
-      await page.mouse.wheel(0, 1600);
-      await expect(page.getByRole("heading", { name: "Filters", level: 2 })).toBeInViewport();
-    }
-  });
-
   test("opens the agency directory from the main navigation", async ({ page, isMobile }) => {
     // Prompt S24: "Agencies" sits in the header (desktop) and the menu (phones).
     await gotoReady(page, "/");

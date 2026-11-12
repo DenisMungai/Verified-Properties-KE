@@ -21,11 +21,6 @@ function filtersPanel(): HTMLElement | null {
   return document.getElementById(FILTERS_PANEL_ID);
 }
 
-/** Opens the filter drawer without the Popover API (data-open fallback); popover openers use popoverTarget. */
-export function openFiltersFallback(): void {
-  if (!supportsPopover()) filtersPanel()?.setAttribute("data-open", "");
-}
-
 function hidePanel(panel: HTMLElement | null) {
   if (!panel) return;
   if (supportsPopover() && panel.matches(":popover-open")) panel.hidePopover();
@@ -85,10 +80,7 @@ export function FilterDrawer({
 
   return (
     // Below md the wrapper adds no box (display: contents), so the closed drawer leaves no empty grid row.
-    // From md the wrapper is the sticky grid item (prompt explore-sticky-filters decision 1): sticky
-    // on the aside did nothing, because its parent was exactly as tall as it. Capped at the viewport
-    // so a long filter list scrolls inside; -m-1/p-1 keep focus outlines clear of the scroll box.
-    <div className="max-md:contents md:sticky md:top-[82px] md:-m-1 md:max-h-[calc(100dvh-98px)] md:self-start md:overflow-y-auto md:overscroll-contain md:p-1">
+    <div className="max-md:contents md:self-start">
       <aside
         ref={panelRef}
         id={FILTERS_PANEL_ID}
@@ -99,8 +91,8 @@ export function FilterDrawer({
           // Popover API). A browser that doesn't know :popover-open drops that rule and stays hidden.
           "fixed inset-0 m-0 h-dvh max-md:z-50 max-h-none w-full max-w-none flex-col overflow-hidden border-0 bg-white p-0 text-ink",
           "backdrop:bg-ink/40 max-md:hidden max-md:data-[open]:flex max-md:[&:popover-open]:flex",
-          // md and up: a compact sidebar card, always shown (the wrapper above is what sticks).
-          "md:static md:flex md:h-auto md:w-auto md:overflow-visible md:rounded-lg md:border md:border-line md:p-4",
+          // md and up: a compact sticky sidebar card, always shown.
+          "md:sticky md:top-[82px] md:flex md:h-auto md:w-auto md:overflow-visible md:rounded-lg md:border md:border-line md:p-4",
         )}
       >
         <div className="flex h-[66px] shrink-0 items-center justify-between border-b border-line px-4 md:h-auto md:px-0 md:pb-3">

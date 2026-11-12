@@ -228,15 +228,3 @@
     border-color: #ddd;
   }
 }
-
-/* Floating Filters pill on Explore (prompt explore-sticky-filters); used only under motion-safe. */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
