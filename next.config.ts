@@ -2,7 +2,11 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /*
+   * S22: the e2e suite runs its own `next dev` (port 3100) next to yours. The dev lockfile lives
+   * in distDir, so it builds into a separate folder. Unset (you, CI, Vercel) means `.next`.
+   */
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   cacheComponents: true,
   partialPrefetching: true,
   /*

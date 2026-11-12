@@ -88,7 +88,10 @@ export function BasicsForm({ listingId, defaults }: { listingId?: string; defaul
               name="category"
               placeholder="Choose a category"
               options={CATEGORY_OPTIONS}
-              value={category}
+              // Uncontrolled on purpose (S22 finding E1): React 19's post-action form reset clears
+              // a controlled select's DOM value while its state stays put. State only drives which
+              // fields show; the select keeps the submitted value through Select's remount key.
+              defaultValue={value("category")}
               onChange={(event) => setCategory(asCategory(event.target.value))}
             />
           )}

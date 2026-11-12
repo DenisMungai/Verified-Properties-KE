@@ -186,7 +186,9 @@ function pageQuery(filters: SearchFilters, now: Date, page: number): SQL {
   const matched = matchedSql(filterConditions(filters), filters.q, now);
   const offset = (page - 1) * PAGE_SIZE;
   if (filters.sort === "recommended") {
-    return sql`with matched as (${matched}), ${cappedRecommendedCtes(nairobiDateSeed(now))}
+    // MATERIALIZED (S22 finding P1): computes lister_verified_now once per matched row. Inlined,
+    // Postgres repeated it in every tier sort key, about 21 µs a call.
+    return sql`with matched as materialized (${matched}), ${cappedRecommendedCtes(nairobiDateSeed(now))}
       select ${cardSelect} from capped order by final_pos offset ${offset} limit ${PAGE_SIZE}`;
   }
   return sql`with matched as (${matched})
@@ -196,7 +198,7 @@ function pageQuery(filters: SearchFilters, now: Date, page: number): SQL {
 /** Up to three matching verified listings, in Recommended order (decision 7). */
 function verifiedStripQuery(filters: SearchFilters, now: Date): SQL {
   const matched = matchedSql(filterConditions(filters), filters.q, now);
-  return sql`with matched as (${matched})
+  return sql`with matched as materialized (${matched})
     select ${cardSelect} from matched where verified
     order by ${verifiedTierOrderBy(nairobiDateSeed(now))} limit ${VERIFIED_STRIP_SIZE}`;
 }
@@ -261,7 +263,7 @@ async function showcaseSection(db: DbExecutor, { where, slots, excludeIds, seed,
   const [featured, newestRows] = await Promise.all([
     cards(
       db,
-      sql`with matched as (${matched}),
+      sql`with matched as materialized (${matched}),
         candidates as (
           select m.*, row_number() over (partition by lister_key order by ${rotationKey(seed)}) as lr
           from matched m

@@ -248,3 +248,54 @@ Keep notes in `docs/incidents/YYYY-MM-DD-short-name.md`.
   the `payment_callbacks` thresholds against real traffic, and clear the sandbox billing rows.
 - **Performance.** Sentry tracing is off. Use Vercel Analytics / Speed Insights if needed.
 - **Paging.** Alerts are email only.
+
+## 8. Running the end-to-end suite
+
+Added in S22 (`prompts/s22-e2e-a11y-perf.md`). The suite runs locally only, never in CI and never
+against production. Results and findings are in `docs/QUALITY_REPORT.md`.
+
+**Where it runs.** On the Neon `e2e` branch (`br-ancient-recipe-b99mstln`, endpoint
+`ep-super-base-b9lh695m`), a child of `dev`. The suite starts its own `next dev` on
+`http://localhost:3100`. It builds into `.next-e2e/`, so your own `npm run dev` on :3000 can keep
+running. That server uses the e2e branch, the M-Pesa simulator, local-disk storage, in-memory rate
+limits and emails printed to `server.log` in the suite's temp folder
+(`%TEMP%\verifiedpropertieske-e2e`, kept outside the project so the dev server doesn't reload on
+every log line). Every helper that writes to a database refuses
+any endpoint except the e2e one.
+
+**Once.** Put these in `.env.local`:
+
+- `E2E_DATABASE_URL` and `E2E_DATABASE_URL_UNPOOLED`: the e2e branch's pooled and direct strings.
+- `NEON_API_KEY` (Neon console > Account > API keys), `E2E_NEON_PROJECT_ID=falling-sky-58396938`
+  and `E2E_NEON_BRANCH_ID=br-ancient-recipe-b99mstln`. These let each run reset the branch from
+  `dev` first.
+
+**Each run.**
+
+```bash
+npm run e2e                          # reset the branch, start :3100, run every spec (about 25 min)
+npm run e2e -- e2e/journey.spec.ts   # one file (the admin setup still runs first)
+npm run e2e:report                   # open the HTML report; failed tests keep a trace
+                                     # (traces live in %TEMP%\verifiedpropertieske-e2e\test-results)
+```
+
+- Without `NEON_API_KEY`, reset the branch yourself (Neon console > Branches > e2e > Reset from
+  parent) and run with `E2E_SKIP_RESET=yes`.
+- `E2E_REUSE_SERVER=yes` reuses a server you started with `node --import tsx e2e/server.ts`.
+- Each run creates `e2e-*-<run id>@example.test` accounts and one listing on the e2e branch only.
+- Each run starts from a clean `.next-e2e` folder, so the first pages compile slowly.
+- Don't run `npm run build` while the suite runs. It rewrites `tsconfig.json` and
+  `next-env.d.ts`, which the e2e dev server watches.
+- If a run hangs in setup and the server log shows "Compiled in …" after every request, that is
+  the dev-server reload loop (`docs/QUALITY_REPORT.md`, "Suite stability"). Stop the run, delete
+  `.next-e2e` and run again.
+
+**Performance and query plans** (read-only):
+
+```bash
+node --import tsx e2e/perf/web-vitals.ts https://verifiedpropertieske.vercel.app <listing-slug>
+node --conditions=react-server --import tsx e2e/perf/explain.ts   # e2e branch only
+```
+
+After an e2e run, `next-env.d.ts` points at `.next-e2e` types until your next `npm run dev`. The
+file is gitignored and harmless.

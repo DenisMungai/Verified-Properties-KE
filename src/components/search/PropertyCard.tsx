@@ -42,18 +42,21 @@ export function PropertyCard({
   featured = false,
   save,
   sizes = CARD_IMAGE_SIZES,
+  eager = false,
 }: {
   listing: PropertyCardData;
   featured?: boolean;
   /** The heart; omitted where saving doesn't apply. */
   save?: SaveButtonProps;
   sizes?: string;
+  /** First card above the fold: its photo loads at once, with high priority. */
+  eager?: boolean;
 }) {
   const facts = cardFacts(listing);
   return (
     <article className="relative flex w-full flex-col overflow-hidden rounded-xl border border-line bg-white transition-shadow duration-200 hover:shadow-sm has-[h3_a:focus-visible]:outline has-[h3_a:focus-visible]:outline-2 has-[h3_a:focus-visible]:outline-offset-2 has-[h3_a:focus-visible]:outline-emerald-600">
       <div className="relative">
-        <ListingImage baseUrl={listing.coverUrl} alt={cardImageAlt(listing)} sizes={sizes} className="aspect-video" />
+        <ListingImage baseUrl={listing.coverUrl} alt={cardImageAlt(listing)} sizes={sizes} eager={eager} className="aspect-video" />
         {(listing.verified || featured) && (
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
             {listing.verified && <VerifiedBadge className={`${PHOTO_CHIP} text-emerald-700`} />}

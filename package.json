@@ -22,6 +22,8 @@
     "jobs:run": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-run.ts",
     "jobs:schedule": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/jobs-schedule.ts",
     "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.ts",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
     "security:sweep": "node --import tsx scripts/security-sweep.ts",
     "sentry:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/sentry-test.ts",
     "maps:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/maps-provider-test.ts"
@@ -50,6 +52,8 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
@@ -66,6 +70,9 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "playwright-core": "1.64.1"
   },
   "engines": {
     "node": ">=20.9"

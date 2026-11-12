@@ -8,6 +8,8 @@
 
 # next.js
 /.next/
+# S22 e2e dev server output
+/.next-e2e/
 /out/
 
 # production
@@ -39,3 +41,8 @@ next-env.d.ts
 
 # S18 map provider test: cached outcomes and static images (provider terms; never commit)
 /.provider-test/
+
+# S22 Playwright output (traces can hold page content; never commit)
+/test-results/
+/playwright-report/
+/blob-report/

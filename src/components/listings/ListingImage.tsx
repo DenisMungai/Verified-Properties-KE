@@ -18,6 +18,7 @@ export function ListingImage({
   alt,
   sizes,
   preload = false,
+  eager = false,
   fit = "cover",
   className,
 }: {
@@ -25,6 +26,12 @@ export function ListingImage({
   alt: string;
   sizes: string;
   preload?: boolean;
+  /**
+   * The likely LCP image when which one depends on the viewport (the first search result): load
+   * it at once with high priority instead of lazily after hydration (S22 finding P2). Next.js
+   * recommends this over `preload` when several images could be the LCP.
+   */
+  eager?: boolean;
   /** `contain` shows the whole photo (full-screen gallery); `cover` fills the frame. */
   fit?: "cover" | "contain";
   className?: string;
@@ -39,6 +46,7 @@ export function ListingImage({
           fill
           sizes={sizes}
           preload={preload}
+          {...(eager && !preload ? { loading: "eager" as const, fetchPriority: "high" as const } : {})}
           className={fit === "contain" ? "object-contain" : "object-cover"}
         />
       ) : (

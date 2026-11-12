@@ -24,9 +24,10 @@ export function VerifiedStrip({
         </p>
       </div>
       <ul className={CARD_GRID}>
-        {listings.map((listing) => (
+        {listings.map((listing, index) => (
           <li key={listing.id} className="flex">
-            <PropertyCard listing={listing} save={saveFor(listing.id)} />
+            {/* The strip sits above the results, so its first photo is the likely LCP. */}
+            <PropertyCard listing={listing} save={saveFor(listing.id)} eager={index === 0} />
           </li>
         ))}
       </ul>

@@ -40,7 +40,12 @@ export function ReconciliationCard({ report }: { report: ReconciliationReport | 
                 {check.ids.length > 0 && (
                   <p className="flex flex-wrap gap-x-3 text-micro">
                     {check.ids.slice(0, SHOWN_IDS).map((id) => (
-                      <Link key={id} href={idHref(check, id)} className="font-medium text-emerald-700 hover:underline tabular">
+                      // 44px tall rows (S22 finding A2): these were 13px text links.
+                      <Link
+                        key={id}
+                        href={idHref(check, id)}
+                        className="inline-flex min-h-control items-center font-medium text-emerald-700 hover:underline tabular"
+                      >
                         {idLabel(check, id)}
                       </Link>
                     ))}

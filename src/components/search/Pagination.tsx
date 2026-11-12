@@ -20,7 +20,9 @@ export function pageWindow(page: number, pageCount: number): number[] {
 function Edge({ href, label, children }: { href: string | null; label: string; children: ReactNode }) {
   if (!href) {
     return (
-      <span aria-disabled="true" aria-label={label} className={cn(itemClasses, "border-line text-slate-600")}>
+      // A disabled link (S22 finding A1): aria-label is not allowed on a plain span, so it takes the
+      // link role; screen readers read "Previous page, link, dimmed" and it is not focusable.
+      <span role="link" aria-disabled="true" aria-label={label} className={cn(itemClasses, "border-line text-slate-600")}>
         {children}
       </span>
     );

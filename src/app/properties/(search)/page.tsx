@@ -102,9 +102,9 @@ async function Results({ href, filters }: { href: string; filters: SearchFilters
           Results, page {result.page} of {result.pageCount}
         </h2>
         <ul className={CARD_GRID}>
-          {toCardData(result.items).map((listing) => (
+          {toCardData(result.items).map((listing, index) => (
             <li key={listing.id} className="flex">
-              <PropertyCard listing={listing} save={saveFor(listing.id)} />
+              <PropertyCard listing={listing} save={saveFor(listing.id)} eager={index === 0 && result.verifiedStrip.length === 0} />
             </li>
           ))}
         </ul>
@@ -148,8 +148,10 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
           <FilterPanel filters={filters} priceError={errors.price} priceInput={priceInput} />
         </FilterDrawer>
         <div className="flex min-w-0 flex-col gap-4">
+          {/* Not keyed by the URL (S22 finding A5): remounting dropped keyboard focus from the Sort
+              select on every sort change. Its only input, the Sort select, follows its default
+              value without a remount (see Select). */}
           <ResultsHeader
-            key={`header:${href}`}
             filters={filters}
             count={
               <span role="status">
