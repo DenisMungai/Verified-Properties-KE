@@ -193,7 +193,8 @@ async function expectContactButtons(page: Page) {
   await expect(main(page).getByRole("link", { name: /^Call/ }).first()).toHaveAttribute("href", `tel:${e164}`);
   const whatsapp = main(page).getByRole("link", { name: /^WhatsApp/ }).first();
   const href = await whatsapp.getAttribute("href");
-  expect(href).toMatch(new RegExp(`^https://wa\.me/${e164.slice(1)}\?text=`));
+  // A prefix check, not a RegExp: in a template string "\." and "\?" lose their backslashes.
+  expect(href?.startsWith(`https://wa.me/${e164.slice(1)}?text=`), `WhatsApp href ${href}`).toBe(true);
   expect(new URL(href!).searchParams.get("text")).toContain(listingTitle);
   await expect(whatsapp).toHaveAttribute("target", "_blank");
 }
