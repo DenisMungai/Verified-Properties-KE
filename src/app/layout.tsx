@@ -6,7 +6,6 @@ import "@fontsource/poppins/latin-700.css";
 // 800 is only for the logo wordmark.
 import "@fontsource/poppins/latin-800.css";
 import "./globals.css";
-import { OverscrollTint } from "@/components/layout/OverscrollTint";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BRAND } from "@/lib/brand";
@@ -16,9 +15,8 @@ export const metadata: Metadata = {
   description: BRAND.description,
 };
 
-// White, to match the solid header (a green browser bar showed as a band above it on iPhones).
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#087443",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -37,7 +35,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {children}
         </main>
         <SiteFooter />
-        <OverscrollTint />
       </body>
     </html>
   );
