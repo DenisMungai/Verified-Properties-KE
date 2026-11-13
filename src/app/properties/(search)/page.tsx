@@ -9,6 +9,7 @@ import { FilterPanel } from "@/components/search/FilterPanel";
 import { Pagination } from "@/components/search/Pagination";
 import { CARD_GRID, PropertyCard, PropertyGridSkeleton } from "@/components/search/PropertyCard";
 import { ResultsHeader } from "@/components/search/ResultsHeader";
+import { ResultsScroller } from "@/components/search/ResultsScroller";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchPageSkeleton } from "@/components/search/SearchPageSkeleton";
 import { VerifiedStrip } from "@/components/search/VerifiedStrip";
@@ -120,10 +121,11 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const href = searchHref(filters);
   const priceInput = errors.price ? { min: first(raw.minPrice), max: first(raw.maxPrice) } : undefined;
   return (
-    <PageContainer className="flex flex-col gap-4 pb-8 pt-4 md:gap-5 md:pt-6">
-      {/* Phones: breadcrumb and subtitle hidden so results start on the first screen. */}
+    // From md the page fits the window and only the results list scrolls (ResultsScroller).
+    <PageContainer className="flex flex-col gap-4 pb-8 pt-4 md:min-h-0 md:flex-1 md:gap-5 md:pb-4 md:pt-6">
+      {/* Phones and short windows: breadcrumb and subtitle hidden so the results list gets the room. */}
       <div className="flex flex-col gap-2">
-        <nav aria-label="Breadcrumb" className="hidden md:block">
+        <nav aria-label="Breadcrumb" className="hidden md:block [@media(max-height:820px)]:!hidden">
           <ol className="flex flex-wrap items-center gap-2 text-small text-slate-600">
             <li>
               <Link href="/" className="-my-3.5 inline-flex min-h-control items-center hover:text-ink hover:underline">
@@ -136,18 +138,18 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
         </nav>
         <div>
           <h1 className="text-display-sm">{MODE_TITLES[filters.mode]}</h1>
-          <p className="mt-2 hidden max-w-2xl text-body text-slate-600 md:block">Browse homes, apartments, land and commercial property</p>
+          <p className="mt-2 hidden max-w-2xl text-body text-slate-600 md:block [@media(max-height:820px)]:!hidden">Browse homes, apartments, land and commercial property</p>
         </div>
       </div>
 
       {/* Keyed by the URL so the inputs reset after a chip, Clear all or pagination link. */}
       <SearchBar key={`bar:${href}`} filters={filters} activeCount={activeFilters(filters).length} />
 
-      <div className="grid gap-gutter md:grid-cols-[176px_minmax(0,1fr)]">
+      <div className="grid gap-gutter md:min-h-0 md:flex-1 md:grid-cols-[176px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
         <FilterDrawer key={`filters:${href}`} clearHref={clearFiltersHref(filters)}>
           <FilterPanel filters={filters} priceError={errors.price} priceInput={priceInput} />
         </FilterDrawer>
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 md:min-h-0">
           {/* Not keyed by the URL (S22 finding A5): remounting dropped keyboard focus from the Sort
               select on every sort change. Its only input, the Sort select, follows its default
               value without a remount (see Select). */}
@@ -161,9 +163,12 @@ async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
               </span>
             }
           />
-          <Suspense key={href} fallback={<PropertyGridSkeleton />}>
-            <Results href={href} filters={filters} />
-          </Suspense>
+          {/* Keyed by the URL so a new search, sort or page starts at the top of the list. */}
+          <ResultsScroller key={href} storageKey={href}>
+            <Suspense fallback={<PropertyGridSkeleton />}>
+              <Results href={href} filters={filters} />
+            </Suspense>
+          </ResultsScroller>
         </div>
       </div>
     </PageContainer>

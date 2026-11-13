@@ -207,6 +207,28 @@
   }
 }
 
+/*
+ * Explore from md: the page fits the window and only the results list scrolls; the header, search
+ * bar, filters and sort row stay in place. The site footer steps aside here (every other page has
+ * it). A browser without :has() keeps the ordinary page scroll.
+ */
+@media (min-width: 768px) {
+  body:has([data-results-scroll]) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body:has([data-results-scroll]) > main {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  body:has([data-results-scroll]) > footer {
+    display: none;
+  }
+}
+
 /* A fixed bottom bar (listing page below lg) never covers the end of the page or the footer. */
 @media (max-width: 1023.98px) {
   body:has([data-mobile-bar]) {
