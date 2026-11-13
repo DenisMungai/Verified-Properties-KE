@@ -73,6 +73,15 @@
     font-size: 90%;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /*
+     * Only seen in the iOS bounce area past the page ends (body paints the canvas): white at the
+     * top to match the header, Charcoal near the end to match the footer (OverscrollTint).
+     */
+    background-color: var(--vp-white);
+  }
+
+  html[data-overscroll="end"] {
+    background-color: var(--vp-charcoal);
   }
 
   body {
@@ -215,6 +224,7 @@
 }
 
 @media print {
+  html,
   body {
     background: #fff;
   }
