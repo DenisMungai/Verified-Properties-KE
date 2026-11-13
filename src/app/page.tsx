@@ -146,7 +146,7 @@ export default function HomePage() {
             <h2 id="locations-heading" className="text-title">
               Explore popular locations
             </h2>
-            <p className="text-small text-slate-600">Start with a county you love.</p>
+            <p className="text-small text-slate-600">Start with a city or town you love.</p>
           </div>
           <LocationTiles />
         </section>
