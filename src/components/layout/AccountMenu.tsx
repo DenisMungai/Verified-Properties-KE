@@ -63,33 +63,41 @@ export function AccountMenu({ user }: { user: HeaderUser }) {
         <UnreadBadge initial={user.unread} />
         <ChevronDown aria-hidden="true" className="size-4 text-slate-600" />
       </button>
+      {/*
+        The panel lives in the sticky header, so page scrolling can't reach anything below the
+        window edge. It is capped to the viewport (66px header + 8px offset + a small gap); the
+        links scroll and Sign out stays pinned. The flex layout sits on an inner wrapper because a
+        `flex` class on the panel would override its `hidden` attribute.
+      */}
       <div
         id={panelId}
         hidden={!open}
         className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-white p-2"
       >
-        <ul className="flex flex-col">
-          {accountLinks(user).map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="flex min-h-control items-center justify-between gap-2 rounded-md px-3 text-small text-ink hover:bg-mint-50"
-              >
-                {link.label}
-                {link.badge && <UnreadBadge initial={user.unread} />}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <form action={signOutAction} className="mt-1 border-t border-line pt-1">
-          <button
-            type="submit"
-            className="flex min-h-control w-full items-center gap-2 rounded-md px-3 text-left text-small text-ink hover:bg-mint-50"
-          >
-            <LogOut aria-hidden="true" className="size-4 text-slate-600" />
-            Sign out
-          </button>
-        </form>
+        <div className="flex max-h-[calc(100dvh-104px)] flex-col">
+          <ul className="flex min-h-0 flex-col overflow-y-auto overscroll-contain">
+            {accountLinks(user).map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="flex min-h-control items-center justify-between gap-2 rounded-md px-3 text-small text-ink hover:bg-mint-50"
+                >
+                  {link.label}
+                  {link.badge && <UnreadBadge initial={user.unread} />}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <form action={signOutAction} className="mt-1 shrink-0 border-t border-line pt-1">
+            <button
+              type="submit"
+              className="flex min-h-control w-full items-center gap-2 rounded-md px-3 text-left text-small text-ink hover:bg-mint-50"
+            >
+              <LogOut aria-hidden="true" className="size-4 text-slate-600" />
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
