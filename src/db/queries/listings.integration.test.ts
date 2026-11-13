@@ -35,6 +35,7 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
     county: "Nairobi",
     town: "Nairobi",
     neighbourhood: "Kilimani",
+    mapUrl: null,
     priceKes: 85_000,
     rentPeriod: "month",
     bedrooms: 3,
@@ -133,7 +134,7 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
   it("creates drafts from validated basics only, copying the agency from the profile", async () => {
     const form = new FormData();
     for (const [key, value] of Object.entries({ ...basics, priceKes: "85,000", bedrooms: "3" })) {
-      form.set(key, String(value));
+      form.set(key, value === null ? "" : String(value));
     }
     form.set("status", "published");
     form.set("agencyId", "00000000-0000-0000-0000-000000000000");
@@ -237,6 +238,19 @@ describe.skipIf(!url)("listings (integration)", { timeout: 60_000 }, () => {
       status: "pending_review",
       returnedToReview: true,
     });
+  });
+
+  it("returns a published listing to review when an unverified owner adds a Google Maps link", async () => {
+    await givePlan({ userId: "u_solo" });
+    const id = await readyDraft("u_solo");
+    await client.query(`update properties set status = 'published', published_at = now() where id = $1`, [id]);
+
+    expect(await updateListing(db, "u_solo", id, { mapUrl: "https://maps.app.goo.gl/Kilimani3br" })).toEqual({
+      ok: true,
+      status: "pending_review",
+      returnedToReview: true,
+    });
+    expect(await getManageableListing(db, "u_solo", id)).toMatchObject({ mapUrl: "https://maps.app.goo.gl/Kilimani3br" });
   });
 
   it("keeps a verified owner's listing published after a material edit", async () => {

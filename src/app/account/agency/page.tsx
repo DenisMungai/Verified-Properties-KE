@@ -182,7 +182,12 @@ async function InAgency({ user, membership, now }: { user: CurrentUser; membersh
           </h2>
           <AvatarUploader kind="logo" name={membership.name} avatarUrl={publicImageBaseUrl(membership.logoKey)} />
           <AgencyDetailsForm
-            defaults={{ name: membership.name, description: membership.description ?? "", website: membership.websiteUrl ?? "" }}
+            defaults={{
+              name: membership.name,
+              description: membership.description ?? "",
+              website: membership.websiteUrl ?? "",
+              officeMapUrl: membership.officeMapUrl ?? "",
+            }}
           />
         </section>
       )}

@@ -7,7 +7,9 @@ import { useFocusFirstError } from "@/components/forms/useFocusFirstError";
 import { Field, Input, SegmentedControl, Select } from "@/components/ui";
 import { INITIAL_ACTION_STATE } from "@/lib/action-state";
 import { KENYA_COUNTIES } from "@/lib/kenya";
+import { MAP_URL_MAX } from "@/lib/listings/map-link";
 import {
+  BASICS_FIELDS,
   CATEGORIES,
   CATEGORY_LABELS,
   LISTING_TYPES,
@@ -19,10 +21,7 @@ import {
 } from "@/lib/validation/listing";
 import { StepFormFooter } from "./StepFormFooter";
 
-export type BasicsDefaults = Record<
-  "title" | "listingType" | "category" | "county" | "town" | "neighbourhood" | "priceKes" | "rentPeriod" | "bedrooms",
-  string
->;
+export type BasicsDefaults = Record<(typeof BASICS_FIELDS)[number], string>;
 
 const TYPE_OPTIONS = LISTING_TYPES.map((value) => ({ value, label: LISTING_TYPE_LABELS[value] }));
 const CATEGORY_OPTIONS = CATEGORIES.map((value) => ({ value, label: CATEGORY_LABELS[value] }));
@@ -120,6 +119,26 @@ export function BasicsForm({ listingId, defaults }: { listingId?: string; defaul
               maxLength={60}
               placeholder="e.g. Kilimani"
               defaultValue={value("neighbourhood")}
+            />
+          )}
+        </Field>
+        <Field
+          id="mapUrl"
+          label="Google Maps link"
+          hint="In Google Maps, drop a pin on the property, tap Share and paste the link here. Buyers who can see your contact details can open it."
+          error={errors.mapUrl}
+          className="md:col-span-2"
+        >
+          {(control) => (
+            <Input
+              {...control}
+              name="mapUrl"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              maxLength={MAP_URL_MAX}
+              placeholder="https://maps.app.goo.gl/…"
+              defaultValue={value("mapUrl")}
             />
           )}
         </Field>

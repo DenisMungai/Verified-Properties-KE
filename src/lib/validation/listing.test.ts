@@ -34,6 +34,7 @@ const complete: ListingFields = {
   county: "Nairobi",
   town: "Nairobi",
   neighbourhood: "Kilimani",
+  mapUrl: null,
   priceKes: 85_000,
   rentPeriod: "month",
   bedrooms: 3,
@@ -82,6 +83,20 @@ describe("basicsSchema", () => {
     const result = basicsSchema.safeParse({ ...basics, rentPeriod: "" });
     expect(result.success).toBe(false);
     if (!result.success) expect(fieldErrorsFrom(result.error)).toHaveProperty("rentPeriod");
+  });
+
+  it("treats the Google Maps link as optional and normalises it", () => {
+    expect(basicsSchema.parse(basics).mapUrl).toBeNull();
+    expect(basicsSchema.parse({ ...basics, mapUrl: "  " }).mapUrl).toBeNull();
+    expect(basicsSchema.parse({ ...basics, mapUrl: "maps.app.goo.gl/AbC123" }).mapUrl).toBe("https://maps.app.goo.gl/AbC123");
+  });
+
+  it("rejects links that aren't Google Maps", () => {
+    for (const mapUrl of ["https://evil.example/maps", "javascript:alert(1)", "https://google.com/search?q=x"]) {
+      const result = parseBasicsStep({ ...basics, mapUrl });
+      expect(result).toMatchObject({ success: false });
+      if (!result.success) expect(Object.keys(result.errors)).toEqual(["mapUrl"]);
+    }
   });
 
   it("reports the missing rent period alongside other errors", () => {

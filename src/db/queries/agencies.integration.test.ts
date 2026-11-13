@@ -327,10 +327,20 @@ describe.skipIf(!url)("agencies (integration)", { timeout: 180_000 }, () => {
     const ivy = await lister("s23_ivy");
     await acceptInvite(db, ivy, byToken(await invite(admin.id, ivy.email)), now);
 
-    const details = { name: "S23 Renamed", description: null, website: "https://s23.example/" };
+    const details = {
+      name: "S23 Renamed",
+      description: null,
+      website: "https://s23.example/",
+      officeMapUrl: "https://maps.app.goo.gl/S23Office",
+    };
     expect(await updateAgencyDetails(db, ivy.id, details)).toBe("not_admin");
     expect(await updateAgencyDetails(db, admin.id, details)).toBe("saved");
-    expect(await getMembership(db, admin.id)).toMatchObject({ name: "S23 Renamed", slug: agency.slug, websiteUrl: "https://s23.example/" });
+    expect(await getMembership(db, admin.id)).toMatchObject({
+      name: "S23 Renamed",
+      slug: agency.slug,
+      websiteUrl: "https://s23.example/",
+      officeMapUrl: "https://maps.app.goo.gl/S23Office",
+    });
 
     expect(await setAgencyLogo(db, ivy.id, agency.agencyId, "avatars/x/y")).toBeUndefined();
     expect(await setAgencyLogo(db, admin.id, agency.agencyId, `avatars/agency-${agency.agencyId}/new`)).toBeNull();
@@ -348,7 +358,7 @@ describe.skipIf(!url)("agencies (integration)", { timeout: 180_000 }, () => {
     await client.query(`update properties set agency_id = $1 where id = $2`, [agency.agencyId, id]);
 
     const result = await getPublicAgency(db, agency.slug);
-    expect(result?.agency).toEqual({ name: "S23 Realty", slug: agency.slug, description: "Test agency", websiteUrl: null, logoKey: null });
+    expect(result?.agency).toEqual({ name: "S23 Realty", slug: agency.slug, description: "Test agency", websiteUrl: null, officeMapUrl: null, logoKey: null });
     const team = await getPublicTeam(db, agency.agencyId);
     expect(team).toEqual([{ displayName: "Lister s23_jo", avatarKey: null, listerType: "agent", verified: false }]);
     // Nothing private in the public shapes: exact keys above, and no emails or phone numbers.

@@ -10,6 +10,7 @@ import { FactsList } from "@/components/listing/FactsList";
 import { Gallery } from "@/components/listing/Gallery";
 import { ContactBarButtons } from "@/components/listing/ContactButtons";
 import { ListerPanel, type Viewer } from "@/components/listing/ListerPanel";
+import { LocationSection } from "@/components/listing/LocationSection";
 import { ReportForm } from "@/components/listing/ReportForm";
 import { SaveButton } from "@/components/listing/SaveButton";
 import { listingLocation } from "@/components/listings/ListingSummary";
@@ -19,7 +20,7 @@ import { saveContextFor, saveProps, toCardData } from "@/components/search/card-
 import { Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { getListingContact } from "@/db/queries/inquiries";
-import { getPublicListing, type PublicListingDetail } from "@/db/queries/listing-detail";
+import { getListingMapUrl, getPublicListing, type PublicListingDetail } from "@/db/queries/listing-detail";
 import { conversationForListing } from "@/db/queries/messaging";
 import { getManageableListing } from "@/db/queries/listings";
 import { similarListings } from "@/db/queries/public-listings";
@@ -130,6 +131,9 @@ async function ListingDetail({ params }: { params: Params }) {
     visibility === "hidden" || mine ? NO_CONTACT : visibleContact(await getListingContact(db, listing.id), visibility);
   const listingRef: ListingRef = { title: listing.title, url: new URL(path, getServerEnv().NEXT_PUBLIC_APP_URL).toString() };
   const barContact = primaryContact(contact);
+  // The map link follows the same rule (prompt google-map-links): a hidden link is never read.
+  const mapVisible = listing.hasMapLink && (mine || visibility !== "hidden");
+  const mapUrl = mapVisible ? await getListingMapUrl(db, listing.id) : null;
 
   const viewer: Viewer = !signedIn
     ? { kind: "signed_out", signInHref: signInPath(path) }
@@ -185,6 +189,11 @@ async function ListingDetail({ params }: { params: Params }) {
               <Description text={listing.description} />
             </section>
             <FactsList listing={listing} />
+            <LocationSection
+              place={listingLocation(listing)}
+              mapUrl={mapUrl}
+              signInHref={listing.hasMapLink && !mapVisible ? signInPath(path) : null}
+            />
             <div className="border-t border-line pt-6">
               {viewer.kind === "buyer" ? (
                 <ReportForm listingId={listing.id} />

@@ -37,6 +37,7 @@ export interface AgencyMembership {
   slug: string;
   description: string | null;
   websiteUrl: string | null;
+  officeMapUrl: string | null;
   logoKey: string | null;
   /** Null when the profile points at the agency without a member row (operator data). */
   role: AgencyRole | null;
@@ -51,6 +52,7 @@ export async function getMembership(db: DbExecutor, userId: string): Promise<Age
       slug: agencies.slug,
       description: agencies.description,
       websiteUrl: agencies.websiteUrl,
+      officeMapUrl: agencies.officeMapUrl,
       logoKey: agencies.logoKey,
       role: agencyMembers.role,
     })
@@ -384,7 +386,7 @@ export async function updateAgencyDetails(tx: DbExecutor, adminId: string, input
   if (!agencyId) return "not_admin";
   await tx
     .update(agencies)
-    .set({ name: input.name, description: input.description, websiteUrl: input.website })
+    .set({ name: input.name, description: input.description, websiteUrl: input.website, officeMapUrl: input.officeMapUrl })
     .where(eq(agencies.id, agencyId));
   return "saved";
 }

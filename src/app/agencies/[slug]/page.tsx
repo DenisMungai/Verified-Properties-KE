@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, cache } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ContactButtons } from "@/components/listing/ContactButtons";
 import { Pagination } from "@/components/search/Pagination";
@@ -15,6 +15,7 @@ import { getAgencyOffice, getPublicAgency, getPublicTeam, type PublicAgency } fr
 import { agencyListings } from "@/db/queries/public-listings";
 import { getServerEnv } from "@/lib/env";
 import { hasAnyContact, NO_CONTACT_POINT } from "@/lib/listings/contact";
+import { isGoogleMapsUrl } from "@/lib/listings/map-link";
 import { LISTER_TYPE_LABELS } from "@/lib/roles";
 import { signInPath } from "@/lib/safe-redirect";
 import { single, type SearchParams } from "@/lib/search-params";
@@ -71,6 +72,19 @@ function AgencyHeader({ agency }: { agency: PublicAgency }) {
               className="inline-flex min-h-control items-center gap-1.5 text-small font-semibold text-emerald-700 underline underline-offset-4 hover:text-ink"
             >
               {new URL(agency.websiteUrl).hostname.replace(/^www\./, "")}
+              <ExternalLink aria-hidden="true" className="size-4" />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          )}
+          {isGoogleMapsUrl(agency.officeMapUrl) && (
+            <a
+              href={agency.officeMapUrl}
+              target="_blank"
+              rel="nofollow ugc noopener noreferrer"
+              className="inline-flex min-h-control items-center gap-1.5 text-small font-semibold text-emerald-700 underline underline-offset-4 hover:text-ink"
+            >
+              <MapPin aria-hidden="true" className="size-4" />
+              Office on Google Maps
               <ExternalLink aria-hidden="true" className="size-4" />
               <span className="sr-only">(opens in a new tab)</span>
             </a>

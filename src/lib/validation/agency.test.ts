@@ -33,6 +33,23 @@ describe("agencyDetailsSchema website", () => {
   });
 });
 
+describe("agencyDetailsSchema office map link", () => {
+  const parse = (officeMapUrl: string | undefined) =>
+    agencyDetailsSchema.safeParse({ name: "Acme", description: "", website: "", officeMapUrl });
+
+  it("is optional and accepts Google Maps links", () => {
+    expect(parse(undefined).data?.officeMapUrl).toBeNull();
+    expect(parse("").data?.officeMapUrl).toBeNull();
+    expect(parse("maps.app.goo.gl/Office1").data?.officeMapUrl).toBe("https://maps.app.goo.gl/Office1");
+  });
+
+  it("refuses anything that isn't Google Maps", () => {
+    for (const bad of ["https://acme.co.ke/map", "javascript:alert(1)", "https://google.com/search?q=acme"]) {
+      expect(parse(bad).success, bad).toBe(false);
+    }
+  });
+});
+
 describe("inviteSchema", () => {
   it("lower-cases the email and defaults the role to member", () => {
     expect(inviteSchema.parse({ email: " Wanjiru@Example.CO.KE " })).toEqual({ email: "wanjiru@example.co.ke", role: "member" });

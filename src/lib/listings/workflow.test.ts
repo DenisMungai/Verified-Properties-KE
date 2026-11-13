@@ -83,11 +83,13 @@ describe("material edits", () => {
     county: "Nairobi",
     town: "Nairobi",
     neighbourhood: "Kilimani",
+    mapUrl: null as string | null,
   };
 
   it("treats title, description, category, type and location as material", () => {
     expect(isMaterialEdit(base, { ...base, title: "Three bedroom apartment" })).toBe(true);
     expect(isMaterialEdit(base, { ...base, neighbourhood: null })).toBe(true);
+    expect(isMaterialEdit(base, { ...base, mapUrl: "https://maps.app.goo.gl/AbC" })).toBe(true);
     expect(isMaterialEdit(base, { ...base })).toBe(false);
   });
 

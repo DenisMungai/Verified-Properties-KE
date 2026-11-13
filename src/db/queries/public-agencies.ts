@@ -15,6 +15,8 @@ export interface PublicAgency {
   slug: string;
   description: string | null;
   websiteUrl: string | null;
+  /** Office location as a Google Maps link; public (prompt google-map-links decision 3). */
+  officeMapUrl: string | null;
   logoKey: string | null;
 }
 
@@ -38,6 +40,7 @@ export async function getPublicAgency(db: DbExecutor, slug: string): Promise<Pub
       slug: agencies.slug,
       description: agencies.description,
       websiteUrl: agencies.websiteUrl,
+      officeMapUrl: agencies.officeMapUrl,
       logoKey: agencies.logoKey,
     })
     .from(agencies)

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AMENITIES, COMMERCIAL_SUBTYPES, KENYA_COUNTIES } from "@/lib/kenya";
+import { optionalGoogleMapsUrl } from "@/lib/listings/map-link";
 import { PHOTO_ALT_MAX, PHOTO_ALT_MIN } from "@/lib/storage/limits";
 
 /**
@@ -46,6 +47,8 @@ export interface ListingFields {
   county: string;
   town: string;
   neighbourhood: string | null;
+  /** Google Maps link (prompt google-map-links); optional. */
+  mapUrl: string | null;
   priceKes: number;
   rentPeriod: RentPeriod | null;
   bedrooms: number | null;
@@ -68,6 +71,7 @@ export const BASICS_FIELDS = [
   "county",
   "town",
   "neighbourhood",
+  "mapUrl",
   "priceKes",
   "rentPeriod",
   "bedrooms",
@@ -185,6 +189,7 @@ export const basicsSchema = z
       .min(2, { error: "Enter the town, for example Nairobi or Ruiru." })
       .max(60, { error: "Use 60 characters or fewer." }),
     neighbourhood: optionalText(60, "Use 60 characters or fewer."),
+    mapUrl: optionalGoogleMapsUrl,
     priceKes: priceSchema,
     rentPeriod: optionalEnum(RENT_PERIODS, "Choose how often rent is paid."),
     bedrooms: optionalInt(0, 50, "Enter 0 to 50 bedrooms (0 for a studio)."),
@@ -364,6 +369,7 @@ export const FIELD_LABELS: Record<keyof ListingFields, string> = {
   county: "County",
   town: "Town",
   neighbourhood: "Area / neighbourhood",
+  mapUrl: "Google Maps link",
   priceKes: "Price",
   rentPeriod: "Rent period",
   bedrooms: "Bedrooms",

@@ -6,7 +6,7 @@ import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, type SearchFilters } from "@/lib/search/params";
 import { setFavorite } from "./favorites";
-import { getPublicListing } from "./listing-detail";
+import { getListingMapUrl, getPublicListing } from "./listing-detail";
 import { getPublicAgency, getPublicTeam, listAgencyDirectory } from "./public-agencies";
 import { agencyListings, homeSections, homeShowcase, savedListings, searchListings, similarListings } from "./public-listings";
 
@@ -26,9 +26,12 @@ const url = process.env.TEST_DATABASE_URL;
 
 const NOW = new Date("2026-11-10T09:00:00Z");
 
-/** Keys that would mean a private column leaked into a public result. */
+/**
+ * Keys that would mean a private column leaked into a public result. A listing's `mapUrl` is
+ * private; an agency's `officeMapUrl` is public (prompt google-map-links decision 3).
+ */
 const PRIVATE_KEY =
-  /email|phone|whatsapp|latitude|longitude|exact|coord|receipt|checkout|invoice|payment|password|reviewed|rejection|pause|addressLabel|owner|agencyId|userId|bio|document|fileName|inquir/i;
+  /email|phone|whatsapp|latitude|longitude|exact|coord|receipt|checkout|invoice|payment|password|reviewed|rejection|pause|addressLabel|(?<![a-z])mapUrl|owner|agencyId|userId|bio|document|fileName|inquir/i;
 
 /**
  * Allowed exceptions, outside the public objects themselves. `getPublicListing` returns
@@ -90,9 +93,9 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     const id = await one(
       `insert into properties (slug, owner_user_id, agency_id, title, description, listing_type, category, price_kes,
          county, town, neighbourhood, address_label, exact_latitude, exact_longitude, public_latitude, public_longitude,
-         status, published_at, rejection_reason, pause_reason)
+         status, published_at, rejection_reason, pause_reason, map_url)
        values ($1, $2, $3, $4, 'A described listing used by the S19 exposure guard.', 'sale', 'apartment', 5000000,
-         'Nairobi', 'Nairobi', 'Kilimani', $5, $6, $7, $8, $9, 'published', $10, $11, $12)
+         'Nairobi', 'Nairobi', 'Kilimani', $5, $6, $7, $8, $9, 'published', $10, $11, $12, $13)
        returning id`,
       [
         slug,
@@ -107,6 +110,8 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
         new Date(NOW.getTime() - 86_400_000),
         mark("rejection-reason"),
         mark("pause-reason"),
+        // The Google Maps link is read only after the contact rule (prompt google-map-links).
+        `https://maps.app.goo.gl/${mark("map-url")}`,
       ],
     );
     for (let n = 0; n < 5; n++) {
@@ -230,7 +235,15 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
       expect(Object.keys(result!).sort()).toEqual(SERVER_ONLY_WRAPPER_KEYS.sort());
       expectNothingPrivate(`detail ${slug}`, result!.listing);
       expect(result!.listing.photos).toHaveLength(5);
+      // Only the fact that a map link exists; the link itself needs getListingMapUrl.
+      expect(result!.listing.hasMapLink).toBe(true);
     }
+  });
+
+  it("reads the Google Maps link only through its own query, for published listings", async () => {
+    expect(await getListingMapUrl(db, listing.id)).toMatch(/^https:\/\/maps\.app\.goo\.gl\/S19MARK-map-url-/);
+    await client.query(`update properties set status = 'pending_review' where id = $1`, [listing.id]);
+    expect(await getListingMapUrl(db, listing.id)).toBeNull();
   });
 
   it("similar listings and saved listings return public card fields only", async () => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalGoogleMapsUrl } from "@/lib/listings/map-link";
 
 /**
  * Agency forms (prompt S23). Only these fields are read from a form; the agency itself is always
@@ -55,7 +56,7 @@ const website = z
 export const createAgencySchema = z.object({ name, description });
 export type CreateAgencyInput = z.infer<typeof createAgencySchema>;
 
-export const agencyDetailsSchema = z.object({ name, description, website });
+export const agencyDetailsSchema = z.object({ name, description, website, officeMapUrl: optionalGoogleMapsUrl });
 export type AgencyDetailsInput = z.infer<typeof agencyDetailsSchema>;
 
 export const agencyRoleSchema = z.enum(AGENCY_ROLES, { error: "Choose admin or member." });

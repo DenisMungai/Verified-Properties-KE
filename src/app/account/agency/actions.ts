@@ -97,7 +97,7 @@ export async function createAgencyAction(_prev: ActionState, formData: FormData)
   redirect(`${AGENCY_PATH}?${outcome}`);
 }
 
-const DETAILS_FIELDS = ["name", "description", "website"] as const;
+const DETAILS_FIELDS = ["name", "description", "website", "officeMapUrl"] as const;
 
 export async function saveAgencyDetailsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireLister(AGENCY_PATH);
@@ -116,7 +116,7 @@ export async function saveAgencyDetailsAction(_prev: ActionState, formData: Form
     return { formError: GENERIC_FAILURE, values };
   }
   refreshAgencyPages();
-  return { ok: true, message: "Agency details saved.", values: { ...values, website: parsed.data.website ?? "" } };
+  return { ok: true, message: "Agency details saved.", values: { ...values, website: parsed.data.website ?? "", officeMapUrl: parsed.data.officeMapUrl ?? "" } };
 }
 
 /* -------------------------------------------------------------------------- */

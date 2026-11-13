@@ -204,6 +204,8 @@ export const agencies = pgTable(
     publicPhone: text("public_phone"),
     /** E.164 Kenyan mobile for WhatsApp click-to-chat. */
     whatsapp: text("whatsapp"),
+    /** Office location as a Google Maps link (prompt google-map-links); public on the agency page. */
+    officeMapUrl: text("office_map_url"),
     ...timestamps,
   },
   (t) => [
@@ -214,6 +216,10 @@ export const agencies = pgTable(
     check("agencies_slug_format", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${t.slug}) <= 64`),
     check("agencies_description_length", sql`${t.description} is null or char_length(${t.description}) <= 1000`),
     check("agencies_website_https", sql`${t.websiteUrl} is null or (${t.websiteUrl} ~ '^https://' and char_length(${t.websiteUrl}) <= 200)`),
+    check(
+      "agencies_office_map_url_https",
+      sql`${t.officeMapUrl} is null or (${t.officeMapUrl} ~ '^https://' and char_length(${t.officeMapUrl}) <= 500)`,
+    ),
   ],
 );
 
@@ -339,6 +345,11 @@ export const properties = pgTable(
     town: text("town").notNull(),
     neighbourhood: text("neighbourhood"),
     addressLabel: text("address_label"),
+    /**
+     * Google Maps link to the property (prompt google-map-links). Shown only under the contact
+     * rule; never selected by public card, search or detail columns.
+     */
+    mapUrl: text("map_url"),
     /** Approximate point for public maps (neighbourhood level unless the lister opts in). */
     publicLatitude: doublePrecision("public_latitude"),
     publicLongitude: doublePrecision("public_longitude"),
@@ -379,6 +390,7 @@ export const properties = pgTable(
         and (${t.exactLatitude} is null or ${t.exactLatitude} between -90 and 90)
         and (${t.exactLongitude} is null or ${t.exactLongitude} between -180 and 180)`,
     ),
+    check("properties_map_url_https", sql`${t.mapUrl} is null or (${t.mapUrl} ~ '^https://' and char_length(${t.mapUrl}) <= 500)`),
     index("properties_public_search_idx").on(
       t.status,
       t.listingType,

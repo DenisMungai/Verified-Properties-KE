@@ -12,6 +12,7 @@ import { FormAlert } from "@/components/forms/FormAlert";
 import { useFocusFirstError } from "@/components/forms/useFocusFirstError";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { INITIAL_ACTION_STATE } from "@/lib/action-state";
+import { MAP_URL_MAX } from "@/lib/listings/map-link";
 import { AGENCY_DESCRIPTION_MAX, AGENCY_NAME_MAX } from "@/lib/validation/agency";
 
 /** Create an agency (prompt S23 decision 3). The warning above it is rendered by the server. */
@@ -44,9 +45,10 @@ export interface AgencyDetailsDefaults {
   name: string;
   description: string;
   website: string;
+  officeMapUrl: string;
 }
 
-/** Name, description and website, for agency admins (decision 8). */
+/** Name, description, website and office map link, for agency admins (decision 8; prompt google-map-links). */
 export function AgencyDetailsForm({ defaults }: { defaults: AgencyDetailsDefaults }) {
   const [state, action, pending] = useActionState(saveAgencyDetailsAction, INITIAL_ACTION_STATE);
   const formRef = useRef<HTMLFormElement>(null);
@@ -68,6 +70,25 @@ export function AgencyDetailsForm({ defaults }: { defaults: AgencyDetailsDefault
       </Field>
       <Field id="details-website" label="Website" hint="For example https://youragency.co.ke" error={state.fieldErrors?.website}>
         {(control) => <Input {...control} name="website" type="url" inputMode="url" autoComplete="url" defaultValue={value("website")} />}
+      </Field>
+      <Field
+        id="details-office-map"
+        label="Office location (Google Maps link)"
+        hint="Shown on your agency page. In Google Maps, find your office, tap Share and paste the link."
+        error={state.fieldErrors?.officeMapUrl}
+      >
+        {(control) => (
+          <Input
+            {...control}
+            name="officeMapUrl"
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            maxLength={MAP_URL_MAX}
+            placeholder="https://maps.app.goo.gl/…"
+            defaultValue={value("officeMapUrl")}
+          />
+        )}
       </Field>
       <Button type="submit" size="lg" loading={pending} className="self-start">
         Save details

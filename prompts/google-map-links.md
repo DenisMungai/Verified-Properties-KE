@@ -1,0 +1,224 @@
+# Google Maps links for listings and agency offices
+
+Status: approved and implemented 2026-11-13 on branch `google-map-links` (migration 0014 applied
+to dev and test branches; production not yet).
+
+## Goal
+
+Listers (individuals and agency members) can paste a Google Maps link for each listing's location.
+Buyers see a "View on Google Maps" button on the listing page, following the contact rule.
+Agency admins can also add a Google Maps link for their office, shown on the public agency page.
+
+This is a small, link-only feature. It is not Phase 3 (no PostGIS, pins, autocomplete, map search,
+geocoding or embedded maps). Phase 3 stays skipped.
+
+## References read
+
+- `AGENTS.md` — §6 business rules (public visibility, contact rule, moderation, trust signals),
+  §7 data conventions, §8 security.
+- `docs/implementation-plan-v2.md` §11 (Phase 3 skipped 2026-11-10; "exact points only when the
+  lister opts in, never in public query results").
+- `prompts/lister-contact-buttons.md` rule as coded in `src/lib/listings/contact.ts`.
+- `prompts/ui-compact-design-system.md` / `ui-mobile-optimization.md` (type tokens, 44px controls).
+
+## Existing code inspected
+
+- `src/db/schema.ts` — `properties` (county / town / neighbourhood text; unused `public_*` /
+  `exact_*` coordinate columns), `agencies` (website, office contacts, check constraints).
+- `src/lib/validation/listing.ts` — `ListingFields`, `BASICS_FIELDS`, `basicsSchema`,
+  `basicsFormValues`, `normalizeForCategory`, `FIELD_LABELS`.
+- `src/lib/listings/workflow.ts` — `MATERIAL_FIELDS`, `isMaterialEdit`, `statusAfterEdit`.
+- `src/db/queries/listings.ts` — `editorColumns`, `listingFieldsOf`, `createDraft`, `updateListing`.
+- `src/components/listings/BasicsForm.tsx`, `ListingSummary.tsx` (preview + admin review).
+- `src/app/account/listings/actions.ts`, `src/app/account/listings/[id]/basics` page defaults.
+- `src/db/queries/listing-detail.ts` — public detail columns (no coordinates, owner id server-only).
+- `src/app/properties/[slug]/page.tsx` — contact visibility decided on the server; `ListerPanel`.
+- `src/lib/validation/agency.ts` (`website` transform), `src/app/account/agency/actions.ts`,
+  `src/components/agency/AgencyForms.tsx`, `src/db/queries/agencies.ts`,
+  `src/db/queries/public-agencies.ts`, `src/app/agencies/[slug]/page.tsx`.
+- `src/db/queries/public-exposure.integration.test.ts`.
+
+## Decisions (owner answers 2026-11-13 marked ✱)
+
+1. ✱ **Listing link visibility follows the contact rule.** Verified lister: every visitor sees
+   the button. Unverified lister: only signed-in visitors with a verified email. The listing
+   owner always sees their own link. Decided on the server with the existing
+   `contactVisibility()`; a hidden link is never selected for, or sent to, the page.
+2. ✱ **Agencies get an office map link too**, edited by agency admins in the agency details form.
+3. **The office link is public** on the agency page, next to the website link. An office is a
+   business address the agency chooses to publish, unlike a property's location. (The office
+   phone/WhatsApp/email stay signed-in only, unchanged.) Tell me if you want it signed-in only.
+4. **Only Google Maps links are accepted.** `https` (an `http` link is upgraded), no
+   username/password, max 500 characters, host and path from this allowlist:
+   - `maps.app.goo.gl/*` (the "Share" link from the Google Maps app)
+   - `goo.gl/maps/*`
+   - `google.com/maps*`, `www.google.com/maps*`, `google.co.ke/maps*`, `www.google.co.ke/maps*`
+   - `maps.google.com/*`, `maps.google.co.ke/*`
+
+   A bare `maps.app.goo.gl/abc` gets `https://` added (like the agency website field). Anything
+   else: "Paste a Google Maps link, for example https://maps.app.goo.gl/…". The server never
+   fetches or expands the link (no SSRF, no outbound calls); it is stored and linked as typed,
+   normalised by `URL`.
+5. **Optional.** Not required to submit a listing; not on the preview checklist.
+6. **The link is a material field.** Adding, changing or removing it on a published listing by an
+   unverified lister sends it back to review, like a changed neighbourhood, so a moderator sees
+   every link before it goes public. Verified listers are not pre-reviewed (unchanged rule).
+7. **Moderators and the lister see the link** in `ListingSummary` (Preview step and admin review),
+   as a plain external link, so they can check it points to the right place.
+8. **Link out only, no embed.** Google embeds need an API key or break on short links. The button
+   opens Google Maps in a new tab with `rel="nofollow ugc noopener noreferrer"`.
+9. **Lives in the Basics step**, under Area / neighbourhood, because that's where location is
+   entered. No new step.
+10. Unused `public_*` / `exact_*` coordinate columns are left alone. The link does not populate
+    them.
+
+## Files likely to change
+
+- `src/db/schema.ts` — `properties.map_url text`, `agencies.office_map_url text`, check constraints.
+- `drizzle/0014_*.sql` + `drizzle/meta/*` — generated by `npm run db:generate`.
+- `src/lib/listings/map-link.ts` (new) — pure `normalizeGoogleMapsUrl(input): string | null | "invalid"`
+  and `isGoogleMapsUrl(url)`; shared by listing and agency validation.
+- `src/lib/listings/map-link.test.ts` (new).
+- `src/lib/validation/listing.ts` — `mapUrl` in `ListingFields`, `BASICS_FIELDS`, `basicsSchema`
+  (`optionalGoogleMapsUrl`), `FIELD_LABELS` ("Google Maps link").
+- `src/lib/validation/listing.test.ts` — basics accepts / rejects map links.
+- `src/lib/listings/workflow.ts` + test — `mapUrl` in `MATERIAL_FIELDS`.
+- `src/db/queries/listings.ts` — `mapUrl` in `editorColumns`, `listingFieldsOf`, `createDraft`.
+- `src/app/account/listings/[id]/basics/page.tsx` (and `new`) — `mapUrl` default.
+- `src/components/listings/BasicsForm.tsx` — new field.
+- `src/components/listings/ListingSummary.tsx` — show the link when set.
+- `src/db/queries/listing-detail.ts` — new `getListingMapUrl(db, listingId)` (published only);
+  `hasMapLink: boolean` in the public detail columns (never the URL itself).
+- `src/components/listing/LocationSection.tsx` (new) — the detail-page block.
+- `src/app/properties/[slug]/page.tsx` — fetch the URL only when visible; render the section.
+- `src/lib/validation/agency.ts` (+ test) — `officeMapUrl` in `agencyDetailsSchema`.
+- `src/app/account/agency/actions.ts`, `src/app/account/agency/page.tsx`,
+  `src/components/agency/AgencyForms.tsx` — field and defaults.
+- `src/db/queries/agencies.ts` — read/write `officeMapUrl`.
+- `src/db/queries/public-agencies.ts`, `src/app/agencies/[slug]/page.tsx` — show the office link.
+- `src/db/queries/public-exposure.integration.test.ts`, `listings.integration.test.ts`,
+  `agencies.integration.test.ts` — new cases.
+
+## Implementation requirements
+
+### Data
+
+- `properties.map_url text null`, `agencies.office_map_url text null`.
+- DB checks (backing app validation): `x is null or (char_length(x) <= 500 and x ~ '^https://')`.
+- `npm run db:generate`; commit the migration. Apply with `npm run db:migrate` to the dev branch.
+  Production is migrated only on deploy/merge as usual (ask before touching production).
+
+### Validation (`src/lib/listings/map-link.ts`)
+
+- Trim; empty → `null`. Add `https://` when no scheme. Parse with `URL`; reject on failure.
+- Protocol `http:` → upgrade to `https:`; any other protocol → invalid.
+- Reject `username`/`password`, non-default ports.
+- Hostname (lower-case) and path must match decision 4. `goo.gl` requires path starting `/maps/`;
+  `google.com` / `google.co.ke` (with or without `www.`) require path `/maps` or `/maps/...`.
+- Return `url.toString()`; if longer than 500 → invalid ("Use a shorter link — the Share link
+  from the Google Maps app works best.").
+- Zod wrapper `optionalGoogleMapsUrl` with message
+  "Paste a Google Maps link, for example https://maps.app.goo.gl/…".
+
+### Listing editor
+
+- Basics form, after Area / neighbourhood, full width (`md:col-span-2`):
+  - Label "Google Maps link", optional, `type="url"`, `inputMode="url"`, `autoComplete="off"`,
+    `maxLength={500}`, placeholder `https://maps.app.goo.gl/…`.
+  - Hint: "Optional. In Google Maps, drop a pin on the property, tap Share and paste the link.
+    Buyers who can see your contacts can open it."
+- Saved through the existing `saveBasicsAction` → `updateListing` (ownership, editability,
+  material-edit review all unchanged). No new action.
+- `savedMessage` already explains "back in review" when the link change triggers it.
+
+### Listing detail page
+
+- `getPublicListing` adds `hasMapLink: sql<boolean>\`${p.mapUrl} is not null\`` — never the URL.
+- New `getListingMapUrl(db, listingId)` selects `map_url` for a **published** listing only.
+- In `ListingDetail`: fetch the URL only when `mine || visibility !== "hidden"`, and only when
+  `listing.hasMapLink`.
+- New `LocationSection` in the main column, after `FactsList`, before the report link:
+  - `<section aria-labelledby="location-heading">`, `h2.text-title` "Location".
+  - `MapPin` + `listingLocation(listing)` in `text-small text-slate-700`.
+  - URL visible → secondary outline button (`buttonClasses({ variant: "secondary" })` or the kit's
+    outline variant, `h-control`, `rounded-lg`), lucide `Map` icon, text "View on Google Maps",
+    `ExternalLink` icon, `sr-only` "(opens in a new tab)". Full width below `sm`, auto width above.
+  - Link exists but hidden (signed-out, unverified lister) → small text link
+    "Sign in to see the map location" to `signInPath(path)` (`min-h-control`, emerald-700).
+  - No link → only the location line (section still shows the place text).
+  - Micro note under the button: "Location link provided by the lister." (`text-micro
+    text-slate-600`).
+- No change to the mobile bottom bar.
+
+### Preview and admin review (`ListingSummary`)
+
+- Under the location line, when `listing.mapUrl` is set: external link "Google Maps link"
+  showing the host (e.g. `maps.app.goo.gl`), `ExternalLink` icon, opens in a new tab.
+
+### Agency office
+
+- `agencyDetailsSchema` gains `officeMapUrl: optionalGoogleMapsUrl`. Form field name `officeMapUrl`.
+- `AgencyDetailsForm`: new field after Website, label "Office location (Google Maps link)",
+  same input attributes and placeholder; hint "Optional. Shown on your agency page."
+- `updateAgencyDetails` writes `officeMapUrl` (admin-only, unchanged permission check).
+- `getPublicAgency` selects `officeMapUrl`. `AgencyHeader` shows, next to the website link, the
+  same styled link "Office on Google Maps" with `MapPin` + `ExternalLink` icons, new tab,
+  `rel="nofollow ugc noopener noreferrer"`.
+
+## Security requirements
+
+- Only allow-listed Google Maps hosts, `https` only, no credentials — prevents phishing or
+  `javascript:` links on trusted pages. Validated on the server with Zod; DB check backs it up.
+- Unverified listers' link changes go through review (decision 6).
+- The listing URL is never in public card/search/detail columns or `generateMetadata`; it's read
+  by a separate query only after the server decides the viewer may see it. Search, cards, the
+  similar-listings rail, sitemaps and any JSON responses must not include it.
+- The server never fetches the link.
+- All external anchors: `target="_blank" rel="nofollow ugc noopener noreferrer"`.
+- No change to rate limits (existing actions) or roles. Logs carry no URLs.
+
+## Acceptance criteria
+
+1. A lister can add, change and clear a Google Maps link on the Basics step; it persists and shows
+   on Preview.
+2. Non-Google links (`https://evil.example/maps`, `javascript:alert(1)`, `https://google.com/search?q=x`,
+   `https://user:pw@maps.app.goo.gl/x`) are rejected with the field error; a bare
+   `maps.app.goo.gl/AbC123` is saved as `https://maps.app.goo.gl/AbC123`.
+3. An unverified lister changing the link on a published listing sends it to `pending_review`;
+   a verified lister's listing stays published.
+4. Listing page, verified lister: signed-out visitor sees "View on Google Maps".
+5. Listing page, unverified lister: signed-out visitor sees "Sign in to see the map location" and
+   the URL is not in the HTML; a signed-in visitor with a verified email sees the button.
+6. No link: the Location section shows only the place text.
+7. Admin review page shows the link.
+8. An agency admin can add an office link; it shows on `/agencies/<slug>` to everyone. A member
+   (non-admin) cannot change it.
+9. Public card/search queries and the detail columns never contain `map_url` (integration test).
+
+## Checks to run
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` (new `map-link.test.ts`, listing/agency validation and workflow tests)
+- `npm run test:integration` (listings, agencies, public-exposure)
+- `npm run build` (schema, routes and server modules change)
+
+## Manual test steps (after implementation)
+
+1. `npm run db:migrate` (dev branch), then `npm run dev`.
+2. Sign in as a lister → My listings → edit a listing → Basics. Paste
+   `https://evil.example/x` → Save → field error. Paste a real share link from the Google Maps app
+   (e.g. `https://maps.app.goo.gl/…`) → Save → "Changes saved." (or "back in review" if unverified
+   and published).
+3. Go to Preview → the "Google Maps link" shows under the location.
+4. Open the public listing in a private window (signed out):
+   - verified lister → "View on Google Maps" opens Google Maps in a new tab;
+   - unverified lister → "Sign in to see the map location"; view source contains no
+     `maps.app.goo.gl`.
+5. Sign in with a verified-email buyer account → the button appears on the unverified lister's
+   listing.
+6. As admin, open Admin → Listings → the listing → the link shows in the summary.
+7. As an agency admin → Account → Agency → details → add an office link → Save. Open
+   `/agencies/<slug>` signed out → "Office on Google Maps" shows next to the website.
+8. On a 390px phone width, the button is full width and 44px tall; the form field doesn't zoom on
+   focus (16px input).

@@ -35,6 +35,8 @@ const detailColumns = {
   county: p.county,
   town: p.town,
   neighbourhood: p.neighbourhood,
+  /** Whether a Google Maps link exists. The link itself is read by `getListingMapUrl`, after the contact rule. */
+  hasMapLink: sql<boolean>`${p.mapUrl} is not null`,
   publishedAt: p.publishedAt,
   listerName: sql<string | null>`coalesce(${agencies.name}, ${listerProfiles.displayName})`,
   /** For the "View agency" link (prompt S23 decision 12); the agency page exists while this listing is published. */
@@ -76,4 +78,17 @@ export async function getPublicListing(db: DbExecutor, slug: string): Promise<Pu
     .orderBy(desc(pi.isCover), asc(pi.sortOrder), asc(pi.createdAt));
   const { ownerUserId, ...listing } = row;
   return { listing: { ...listing, photos }, ownerUserId };
+}
+
+/**
+ * A published listing's Google Maps link (prompt google-map-links). Call only after the server has
+ * decided the viewer may see the lister's contacts, or for the owner's own listing.
+ */
+export async function getListingMapUrl(db: DbExecutor, listingId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ mapUrl: p.mapUrl })
+    .from(p)
+    .where(and(eq(p.id, listingId), publishedOnly))
+    .limit(1);
+  return row?.mapUrl ?? null;
 }

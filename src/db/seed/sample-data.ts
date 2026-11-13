@@ -142,6 +142,7 @@ const NO_EXTRAS = {
   subtype: null,
   zoningNotes: null,
   neighbourhood: null,
+  mapUrl: null,
 } satisfies Partial<ListingFields>;
 
 type Fields = Partial<ListingFields> &

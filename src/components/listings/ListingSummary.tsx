@@ -1,7 +1,8 @@
-import { MapPin } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
 import type { EditableListing } from "@/db/queries/listings";
 import { ListingImage } from "./ListingImage";
 import { formatAreaSqm, formatKes, formatLandSize } from "@/lib/format";
+import { isGoogleMapsUrl, mapUrlHost } from "@/lib/listings/map-link";
 import { CATEGORY_LABELS, LISTING_TYPE_LABELS } from "@/lib/validation/listing";
 
 const RENT_SUFFIX = { week: "/ week", month: "/ month", year: "/ year" } as const;
@@ -93,6 +94,18 @@ export function ListingSummary({
           <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           {listingLocation(listing)}
         </p>
+        {isGoogleMapsUrl(listing.mapUrl) && (
+          <a
+            href={listing.mapUrl}
+            target="_blank"
+            rel="nofollow ugc noopener noreferrer"
+            className="inline-flex min-h-control items-center gap-1.5 self-start text-small font-semibold text-emerald-700 underline underline-offset-4 hover:text-ink"
+          >
+            Google Maps link ({mapUrlHost(listing.mapUrl)})
+            <ExternalLink aria-hidden="true" className="size-4" />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
       </div>
       {facts.length > 0 && (
         <ul aria-label="Key facts" className="flex flex-wrap gap-2">

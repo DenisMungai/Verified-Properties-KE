@@ -84,6 +84,8 @@ export const MATERIAL_FIELDS = [
   "county",
   "town",
   "neighbourhood",
+  // A new or changed map link is reviewed like a changed neighbourhood (prompt google-map-links).
+  "mapUrl",
 ] as const;
 export type MaterialField = (typeof MATERIAL_FIELDS)[number];
 

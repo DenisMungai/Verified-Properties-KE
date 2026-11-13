@@ -32,6 +32,7 @@ const basics: BasicsInput = {
   county: "Nairobi",
   town: "Nairobi",
   neighbourhood: "Kilimani",
+  mapUrl: null,
   priceKes: 85_000,
   rentPeriod: "month",
   bedrooms: 3,
