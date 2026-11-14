@@ -20,10 +20,10 @@ import { saveContextFor, saveProps, toCardData } from "@/components/search/card-
 import { Skeleton, VerifiedBadge, buttonClasses } from "@/components/ui";
 import { getDb } from "@/db";
 import { getListingContact } from "@/db/queries/inquiries";
-import { getListingMapUrl, getPublicListing, type PublicListingDetail } from "@/db/queries/listing-detail";
+import { getListingMapUrl, type PublicListingDetail } from "@/db/queries/listing-detail";
 import { conversationForListing } from "@/db/queries/messaging";
 import { getManageableListing } from "@/db/queries/listings";
-import { similarListings } from "@/db/queries/public-listings";
+import { cachedPublicListing, cachedSimilarListings } from "@/lib/cache/public-listings";
 import { formatKes, formatNairobiDate } from "@/lib/format";
 import { getServerEnv } from "@/lib/env";
 import { NO_CONTACT, contactVisibility, primaryContact, visibleContact } from "@/lib/listings/contact";
@@ -38,8 +38,8 @@ import { variantSuffix } from "@/lib/storage/limits";
 
 type Params = Promise<{ slug: string }>;
 
-/** One read per request, shared by the metadata and the page. */
-const loadListing = cache((slug: string) => getPublicListing(getDb(), slug));
+/** One read per request, shared by the metadata and the page; the row itself comes from the shared cache. */
+const loadListing = cache(cachedPublicListing);
 
 function modeOf(listing: Pick<PublicListingDetail, "category" | "listingType">): SearchMode {
   if (listing.category === "land") return "land";
@@ -90,7 +90,8 @@ function Breadcrumbs({ listing }: { listing: PublicListingDetail }) {
 async function SimilarListings({ listing }: { listing: PublicListingDetail }) {
   // The card query reads the clock (recency score), which must follow a request-time signal.
   await connection();
-  const similar = await similarListings(getDb(), listing);
+  const { id, listingType, category, town, county } = listing;
+  const similar = await cachedSimilarListings({ id, listingType, category, town, county });
   if (similar.length === 0) return null;
   const context = await saveContextFor(
     similar.map((card) => card.id),

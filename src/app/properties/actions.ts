@@ -6,13 +6,14 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
+import { failureLogger } from "@/lib/log";
 import { conversationHref } from "@/lib/messaging/paths";
 import { setFavorite } from "@/db/queries/favorites";
 import { createInquiry, type InquiryResult } from "@/db/queries/inquiries";
 import { recordListingView } from "@/db/queries/listing-views";
 import { createReport, type ReportResult } from "@/db/queries/reports";
 import { withTransaction } from "@/db/tx";
-import { fieldErrorsFrom, keepValues, type ActionState } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { requestIp } from "@/lib/mpesa/callback-guard";
 import { getCurrentUser } from "@/lib/session";
@@ -25,7 +26,6 @@ import { INQUIRY_FIELDS, inquirySchema, reportSchema } from "@/lib/validation/en
  * is published and not the user's own. Logs carry ids only, never message text or contact details.
  */
 
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const SIGN_IN_FIRST = "Sign in to continue.";
 const listingId = z.uuid();
 
@@ -34,9 +34,7 @@ function formText(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[engagement] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("engagement");
 
 async function signedInUser() {
   const user = await getCurrentUser();

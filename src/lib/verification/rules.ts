@@ -103,10 +103,6 @@ export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 /** Statuses that hold the lister's single open request (matches the partial unique index). */
 export const OPEN_STATUSES = ["payment_pending", "documents_pending", "under_review"] as const satisfies readonly VerificationStatus[];
 
-export function isOpenStatus(status: VerificationStatus): boolean {
-  return (OPEN_STATUSES as readonly VerificationStatus[]).includes(status);
-}
-
 const TRANSITIONS: Record<VerificationStatus, readonly VerificationStatus[]> = {
   unverified: [],
   payment_pending: ["documents_pending"],

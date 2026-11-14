@@ -14,13 +14,16 @@ import {
 } from "@/db/queries/listing-photos";
 import { getDb } from "@/db";
 import { withTransaction } from "@/db/tx";
+import { type ClientActionResult, GENERIC_FAILURE } from "@/lib/action-state";
+import { invalidateListing } from "@/lib/cache/public-listings";
+import { failureLogger } from "@/lib/log";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { getPrivateStore, getPublicStore } from "@/lib/storage";
+import { imageUploadRequestSchema } from "@/lib/storage/avatar-upload";
 import { deleteImageObjects, ingestUpload, UploadError } from "@/lib/storage/ingest";
 import { isOwnUploadKey, newUploadKey } from "@/lib/storage/keys";
-import { IMAGE_MIME_TYPES, MAX_PHOTOS_PER_LISTING, MAX_UPLOAD_BYTES, PRESIGN_SECONDS } from "@/lib/storage/limits";
+import { MAX_PHOTOS_PER_LISTING, PRESIGN_SECONDS } from "@/lib/storage/limits";
 import { StorageNotConfiguredError } from "@/lib/storage/object-store";
-import { REJECT_MESSAGES } from "@/lib/storage/image-processing";
 import { photoAltSchema } from "@/lib/validation/listing";
 import { requireLister } from "./guard";
 import { deleteStoredPhotos } from "./stored-photos";
@@ -32,9 +35,6 @@ import { deleteStoredPhotos } from "./stored-photos";
  * descriptions or personal data.
  */
 
-export type PhotoActionResult = { ok: true; message?: string } | { ok: false; error: string };
-
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const NOT_SET_UP = "Photo uploads are not set up yet.";
 
 const FAILURE_MESSAGES: Record<PhotoFailure, string> = {
@@ -47,19 +47,14 @@ const FAILURE_MESSAGES: Record<PhotoFailure, string> = {
 const listingId = z.uuid({ error: "We couldn't find that listing." });
 const photoId = z.uuid({ error: "We couldn't find that photo." });
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[photos] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("photos");
 
 function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? GENERIC_FAILURE;
 }
 
-const uploadRequestSchema = z.object({
-  listingId,
-  contentType: z.enum(IMAGE_MIME_TYPES, { error: REJECT_MESSAGES.type }),
-  size: z.int().min(1, { error: "That file is empty." }).max(MAX_UPLOAD_BYTES, { error: REJECT_MESSAGES.size }),
-});
+// listingId first, so its error is the one shown when several fields fail.
+const uploadRequestSchema = z.object({ listingId, ...imageUploadRequestSchema.shape });
 
 /** Step 1: checks everything that can be checked before the bytes arrive, then signs one upload. */
 export async function requestPhotoUploadAction(input: {
@@ -101,7 +96,7 @@ function addedMessage(result: { status: string; returnedToReview: boolean }): st
 }
 
 /** Step 2: verifies and processes the uploaded object, then records the photo. */
-export async function finalizePhotoUploadAction(input: z.input<typeof finalizeSchema>): Promise<PhotoActionResult> {
+export async function finalizePhotoUploadAction(input: z.input<typeof finalizeSchema>): Promise<ClientActionResult> {
   const user = await requireLister("/account/listings");
   const parsed = finalizeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
@@ -122,6 +117,7 @@ export async function finalizePhotoUploadAction(input: z.input<typeof finalizeSc
       await deleteImageObjects(publicStore, ingested.baseKey).catch(() => undefined);
       return { ok: false, error: FAILURE_MESSAGES[added.reason] };
     }
+    invalidateListing(id);
     refresh();
     return { ok: true, message: addedMessage(added) };
   } catch (error) {
@@ -132,12 +128,12 @@ export async function finalizePhotoUploadAction(input: z.input<typeof finalizeSc
   }
 }
 
-/** Shared shell for the small photo edits: auth, validation, one transaction, refresh. */
+/** Shared shell for the small photo edits: auth, validation, one transaction, cache clear, refresh. */
 async function photoEdit(
   action: string,
   ids: { listingId: string; photoId: string },
   run: (userId: string, listingId: string, photoId: string) => Promise<PhotoResult>,
-): Promise<PhotoActionResult> {
+): Promise<ClientActionResult> {
   const user = await requireLister("/account/listings");
   const parsed = z.object({ listingId, photoId }).safeParse(ids);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
@@ -148,18 +144,19 @@ async function photoEdit(
     logFailure(action, error);
     return { ok: false, error: GENERIC_FAILURE };
   }
+  invalidateListing(parsed.data.listingId);
   refresh();
   return { ok: true };
 }
 
-export async function setCoverPhotoAction(ids: { listingId: string; photoId: string }): Promise<PhotoActionResult> {
+export async function setCoverPhotoAction(ids: { listingId: string; photoId: string }): Promise<ClientActionResult> {
   return photoEdit("set cover", ids, (userId, l, p) => withTransaction((tx) => setCover(tx, userId, l, p)));
 }
 
 export async function movePhotoAction(
   ids: { listingId: string; photoId: string },
   direction: "up" | "down",
-): Promise<PhotoActionResult> {
+): Promise<ClientActionResult> {
   if (direction !== "up" && direction !== "down") return { ok: false, error: GENERIC_FAILURE };
   return photoEdit("move", ids, (userId, l, p) => withTransaction((tx) => movePhoto(tx, userId, l, p, direction)));
 }
@@ -167,7 +164,7 @@ export async function movePhotoAction(
 export async function updatePhotoAltAction(
   ids: { listingId: string; photoId: string },
   altText: string,
-): Promise<PhotoActionResult> {
+): Promise<ClientActionResult> {
   const alt = photoAltSchema.safeParse(altText);
   if (!alt.success) return { ok: false, error: firstError(alt.error) };
   return photoEdit("update description", ids, (userId, l, p) =>
@@ -175,7 +172,7 @@ export async function updatePhotoAltAction(
   );
 }
 
-export async function deletePhotoAction(ids: { listingId: string; photoId: string }): Promise<PhotoActionResult> {
+export async function deletePhotoAction(ids: { listingId: string; photoId: string }): Promise<ClientActionResult> {
   return photoEdit("delete", ids, async (userId, l, p) => {
     const result = await withTransaction((tx) => deletePhoto(tx, userId, l, p));
     if (result.ok) await deleteStoredPhotos([result.baseKey]);

@@ -1,7 +1,9 @@
 import { after } from "next/server";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { getCardDeps } from "@/lib/card";
 import { settleCardPayment } from "@/lib/card/settle-card";
 import { handleCardWebhook } from "@/lib/card/webhook";
+import { errorName } from "@/lib/log";
 
 /** Verify runs after the response; give it room. */
 export const maxDuration = 30;
@@ -18,8 +20,10 @@ export async function POST(request: Request): Promise<Response> {
     after(async () => {
       try {
         await settleCardPayment(deps, paymentId, "webhook");
+        // A confirmed payment can restore paused listings and the verified badge.
+        invalidatePublicListings();
       } catch (error) {
-        console.error("[card] webhook processing failed", error instanceof Error ? error.name : "unknown");
+        console.error("[card] webhook processing failed", errorName(error));
       }
     });
   }

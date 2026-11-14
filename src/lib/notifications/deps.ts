@@ -9,8 +9,3 @@ export interface NotificationDeps {
   /** Absolute base for links in emails, without a trailing slash. */
   appUrl: string;
 }
-
-/** An error's name only: messages can carry addresses or provider detail. */
-export function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : "unknown";
-}

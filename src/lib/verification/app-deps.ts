@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { withTransaction } from "@/db/tx";
 import { getBillingDeps } from "@/lib/billing/app-deps";
 import { verificationDecisionEmail, type VerificationEmailKind } from "@/lib/email/templates";
+import { errorName } from "@/lib/log";
 import { getPrivateStore } from "@/lib/storage";
 import type { DecisionDeps } from "./decisions";
 import type { ListerDeps } from "./lister";
@@ -35,6 +36,6 @@ export async function notifyLister(
     if (!user) return;
     await email({ to: user.email, ...verificationDecisionEmail(user.name, kind, details, `${appUrl}${VERIFICATION_PATH}`) });
   } catch (error) {
-    console.error(`[verification] ${kind} email failed`, error instanceof Error ? error.name : "unknown");
+    console.error(`[verification] ${kind} email failed`, errorName(error));
   }
 }

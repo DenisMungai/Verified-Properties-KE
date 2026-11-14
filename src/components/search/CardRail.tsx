@@ -10,7 +10,8 @@ const arrowClasses =
 
 /**
  * A horizontal snap rail of `w-72 sm:w-80` cards with square previous / next buttons. The buttons only
- * scroll the list; without JavaScript the rail still scrolls by touch or trackpad.
+ * scroll the list; without JavaScript the rail still scrolls by touch or trackpad. On phones the
+ * list bleeds to the screen edge; `scroll-px-4` makes cards snap to the 16px page gutter, not the edge.
  */
 export function CardRail({
   headingId,
@@ -59,7 +60,7 @@ export function CardRail({
       </div>
       <ul
         ref={listRef}
-        className="hide-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-4 sm:px-0 [&>li]:flex [&>li]:w-72 sm:[&>li]:w-80 [&>li]:shrink-0 [&>li]:snap-start"
+        className="hide-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:scroll-px-0 sm:gap-4 sm:px-0 [&>li]:flex [&>li]:w-72 sm:[&>li]:w-80 [&>li]:shrink-0 [&>li]:snap-start"
       >
         {children}
       </ul>

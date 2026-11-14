@@ -223,12 +223,6 @@ export async function deletePhoto(
   return { ok: true, baseKey: photo.storageKey };
 }
 
-/** Base keys of every photo on a listing, read before the listing row is deleted. */
-export async function photoKeysForListing(db: DbExecutor, listingId: string): Promise<string[]> {
-  const rows = await db.select({ key: pi.storageKey }).from(pi).where(eq(pi.propertyId, listingId));
-  return rows.map((row) => row.key);
-}
-
 /** Which of these base keys still belong to a photo row (for orphan cleanup). */
 export async function referencedBaseKeys(db: DbExecutor, baseKeys: string[]): Promise<Set<string>> {
   const found = new Set<string>();

@@ -59,6 +59,25 @@ describe("checkRateLimits", () => {
     expect(result.ok).toBe(false);
     expect(result.retryAfterSeconds).toBe(14 * 60);
   });
+
+  it("counts every check, including the ones after a refusal", async () => {
+    const calls: string[] = [];
+    const limiter = {
+      async limit(policy: { name: string }, key: string) {
+        calls.push(`${policy.name}:${key}`);
+        return policy.name === POLICIES.signInPerEmail.name ? { ok: false, retryAfterSeconds: 60 } : { ok: true, retryAfterSeconds: 0 };
+      },
+    };
+    const result = await checkRateLimits(
+      [
+        [POLICIES.signInPerEmail, "e"],
+        [POLICIES.signInPerIp, "ip"],
+      ],
+      limiter,
+    );
+    expect(result).toEqual({ ok: false, retryAfterSeconds: 60 });
+    expect(calls.sort()).toEqual(["sign-in:email:e", "sign-in:ip:ip"]);
+  });
 });
 
 describe("tooManyAttemptsMessage", () => {

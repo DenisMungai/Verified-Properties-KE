@@ -10,11 +10,13 @@ import {
   updateAgencyDetails,
 } from "@/db/queries/agencies";
 import { acceptInvite, createInvite, declineInvite, revokeInvite, type InviteLookup } from "@/db/queries/agency-invites";
-import { type ActionState, fieldErrorsFrom, keepValues } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
 import { hashInviteToken, invitePath, isWellFormedInviteToken } from "@/lib/agencies/invite-token";
 import { getBillingDeps } from "@/lib/billing/app-deps";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { agencyInviteEmail, agencyRemovedEmail } from "@/lib/email/templates";
 import { formatNairobiDate } from "@/lib/format";
+import { failureLogger } from "@/lib/log";
 import {
   POLICIES,
   RateLimitUnavailableError,
@@ -42,11 +44,8 @@ import { requireLister } from "../listings/guard";
  */
 
 const AGENCY_PATH = "/account/agency";
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[agency] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("agency");
 
 /** A rate-limit message, or null when the caller may go ahead. Throws RateLimitUnavailableError. */
 async function limited(policy: RateLimitPolicy, userId: string): Promise<string | null> {
@@ -57,6 +56,8 @@ async function limited(policy: RateLimitPolicy, userId: string): Promise<string 
 function refreshAgencyPages(): void {
   // Roles and the account menu may have changed.
   revalidatePath("/account", "layout");
+  // Agency names and logos show on members' public listings, and joining or leaving pauses some.
+  invalidatePublicListings();
 }
 
 /** `?updated=…&paused=2&drafted=1` for the flash after joining or creating. */

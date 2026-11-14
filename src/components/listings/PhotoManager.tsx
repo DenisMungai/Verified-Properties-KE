@@ -10,11 +10,10 @@ import {
   requestPhotoUploadAction,
   setCoverPhotoAction,
   updatePhotoAltAction,
-  type PhotoActionResult,
 } from "@/app/account/listings/photo-actions";
 import { FormAlert } from "@/components/forms/FormAlert";
 import { Badge, Button, Field, IconButton, Input, buttonClasses } from "@/components/ui";
-import type { ActionState } from "@/lib/action-state";
+import type { ActionState, ClientActionResult } from "@/lib/action-state";
 import { cn } from "@/lib/cn";
 import { putFile } from "@/lib/storage/put-file";
 import {
@@ -207,7 +206,7 @@ export function PhotoManager({
     setAnnouncement(summary);
   }
 
-  function edit(run: () => Promise<PhotoActionResult>, success: string) {
+  function edit(run: () => Promise<ClientActionResult>, success: string) {
     startTransition(async () => {
       const result = await run();
       // Updates after an await need their own transition, so the announcement commits together

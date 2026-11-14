@@ -76,15 +76,6 @@ export async function createInquiry(
   return { ok: true, conversationId: conversation.id };
 }
 
-export async function hasInquired(db: DbExecutor, userId: string, propertyId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: i.id })
-    .from(i)
-    .where(and(eq(i.senderUserId, userId), eq(i.propertyId, propertyId)))
-    .limit(1);
-  return Boolean(row);
-}
-
 /**
  * A listing's contacts: the owner's phone, WhatsApp and public email, and, when the listing is an
  * agency listing, the agency's name and office contacts. Callers apply the contact rule

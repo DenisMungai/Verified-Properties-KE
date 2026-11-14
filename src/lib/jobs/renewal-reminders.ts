@@ -14,7 +14,7 @@ import { renewalReminderEmail, renewalReminderSms } from "@/lib/email/templates"
 import { formatKes, formatNairobiDate } from "@/lib/format";
 import { maskPhone } from "@/lib/kenya";
 import { providerCode } from "@/lib/monitoring/log-safe";
-import { errorName } from "@/lib/notifications/deps";
+import { errorName } from "@/lib/log";
 import { Counter } from "./counter";
 import { REMINDER_LEAD_DAYS, reminderDue, type DueReminder } from "./reminder-window";
 import type { JobDeps, JobResult } from "./types";

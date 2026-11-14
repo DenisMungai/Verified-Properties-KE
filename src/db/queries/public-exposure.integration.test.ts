@@ -8,7 +8,7 @@ import { DEFAULT_FILTERS, type SearchFilters } from "@/lib/search/params";
 import { setFavorite } from "./favorites";
 import { getListingMapUrl, getPublicListing } from "./listing-detail";
 import { getPublicAgency, getPublicTeam, listAgencyDirectory } from "./public-agencies";
-import { agencyListings, homeSections, homeShowcase, savedListings, searchListings, similarListings } from "./public-listings";
+import { agencyListings, homeSections, savedListings, searchListings, similarListings } from "./public-listings";
 
 /**
  * Plan §12: "Public APIs never expose exact coordinates, verification documents, payment details
@@ -225,7 +225,6 @@ describe.skipIf(!url)("public exposure guard (integration)", { timeout: 120_000 
     const shown = [...sections.main.featured, ...sections.main.newest, ...sections.county.featured, ...sections.county.newest];
     expect(shown.length).toBeGreaterThan(0);
     expectNothingPrivate("home sections", sections);
-    expectNothingPrivate("home showcase", await homeShowcase(db, NOW));
   });
 
   it("the listing detail returns public fields only, with the owner id kept outside the public object", async () => {

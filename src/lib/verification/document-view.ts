@@ -1,5 +1,6 @@
 import "server-only";
 import { getDocumentWithLister, insertAudit } from "@/db/queries/verification";
+import { errorName } from "@/lib/log";
 import type { CurrentUser } from "@/lib/session";
 import type { ObjectStore } from "@/lib/storage/object-store";
 import type { ListerDeps } from "./lister";
@@ -39,7 +40,7 @@ export async function openDocumentForAdmin(
     );
     return { ok: true, url: await deps.privateStore().presignGet(document.storageKey, DOCUMENT_LINK_SECONDS) };
   } catch (error) {
-    console.error("[verification] view document failed", error instanceof Error ? error.name : "unknown");
+    console.error("[verification] view document failed", errorName(error));
     return { ok: false, code: "unavailable" };
   }
 }

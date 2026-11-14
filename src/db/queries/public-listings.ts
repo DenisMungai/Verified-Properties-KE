@@ -286,9 +286,11 @@ export interface HomeSections {
   county: HomeShowcase;
 }
 
-/** Both home sections (S14 decisions 1–2). The county pick needs the main section's ids, so it runs second. */
-export async function homeSections(db: DbExecutor, now = new Date()): Promise<HomeSections> {
-  const seed = nairobiDateSeed(now);
+/**
+ * Both home sections (S14 decisions 1–2). The county pick needs the main section's ids, so it runs
+ * second. `seed` is the daily rotation key; a cached caller passes the one it is keyed by.
+ */
+export async function homeSections(db: DbExecutor, now = new Date(), seed = nairobiDateSeed(now)): Promise<HomeSections> {
   const main = await showcaseSection(db, { where: publishedOnly, slots: HOME_SLOTS, excludeIds: [], seed, now });
   const shown = [...main.featured, ...main.newest].map((card) => card.id);
   const county = await showcaseSection(db, {
@@ -299,11 +301,6 @@ export async function homeSections(db: DbExecutor, now = new Date()): Promise<Ho
     now,
   });
   return { main, county };
-}
-
-/** The main home section on its own. */
-export async function homeShowcase(db: DbExecutor, now = new Date()): Promise<HomeShowcase> {
-  return showcaseSection(db, { where: publishedOnly, slots: HOME_SLOTS, excludeIds: [], seed: nairobiDateSeed(now), now });
 }
 
 export const SIMILAR_LIMIT = 3;

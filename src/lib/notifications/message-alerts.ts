@@ -3,9 +3,10 @@ import type { MessageAlert } from "@/db/queries/message-alerts";
 import { finishDelivery, type DeliveryKey } from "@/db/queries/notification-deliveries";
 import { maskEmail } from "@/lib/email/send";
 import { messageAlertEmail } from "@/lib/email/templates";
+import { errorName } from "@/lib/log";
 import { conversationHref } from "@/lib/messaging/paths";
 import type { DeliveryStatus, SkipReason } from "./constants";
-import { errorName, type NotificationDeps } from "./deps";
+import type { NotificationDeps } from "./deps";
 
 /**
  * One new-message alert (prompt S16 decisions 2 and 7). The caller has already claimed (or

@@ -68,8 +68,6 @@ export async function moderationQueue(db: DbExecutor) {
     .limit(200);
 }
 
-export type QueueRow = Awaited<ReturnType<typeof moderationQueue>>[number];
-
 /** The phase of the plan that pays for this owner's listings, or "none". */
 export async function listingPlanPhase(db: DbExecutor, ownerUserId: string, now: Date): Promise<SubscriptionPhase | "none"> {
   const plan = await getListingSubscription(db, await getListingPool(db, ownerUserId), now);

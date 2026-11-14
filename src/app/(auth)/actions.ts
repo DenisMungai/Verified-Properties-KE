@@ -3,8 +3,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
-import { type ActionState, fieldErrorsFrom, keepValues } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
 import { getAuth } from "@/lib/auth";
+import { errorName } from "@/lib/log";
 import {
   POLICIES,
   RateLimitUnavailableError,
@@ -17,7 +18,6 @@ import { DEFAULT_SIGNED_IN_PATH, safeNextPath } from "@/lib/safe-redirect";
 import { emailOnlySchema, resetPasswordSchema, signInSchema, signUpSchema } from "@/lib/validation/auth";
 
 const UNAVAILABLE = "Sign-in is temporarily unavailable. Please try again shortly.";
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const BAD_CREDENTIALS = "Email or password is incorrect.";
 const RESET_SENT = "If an account exists for that email, we've sent a reset link. It expires in 1 hour.";
 const VERIFICATION_SENT = "If that email needs confirming, we've sent a new link. It expires in 1 hour.";
@@ -68,7 +68,7 @@ export async function signInAction(_prev: ActionState, formData: FormData): Prom
     if (code === "INVALID_EMAIL_OR_PASSWORD" || code === "INVALID_EMAIL" || code === "PASSWORD_TOO_LONG") {
       return { formError: BAD_CREDENTIALS, values };
     }
-    console.error("[auth] sign-in failed", code ?? (error instanceof Error ? error.name : "unknown"));
+    console.error("[auth] sign-in failed", code ?? errorName(error));
     return { formError: GENERIC_FAILURE, values };
   }
   redirect(next);
@@ -103,7 +103,7 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
     if (code === "PASSWORD_TOO_SHORT" || code === "PASSWORD_TOO_LONG") {
       return { fieldErrors: { password: "Use 10 to 128 characters." }, values };
     }
-    console.error("[auth] sign-up failed", code ?? (error instanceof Error ? error.name : "unknown"));
+    console.error("[auth] sign-up failed", code ?? errorName(error));
     return { formError: GENERIC_FAILURE, values };
   }
   redirect("/check-email");
@@ -127,7 +127,7 @@ export async function forgotPasswordAction(_prev: ActionState, formData: FormDat
     });
   } catch (error) {
     // Never surfaced: the response must be identical whether or not the account exists.
-    console.error("[auth] reset request failed", apiErrorCode(error) ?? (error instanceof Error ? error.name : "unknown"));
+    console.error("[auth] reset request failed", apiErrorCode(error) ?? errorName(error));
   }
   return { ok: true, message: RESET_SENT };
 }
@@ -146,7 +146,7 @@ export async function resetPasswordAction(_prev: ActionState, formData: FormData
   } catch (error) {
     const code = apiErrorCode(error);
     if (code === "INVALID_TOKEN") return { formError: LINK_EXPIRED };
-    console.error("[auth] reset failed", code ?? (error instanceof Error ? error.name : "unknown"));
+    console.error("[auth] reset failed", code ?? errorName(error));
     return { formError: GENERIC_FAILURE };
   }
   redirect("/sign-in?reset=1");
@@ -166,7 +166,7 @@ export async function resendVerificationAction(_prev: ActionState, formData: For
       headers: await headers(),
     });
   } catch (error) {
-    console.error("[auth] resend verification failed", apiErrorCode(error) ?? (error instanceof Error ? error.name : "unknown"));
+    console.error("[auth] resend verification failed", apiErrorCode(error) ?? errorName(error));
   }
   return { ok: true, message: VERIFICATION_SENT };
 }
@@ -175,7 +175,7 @@ export async function signOutAction(): Promise<void> {
   try {
     await getAuth().api.signOut({ headers: await headers() });
   } catch (error) {
-    console.error("[auth] sign-out failed", error instanceof Error ? error.name : "unknown");
+    console.error("[auth] sign-out failed", errorName(error));
   }
   redirect("/");
 }

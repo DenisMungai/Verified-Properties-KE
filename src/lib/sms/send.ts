@@ -1,4 +1,5 @@
 import { maskPhone } from "@/lib/kenya";
+import { errorName } from "@/lib/log";
 
 /**
  * Optional SMS through Africa's Talking (plan v2.0 §3; prompt S9 decision 10). Mirrors the email
@@ -64,7 +65,7 @@ export function createSmsTransport({
         if (recipient?.statusCode !== undefined && AT_ACCEPTED_CODES.has(recipient.statusCode)) return { status: "sent" };
         return { status: "failed", error: `at_${recipient?.statusCode ?? "no_recipient"}` };
       } catch (error) {
-        return { status: "failed", error: error instanceof Error ? error.name : "unknown" };
+        return { status: "failed", error: errorName(error) };
       }
     };
   }

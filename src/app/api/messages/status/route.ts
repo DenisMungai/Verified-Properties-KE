@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { messageStatus } from "@/db/queries/messaging";
+import { errorName } from "@/lib/log";
 import { POLICIES, checkRateLimits, rateLimitKey } from "@/lib/rate-limit";
 import { getCurrentUser } from "@/lib/session";
 
@@ -31,7 +32,7 @@ export async function GET(request: Request): Promise<Response> {
     const parsed = conversationParam.safeParse(new URL(request.url).searchParams.get("conversation"));
     return json(await messageStatus(getDb(), user.id, parsed.success ? parsed.data : null));
   } catch (error) {
-    console.error("[messaging] status failed", error instanceof Error ? error.name : "unknown");
+    console.error("[messaging] status failed", errorName(error));
     return json({ error: "unavailable" }, 500);
   }
 }

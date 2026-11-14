@@ -3,7 +3,7 @@ import { receiptForPayment, receiptRecipients, type ReceiptData } from "@/db/que
 import { claimDelivery, finishDelivery } from "@/db/queries/notification-deliveries";
 import { maskEmail } from "@/lib/email/send";
 import { paymentReceiptEmail, type PaymentReceiptDetails } from "@/lib/email/templates";
-import { errorName } from "@/lib/notifications/deps";
+import { errorName } from "@/lib/log";
 import { formatKes, formatNairobiDate, formatNairobiDateTime } from "@/lib/format";
 import type { BillingDeps } from "./deps";
 import { receiptPath } from "./receipt-path";

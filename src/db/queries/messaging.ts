@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { DbExecutor } from "@/db/executor";
 import { conversations, inquiries, listerProfiles, messageReports, messages, properties, propertyImages, userBlocks, users } from "@/db/schema";
@@ -358,9 +358,4 @@ export async function unblockUser(db: DbExecutor, userId: string, conversationId
   if (!other) return { ok: false, reason: "not_found" };
   await db.delete(userBlocks).where(and(eq(userBlocks.blockerUserId, userId), eq(userBlocks.blockedUserId, other)));
   return { ok: true };
-}
-
-/** Oldest first; exported for tests. */
-export async function messagesIn(db: DbExecutor, conversationId: string) {
-  return db.select().from(m).where(eq(m.conversationId, conversationId)).orderBy(asc(m.createdAt), asc(m.id));
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { errorName } from "@/lib/log";
 import { runJob } from "./registry";
 import { verifyQstashSignature, type SigningKeys } from "./signature";
 import { isJobName, type JobDeps } from "./types";
@@ -31,7 +32,7 @@ export async function handleJobRequest(
   try {
     return Response.json(await runJob(name, deps()));
   } catch (error) {
-    console.error(`[jobs] ${name} failed error=${error instanceof Error ? error.name : "unknown"}`);
+    console.error(`[jobs] ${name} failed error=${errorName(error)}`);
     return Response.json({ error: "job_failed" }, { status: 500 });
   }
 }

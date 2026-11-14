@@ -1,4 +1,5 @@
 import "server-only";
+import { errorName } from "@/lib/log";
 import { getPublicStore } from "@/lib/storage";
 import { deleteImageObjects } from "@/lib/storage/ingest";
 
@@ -13,6 +14,6 @@ export async function deleteStoredPhotos(baseKeys: string[]): Promise<void> {
     const store = getPublicStore();
     for (const key of baseKeys) await deleteImageObjects(store, key);
   } catch (error) {
-    console.error("[photos] delete files failed", error instanceof Error ? error.name : "unknown");
+    console.error("[photos] delete files failed", errorName(error));
   }
 }

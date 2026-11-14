@@ -4,7 +4,7 @@ import { overdueReviewQueues, reviewDigestRecipients, type OverdueQueue } from "
 import { maskEmail } from "@/lib/email/send";
 import { reviewDigestEmail, type ReviewQueueLine } from "@/lib/email/templates";
 import { HOUR_MS, REVIEW_OVERDUE_H } from "@/lib/notifications/constants";
-import { errorName } from "@/lib/notifications/deps";
+import { errorName } from "@/lib/log";
 import { nairobiDateKey, waitLabel } from "@/lib/notifications/review-digest";
 import { Counter } from "./counter";
 import type { JobDeps, JobResult } from "./types";

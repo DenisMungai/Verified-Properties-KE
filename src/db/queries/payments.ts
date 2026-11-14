@@ -24,7 +24,6 @@ export type Plan = typeof plans.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
-export type PaymentStatus = Payment["status"];
 
 /** Who owns a subscription: a lister, or an agency for agency listing plans. */
 export type SubscriptionOwner = { kind: "user"; userId: string } | { kind: "agency"; agencyId: string };

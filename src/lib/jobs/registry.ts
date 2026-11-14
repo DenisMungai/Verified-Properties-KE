@@ -1,6 +1,6 @@
 import "server-only";
 import { finishJobRun, startJobRun } from "@/db/queries/job-runs";
-import { errorName } from "@/lib/notifications/deps";
+import { errorName } from "@/lib/log";
 import { runGraceExpiry } from "./grace-expiry";
 import { runNotifications } from "./notifications";
 import { runPaymentChecks } from "./payment-checks";

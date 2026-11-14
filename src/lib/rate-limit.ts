@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { getServerEnv } from "@/lib/env";
+import { errorName } from "@/lib/log";
 
 export interface RateLimitPolicy {
   /** Groups a policy in storage, e.g. "sign-in:email". */
@@ -114,7 +115,7 @@ function createUpstashLimiter(redis: Redis): RateLimiter {
         };
       } catch (error) {
         // Provider outage: fail open so sign-in keeps working; Better Auth's limiter still applies.
-        console.error("[rate-limit] provider error", error instanceof Error ? error.name : "unknown");
+        console.error("[rate-limit] provider error", errorName(error));
         return { ok: true, retryAfterSeconds: 0 };
       }
     },
@@ -139,14 +140,17 @@ export function getRateLimiter(): RateLimiter {
   return limiter;
 }
 
-/** Checks every (policy, key) pair; returns the first refusal, or ok. Counts every check. */
+/**
+ * Checks every (policy, key) pair at once (one Redis round trip of latency, not one per check) and
+ * counts every check. Refused when any is; the longest wait wins.
+ */
 export async function checkRateLimits(
   checks: ReadonlyArray<readonly [RateLimitPolicy, string]>,
   rateLimiter: RateLimiter = getRateLimiter(),
 ): Promise<LimitResult> {
+  const results = await Promise.all(checks.map(([policy, key]) => rateLimiter.limit(policy, key)));
   let refusal: LimitResult | undefined;
-  for (const [policy, key] of checks) {
-    const result = await rateLimiter.limit(policy, key);
+  for (const result of results) {
     if (!result.ok && (!refusal || result.retryAfterSeconds > refusal.retryAfterSeconds)) refusal = result;
   }
   return refusal ?? { ok: true, retryAfterSeconds: 0 };

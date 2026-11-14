@@ -9,8 +9,6 @@ export const KENYA_COUNTIES = [
   "Tharaka-Nithi", "Trans Nzoia", "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot",
 ] as const;
 
-export type KenyaCounty = (typeof KENYA_COUNTIES)[number];
-
 export const AMENITIES = [
   "24-hour security", "Backup generator", "Borehole", "CCTV", "Fibre internet", "Garden",
   "Gated community", "Gym", "Lift", "Loading bays", "Parking", "Sea view",

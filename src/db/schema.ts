@@ -404,8 +404,11 @@ export const properties = pgTable(
     index("properties_published_idx").on(t.publishedAt.desc()),
     // Map-bounds queries; PostGIS replaces this in Phase 3.
     index("properties_public_coords_idx").on(t.publicLatitude, t.publicLongitude),
-    index("properties_title_trgm_idx").using("gin", t.title.op("gin_trgm_ops")),
+    // The location search ORs `ILIKE %q%` over these three; each needs a trigram index, or one
+    // unindexed column turns every text search into a full scan.
+    index("properties_county_trgm_idx").using("gin", t.county.op("gin_trgm_ops")),
     index("properties_town_trgm_idx").using("gin", t.town.op("gin_trgm_ops")),
+    index("properties_neighbourhood_trgm_idx").using("gin", t.neighbourhood.op("gin_trgm_ops")),
   ],
 );
 

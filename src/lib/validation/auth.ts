@@ -28,7 +28,6 @@ export const fullName = z
   .max(80, { error: "Use at most 80 characters." });
 
 export const SIGN_UP_INTENTS = ["find", "list"] as const;
-export type SignUpIntent = (typeof SIGN_UP_INTENTS)[number];
 
 export const signInSchema = z.object({
   email,
@@ -71,6 +70,3 @@ export const changePasswordSchema = z
   });
 
 export const accountNameSchema = z.object({ name: fullName });
-
-export type SignInInput = z.infer<typeof signInSchema>;
-export type SignUpInput = z.infer<typeof signUpSchema>;

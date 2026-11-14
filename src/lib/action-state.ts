@@ -14,6 +14,12 @@ export interface ActionState {
 
 export const INITIAL_ACTION_STATE: ActionState = {};
 
+/** What a Server Action called from client code (not a form) returns. */
+export type ClientActionResult = { ok: true; message?: string } | { ok: false; error: string };
+
+/** The neutral failure message: the cause is logged on the server, never shown. */
+export const GENERIC_FAILURE = "Something went wrong. Please try again.";
+
 /** First message per field. */
 export function fieldErrorsFrom(error: ZodError): Record<string, string> {
   const out: Record<string, string> = {};

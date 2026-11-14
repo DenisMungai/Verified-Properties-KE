@@ -1,3 +1,4 @@
+import { errorName } from "@/lib/log";
 import type { JobName } from "./types";
 
 /** Tallies a job's outcomes; `failed` items are logged by id and error name and retried next run. */
@@ -18,7 +19,7 @@ export class Counter {
         await fn(item);
       } catch (error) {
         this.add("failed");
-        console.error(`[jobs] ${this.job} item failed id=${idOf(item)} error=${error instanceof Error ? error.name : "unknown"}`);
+        console.error(`[jobs] ${this.job} item failed id=${idOf(item)} error=${errorName(error)}`);
       }
     }
   }

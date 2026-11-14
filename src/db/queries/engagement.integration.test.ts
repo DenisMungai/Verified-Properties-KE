@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { savedIdsAmong, setFavorite } from "./favorites";
-import { createInquiry, getListingContact, hasInquired } from "./inquiries";
+import { createInquiry, getListingContact } from "./inquiries";
 import { listConversations, unreadTotal } from "./messaging";
 import { getPublicListing } from "./listing-detail";
 import { savedListings, similarListings } from "./public-listings";
@@ -209,16 +209,13 @@ describe.skipIf(!url)("engagement (integration)", { timeout: 120_000 }, () => {
   /* Inquiries                                                              */
   /* ---------------------------------------------------------------------- */
 
-  it("creates an inquiry addressed to the owner, and remembers that the buyer asked", async () => {
+  it("creates an inquiry addressed to the owner", async () => {
     const { id } = await insertListing("s8e_owner");
-    expect(await hasInquired(db, "s8e_buyer", id)).toBe(false);
     expect(await createInquiry(db, "s8e_buyer", id, inquiry())).toMatchObject({ ok: true });
     const rows = await client.query(`select sender_user_id, recipient_user_id, phone, message from inquiries where property_id = $1`, [id]);
     expect(rows.rows).toEqual([
       { sender_user_id: "s8e_buyer", recipient_user_id: "s8e_owner", phone: "+254711222333", message: inquiry().message },
     ]);
-    expect(await hasInquired(db, "s8e_buyer", id)).toBe(true);
-    expect(await hasInquired(db, "s8e_other", id)).toBe(false);
     expect(await getListingContact(db, id)).toEqual({
       lister: { phone: "+254712000111", whatsapp: null, email: "owner@example.test" },
       agency: null,

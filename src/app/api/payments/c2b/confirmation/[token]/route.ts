@@ -1,3 +1,4 @@
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { confirmC2b, recordC2bConfirmation } from "@/lib/mpesa/c2b";
 import { handlePaymentCallback } from "@/lib/mpesa/callback-route";
 
@@ -13,7 +14,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const c2b = await recordC2bConfirmation(deps, { payload, sourceIp });
     return {
       body: { ResultCode: 0, ResultDesc: "Accepted" },
-      later: c2b ? () => confirmC2b(deps, c2b, payload) : undefined,
+      later: c2b
+        ? async () => {
+            await confirmC2b(deps, c2b, payload);
+            // A confirmed payment can restore paused listings and the verified badge.
+            invalidatePublicListings();
+          }
+        : undefined,
     };
   });
 }

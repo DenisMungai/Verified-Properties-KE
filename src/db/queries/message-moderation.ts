@@ -72,14 +72,6 @@ export async function reportMessage(
 
 const reporter = alias(users, "reporter");
 
-export async function openMessageReportCount(db: DbExecutor): Promise<number> {
-  const [row] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(r)
-    .where(inArray(r.status, [...OPEN_REPORT_STATUSES]));
-  return row?.n ?? 0;
-}
-
 /** Open message reports, newest first, with a short excerpt of the reported message only. */
 export async function listOpenMessageReports(db: DbExecutor) {
   return db

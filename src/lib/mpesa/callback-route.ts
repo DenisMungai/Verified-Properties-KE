@@ -1,6 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import { recordPaymentEvent } from "@/db/queries/payments";
+import { errorName } from "@/lib/log";
 import { guardCallback, readJsonBody } from "./callback-request";
 import type { PaymentDeps } from "./deps";
 import { getMpesaSettings, getPaymentDeps } from "./index";
@@ -54,7 +55,7 @@ export async function handlePaymentCallback(
       try {
         await later();
       } catch (error) {
-        console.error(`[mpesa] ${route} processing failed`, error instanceof Error ? error.name : "unknown");
+        console.error(`[mpesa] ${route} processing failed`, errorName(error));
       }
     });
   }

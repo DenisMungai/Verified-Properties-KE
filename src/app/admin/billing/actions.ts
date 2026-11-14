@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import type { ZodType } from "zod";
-import { fieldErrorsFrom, keepValues, type ActionState } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import {
   activateFlaggedPayment,
   applyPaybillToInvoice,
@@ -16,6 +17,7 @@ import {
   type AdminResult,
 } from "@/lib/billing/admin-actions";
 import { getBillingDeps } from "@/lib/billing/app-deps";
+import { errorName } from "@/lib/log";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { requireRole } from "@/lib/session";
 import {
@@ -34,7 +36,6 @@ import {
  * payment's real state is re-read inside the transaction. Success redirects with a notice.
  */
 
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const BILLING = "/admin/billing";
 
 const paymentPath = (id: string, notice?: string) => `${BILLING}/payments/${id}${notice ? `?notice=${notice}` : ""}`;
@@ -53,11 +54,14 @@ function parse<T>(schema: ZodType<T>, formData: FormData, names: readonly string
   return result.success ? { ok: true, data: result.data } : { ok: false, state: { fieldErrors: fieldErrorsFrom(result.error), values } };
 }
 
+/** Runs one billing action; a successful one can activate or end a plan (restoring or pausing listings, the badge), so the public cache is cleared. */
 async function attempt(run: () => Promise<AdminResult>): Promise<AdminResult | "failed"> {
   try {
-    return await run();
+    const result = await run();
+    if (result.ok) invalidatePublicListings();
+    return result;
   } catch (error) {
-    console.error("[billing-admin] action failed", error instanceof Error ? error.name : "unknown");
+    console.error("[billing-admin] action failed", errorName(error));
     return "failed";
   }
 }

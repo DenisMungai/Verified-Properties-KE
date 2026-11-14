@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { createDataRequest } from "@/db/queries/data-requests";
 import { fieldErrorsFrom, keepValues, type ActionState } from "@/lib/action-state";
 import { DATA_REQUEST_PATH, requestReference, responseTargetFor } from "@/lib/legal";
+import { errorName } from "@/lib/log";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/session";
 import { DATA_REQUEST_FIELDS, dataRequestSchema } from "@/lib/validation/data-request";
@@ -27,7 +28,7 @@ export async function createDataRequestAction(_prev: ActionState, formData: Form
     ({ id } = await createDataRequest(getDb(), user.id, parsed.data));
   } catch (error) {
     if (!(error instanceof RateLimitUnavailableError)) {
-      console.error("[data-request] create failed", error instanceof Error ? error.name : "unknown");
+      console.error("[data-request] create failed", errorName(error));
     }
     return { formError: "Something went wrong. Please try again.", values };
   }

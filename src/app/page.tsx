@@ -11,10 +11,9 @@ import { HOME_CARD_GRID, PropertyGridSkeleton } from "@/components/search/Proper
 import { FeaturedDisclosure, ShowcaseSection } from "@/components/search/ShowcaseSection";
 import { saveContextFor } from "@/components/search/card-data";
 import { EmptyState, Skeleton, buttonClasses } from "@/components/ui";
-import { getDb } from "@/db";
-import { homeSections } from "@/db/queries/public-listings";
+import { cachedHomeSections } from "@/lib/cache/public-listings";
 import { SEARCH_PATH, searchHref } from "@/lib/search/params";
-import { HOME_COUNTY, HOME_COUNTY_SLOTS, HOME_SLOTS } from "@/lib/search/ranking";
+import { HOME_COUNTY, HOME_COUNTY_SLOTS, HOME_SLOTS, nairobiDateSeed } from "@/lib/search/ranking";
 
 /**
  * The home listings (plan v2.0 §5 "Home page"; prompts S7 decision 9 and S14): the site-wide
@@ -22,9 +21,10 @@ import { HOME_COUNTY, HOME_COUNTY_SLOTS, HOME_SLOTS } from "@/lib/search/ranking
  * listers' only; the newest fill the rest without the label.
  */
 async function HomeListings() {
-  // The rotation seed reads the clock, which must follow a request-time signal.
+  // The rotation seed reads the clock, which must follow a request-time signal. The sections are
+  // the same for every visitor that day, so they come from the shared cache.
   await connection();
-  const { main, county } = await homeSections(getDb());
+  const { main, county } = await cachedHomeSections(nairobiDateSeed(new Date()));
 
   if (main.featured.length === 0 && main.newest.length === 0) {
     return (

@@ -12,9 +12,11 @@ import {
   type ListingResult,
 } from "@/db/queries/listings";
 import { withTransaction } from "@/db/tx";
-import type { ActionState } from "@/lib/action-state";
+import { type ActionState, GENERIC_FAILURE } from "@/lib/action-state";
 import { PUBLISH_BLOCK_MESSAGES } from "@/lib/billing/entitlements";
+import { invalidateListing, invalidatePublicListings } from "@/lib/cache/public-listings";
 import { LISTER_TRANSITION_TARGETS, type ListerTransitionTarget } from "@/lib/listings/workflow";
+import { failureLogger } from "@/lib/log";
 import {
   POLICIES,
   RateLimitUnavailableError,
@@ -38,8 +40,6 @@ import { deleteStoredPhotos } from "./stored-photos";
  * is never trusted on its own. Logs carry no listing content or personal data.
  */
 
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
-
 const RESULT_MESSAGES: Record<"not_found" | "not_allowed" | "conflict", string> = {
   not_found: "We couldn't find that listing.",
   not_allowed: "That change isn't available for this listing right now.",
@@ -62,9 +62,7 @@ function failureMessage(result: Extract<ListingResult, { ok: false }>): string {
   }
 }
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[listings] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("listings");
 
 function savedMessage(result: Extract<ListingResult, { ok: true }>): string {
   if (result.returnedToReview && result.status === "draft") {
@@ -93,6 +91,7 @@ export async function saveBasicsAction(_prev: ActionState, formData: FormData): 
     } else {
       const result = await updateListing(getDb(), user.id, id, parsed.data);
       if (!result.ok) return { formError: failureMessage(result), values };
+      invalidateListing(id);
       message = savedMessage(result);
     }
   } catch (error) {
@@ -120,6 +119,7 @@ export async function saveDetailsAction(_prev: ActionState, formData: FormData):
   try {
     const result = await updateListing(getDb(), user.id, listingId, parsed.data);
     if (!result.ok) return { formError: failureMessage(result), values };
+    invalidateListing(listingId);
     message = savedMessage(result);
   } catch (error) {
     logFailure("save details", error);
@@ -142,6 +142,8 @@ export async function submitListingAction(_prev: ActionState, formData: FormData
     return { formError: GENERIC_FAILURE };
   }
   if (!result.ok) return { formError: failureMessage(result) };
+  // A verified lister's listing goes live at once.
+  invalidatePublicListings();
   redirect(`/account/listings?submitted=${result.status}`);
 }
 
@@ -181,5 +183,8 @@ export async function changeListingStatusAction(formData: FormData): Promise<voi
     const code = result.reason === "entitlement" ? result.entitlement.reason : result.reason;
     redirect(`/account/listings?error=${code}`);
   }
+  // Unpausing makes a listing visible again; every other status change can only hide it.
+  if (intent === "unpause") invalidatePublicListings();
+  else invalidateListing(listingId);
   redirect(`/account/listings?updated=${intent === "unpause" ? "published" : intent === "delete" ? "deleted" : intent}`);
 }

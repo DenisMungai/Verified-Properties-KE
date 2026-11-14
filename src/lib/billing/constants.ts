@@ -23,14 +23,6 @@ export const ACTIVE_LISTING_STATUSES = ["published", "pending_review"] as const;
 export const PLAN_KINDS = ["listing", "verification"] as const;
 export type PlanKind = (typeof PLAN_KINDS)[number];
 
-export const PLAN_CODES = {
-  starter: "starter",
-  pro: "pro",
-  agency: "agency",
-  verification: "verification",
-} as const;
-export type PlanCode = (typeof PLAN_CODES)[keyof typeof PLAN_CODES];
-
 export const SUBSCRIPTION_STATUSES = [
   "pending",
   "active",

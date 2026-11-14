@@ -5,7 +5,7 @@ import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DbExecutor } from "@/db/executor";
 import { getPublicListing } from "@/db/queries/listing-detail";
-import { homeShowcase, searchListings, type PublicListingCard } from "@/db/queries/public-listings";
+import { homeSections, searchListings, type PublicListingCard } from "@/db/queries/public-listings";
 import {
   amountMismatches,
   multiplePayments,
@@ -152,7 +152,7 @@ describe.skipIf(!url)("sample seed (integration)", { timeout: 600_000 }, () => {
   });
 
   it("never shows the draft, pending and rejected listings", async () => {
-    const home = await homeShowcase(db);
+    const home = (await homeSections(db)).main;
     const homeSlugs = [...home.featured, ...home.newest].map((c) => c.slug);
     for (const slug of hidden) {
       expect(homeSlugs).not.toContain(slug);

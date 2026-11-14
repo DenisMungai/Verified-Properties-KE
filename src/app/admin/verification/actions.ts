@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import type { ActionState } from "@/lib/action-state";
+import { type ActionState, GENERIC_FAILURE } from "@/lib/action-state";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
+import { errorName } from "@/lib/log";
 import { requireRole } from "@/lib/session";
 import { decisionReasonSchema } from "@/lib/validation/engagement";
 import { getDecisionDeps, notifyLister } from "@/lib/verification/app-deps";
@@ -22,18 +24,20 @@ import { REVIEW_CHECKLIST } from "@/lib/verification/rules";
 
 const REVIEWER = ["platform_admin"] as const;
 const QUEUE = "/admin/verification";
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 
 function formText(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value : "";
 }
 
+/** Runs one decision; a successful one can add or remove a verified badge (and credit plan days), so the public cache is cleared. */
 async function run(action: string, fn: () => Promise<DecisionResult>): Promise<DecisionResult | "failed"> {
   try {
-    return await fn();
+    const result = await fn();
+    if (result.ok) invalidatePublicListings();
+    return result;
   } catch (error) {
-    console.error(`[verification] ${action} failed`, error instanceof Error ? error.name : "unknown");
+    console.error(`[verification] ${action} failed`, errorName(error));
     return "failed";
   }
 }

@@ -1,3 +1,4 @@
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { handlePaymentCallback } from "@/lib/mpesa/callback-route";
 import { recordStkCallback, settleStkPayment } from "@/lib/mpesa/settle";
 
@@ -15,7 +16,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const paymentId = recorded.paymentId;
     return {
       body: { ResultCode: 0, ResultDesc: "Accepted" },
-      later: paymentId ? () => settleStkPayment(deps, paymentId) : undefined,
+      later: paymentId
+        ? async () => {
+            await settleStkPayment(deps, paymentId);
+            // A confirmed payment can restore paused listings and the verified badge.
+            invalidatePublicListings();
+          }
+        : undefined,
     };
   });
 }

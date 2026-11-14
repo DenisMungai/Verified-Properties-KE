@@ -6,7 +6,8 @@ import { getDb } from "@/db";
 import { reportMessage, type MessageReportResult } from "@/db/queries/message-moderation";
 import { blockUser, sendMessage, unblockUser, type SendResult } from "@/db/queries/messaging";
 import { withTransaction } from "@/db/tx";
-import { fieldErrorsFrom, keepValues, type ActionState } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
+import { errorName } from "@/lib/log";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage, type RateLimitPolicy } from "@/lib/rate-limit";
 import { getCurrentUser } from "@/lib/session";
 import { messageReportSchema, messageSchema } from "@/lib/validation/messaging";
@@ -17,7 +18,6 @@ import { messageReportSchema, messageSchema } from "@/lib/validation/messaging";
  * participants. The other person is always derived on the server. Logs carry outcomes only.
  */
 
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const SIGN_IN_FIRST = "Sign in to continue.";
 const NOT_FOUND = "We couldn't find that conversation.";
 const id = z.uuid();
@@ -29,7 +29,7 @@ function formText(formData: FormData, name: string): string {
 
 function logFailure(action: string, error: unknown): void {
   if (error instanceof RateLimitUnavailableError) return;
-  console.error(`[messaging] ${action} failed`, error instanceof Error ? error.name : "unknown");
+  console.error(`[messaging] ${action} failed`, errorName(error));
 }
 
 async function signedInUser() {

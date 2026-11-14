@@ -15,7 +15,6 @@ export const PAYSTACK_WEBHOOK_IPS = "52.31.139.75,52.49.173.169,52.214.14.220";
 /** Hosted checkout pages; the browser is only ever sent here. */
 export const PAYSTACK_CHECKOUT_ORIGIN = "https://checkout.paystack.com";
 
-export const CARD_WEBHOOK_PATH = "/api/payments/card/webhook";
 export const CARD_RETURN_PATH = "/account/billing/checkout/card-return";
 
 export interface CardSettings {

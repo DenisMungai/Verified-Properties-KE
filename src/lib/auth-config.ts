@@ -6,7 +6,7 @@ import { grantRoles } from "@/db/queries/roles";
 import type { EmailTransport } from "@/lib/email/send";
 import { maskEmail } from "@/lib/email/send";
 import { passwordResetEmail, verificationEmail } from "@/lib/email/templates";
-import { errorName } from "@/lib/notifications/deps";
+import { errorName } from "@/lib/log";
 import { SIGN_UP_ROLE } from "@/lib/roles";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/validation/auth";
 

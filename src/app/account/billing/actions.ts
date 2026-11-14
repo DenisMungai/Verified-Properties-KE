@@ -7,6 +7,7 @@ import { getPaymentStatusForUser } from "@/db/queries/billing-page";
 import { lastEventAt } from "@/db/queries/payments";
 import type { ActionState } from "@/lib/action-state";
 import { getBillingDeps } from "@/lib/billing/app-deps";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { cancelInvoice, hideInvoice } from "@/lib/billing/invoice-actions";
 import { paymentView, type PaymentView } from "@/lib/billing/payment-view";
 import { cancelScheduledChange, keepListingsAfterDowngrade, scheduleDowngrade } from "@/lib/billing/plan-schedule";
@@ -14,6 +15,7 @@ import { getCardDeps } from "@/lib/card";
 import { settleCardPayment } from "@/lib/card/settle-card";
 import { startCardPayment, type StartCardCode } from "@/lib/card/start-card-payment";
 import { maskPhone, normalizeKenyanPhone } from "@/lib/kenya";
+import { failureLogger } from "@/lib/log";
 import { getPaymentDeps } from "@/lib/mpesa";
 import { settleStkPayment } from "@/lib/mpesa/settle";
 import { startPlanPayment, type StartPaymentCode } from "@/lib/mpesa/start-payment";
@@ -32,9 +34,7 @@ const GENERIC_FAILURE = "We couldn't start the payment. Please try again.";
 
 const planCodeSchema = z.string().trim().min(1).max(40).regex(/^[a-z0-9_-]+$/, { error: "Choose a plan." });
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[billing] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("billing");
 
 /* -------------------------------------------------------------------------- */
 /* Paying                                                                     */
@@ -135,6 +135,8 @@ export async function getPaymentStatusAction(paymentId: string): Promise<Payment
     logFailure("payment status settle", error);
   }
   const fresh = (await getPaymentStatusForUser(db, user.id, paymentId)) ?? row;
+  // Settled just now: the plan or badge it pays for may have restored listings.
+  if (row.status === "pending" && fresh.status !== "pending") invalidatePublicListings();
   return { ok: true, payment: paymentView(fresh) };
 }
 
@@ -184,6 +186,8 @@ export async function keepListingsAction(_prev: ActionState, formData: FormData)
     return { formError: "Something went wrong. Please try again." };
   }
   if (!result.ok) return { formError: result.message };
+  // The listings not kept are paused.
+  invalidatePublicListings();
   redirect(`${BILLING_PATH}?updated=kept`);
 }
 

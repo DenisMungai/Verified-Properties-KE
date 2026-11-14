@@ -5,7 +5,7 @@ import type { DbExecutor } from "@/db/executor";
 import * as schema from "@/db/schema";
 import { DEFAULT_FILTERS, PAGE_SIZE, type SearchFilters } from "@/lib/search/params";
 import { HOME_COUNTY_SLOTS, HOME_PER_LISTER, HOME_SLOTS } from "@/lib/search/ranking";
-import { homeSections, homeShowcase, searchListings, type PublicListingCard } from "./public-listings";
+import { homeSections, searchListings, type PublicListingCard } from "./public-listings";
 
 /**
  * Public search, ranking and the home showcase against the Neon test branch (TEST_DATABASE_URL).
@@ -199,7 +199,7 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
       expect(result.items.map((card) => card.id)).toEqual([published]);
       expect(result.total).toBe(1);
     }
-    const home = await homeShowcase(db, NOW);
+    const home = (await homeSections(db, NOW)).main;
     expect([...home.featured, ...home.newest].map((card) => card.id)).toEqual([published]);
   });
 
@@ -463,7 +463,7 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     const bFewPhotos = await insertListing({ owner: "s7_home_b", photos: 4, ageDays: 0.5 });
     const plainNew = await insertListing({ owner: "s7_home_plain", photos: 8, ageDays: 0.2 });
 
-    const { featured, newest } = await homeShowcase(db, NOW);
+    const { featured, newest } = (await homeSections(db, NOW)).main;
     const featuredIds = featured.map((card) => card.id);
     expect(featuredIds).toHaveLength(3);
     expect(featuredIds.filter((id) => aListings.includes(id))).toHaveLength(2);
@@ -481,7 +481,7 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     await insertLister("s7_home_only");
     const ids: string[] = [];
     for (let i = 0; i < HOME_SLOTS + 2; i++) ids.push(await insertListing({ owner: "s7_home_only", photos: 6, ageDays: i + 1 }));
-    const { featured, newest } = await homeShowcase(db, NOW);
+    const { featured, newest } = (await homeSections(db, NOW)).main;
     expect(featured).toEqual([]);
     expect(newest.map((card: PublicListingCard) => card.id)).toEqual(ids.slice(0, HOME_SLOTS));
   });
@@ -509,7 +509,6 @@ describe.skipIf(!url)("public listings (integration)", { timeout: 120_000 }, () 
     // 11 verified candidates fill the main section's featured slots, so it shows no newest.
     expect(main.featured).toHaveLength(HOME_SLOTS);
     expect(main.newest).toEqual([]);
-    expect(main.featured.map((card) => card.id)).toEqual((await homeShowcase(db, NOW)).featured.map((card) => card.id));
 
     expect(county.featured).toHaveLength(HOME_COUNTY_SLOTS);
     expect(county.newest).toEqual([]);

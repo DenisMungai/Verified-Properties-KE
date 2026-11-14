@@ -2,6 +2,8 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { type ClientActionResult, GENERIC_FAILURE } from "@/lib/action-state";
+import { failureLogger } from "@/lib/log";
 import { POLICIES, RateLimitUnavailableError, checkRateLimits, rateLimitKey, tooManyAttemptsMessage } from "@/lib/rate-limit";
 import { StorageNotConfiguredError } from "@/lib/storage/object-store";
 import { getDecisionDeps, getListerDeps, VERIFICATION_PATH } from "@/lib/verification/app-deps";
@@ -22,14 +24,9 @@ import { requireLister } from "../listings/guard";
  * Logs carry no keys, file names or personal data.
  */
 
-export type VerificationActionResult = { ok: true; message?: string } | { ok: false; error: string };
-
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const NOT_SET_UP = "Document uploads are not set up yet.";
 
-function logFailure(action: string, error: unknown): void {
-  console.error(`[verification] ${action} failed`, error instanceof Error ? error.name : "unknown");
-}
+const logFailure = failureLogger("verification");
 
 function failure(error: unknown, action: string): { ok: false; error: string } {
   if (error instanceof StorageNotConfiguredError) return { ok: false, error: NOT_SET_UP };
@@ -75,7 +72,7 @@ export async function finalizeDocumentAction(input: {
   uploadKey: string;
   documentType: string;
   fileName: string;
-}): Promise<VerificationActionResult> {
+}): Promise<ClientActionResult> {
   const user = await requireLister(VERIFICATION_PATH);
   const parsed = finalizeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: GENERIC_FAILURE };
@@ -89,7 +86,7 @@ export async function finalizeDocumentAction(input: {
   return { ok: true, message: "Document added." };
 }
 
-export async function removeDocumentAction(input: { documentId: string }): Promise<VerificationActionResult> {
+export async function removeDocumentAction(input: { documentId: string }): Promise<ClientActionResult> {
   const user = await requireLister(VERIFICATION_PATH);
   const parsed = z.object({ documentId: z.uuid() }).safeParse(input);
   if (!parsed.success) return { ok: false, error: GENERIC_FAILURE };
@@ -103,7 +100,7 @@ export async function removeDocumentAction(input: { documentId: string }): Promi
   return { ok: true, message: "Document removed." };
 }
 
-export async function submitVerificationAction(): Promise<VerificationActionResult> {
+export async function submitVerificationAction(): Promise<ClientActionResult> {
   const user = await requireLister(VERIFICATION_PATH);
   try {
     const limit = await checkRateLimits([[POLICIES.verificationSubmitPerUser, rateLimitKey(user.id)]]);
@@ -121,7 +118,7 @@ export async function submitVerificationAction(): Promise<VerificationActionResu
  * Starts a free re-review (prompt S13 decisions 3–4). Takes nothing from the browser: eligibility
  * and the review being renewed are worked out from the session user's own records.
  */
-export async function startRereviewAction(): Promise<VerificationActionResult> {
+export async function startRereviewAction(): Promise<ClientActionResult> {
   const user = await requireLister(VERIFICATION_PATH);
   try {
     const limit = await checkRateLimits([[POLICIES.verificationSubmitPerUser, rateLimitKey(user.id)]]);

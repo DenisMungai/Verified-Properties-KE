@@ -12,7 +12,9 @@ import { dismissMessageReport, removeReportedMessage, type MessageDecisionResult
 import { getDb } from "@/db";
 import { closeDataRequest, type CloseResult } from "@/db/queries/data-requests";
 import { withTransaction } from "@/db/tx";
-import { fieldErrorsFrom, type ActionState } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE } from "@/lib/action-state";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
+import { errorName } from "@/lib/log";
 import { requireRole } from "@/lib/session";
 import { closeDataRequestSchema } from "@/lib/validation/data-request";
 import { decisionReasonSchema } from "@/lib/validation/engagement";
@@ -24,7 +26,6 @@ import { decisionReasonSchema } from "@/lib/validation/engagement";
  */
 
 const MODERATOR = ["platform_admin"] as const;
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 
 const REFUSALS: Record<Extract<DecisionResult, { ok: false }>["reason"], string> = {
   not_found: "We couldn't find that item.",
@@ -37,11 +38,14 @@ function formText(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
+/** Runs one listing decision; a successful one can publish or hide a listing, so the public cache is cleared. */
 async function decide(action: string, run: () => Promise<DecisionResult>): Promise<DecisionResult | "failed"> {
   try {
-    return await run();
+    const result = await run();
+    if (result.ok) invalidatePublicListings();
+    return result;
   } catch (error) {
-    console.error(`[moderation] ${action} failed`, error instanceof Error ? error.name : "unknown");
+    console.error(`[moderation] ${action} failed`, errorName(error));
     return "failed";
   }
 }
@@ -101,7 +105,7 @@ async function decideMessage(action: string, run: () => Promise<MessageDecisionR
   try {
     return await run();
   } catch (error) {
-    console.error(`[moderation] ${action} failed`, error instanceof Error ? error.name : "unknown");
+    console.error(`[moderation] ${action} failed`, errorName(error));
     return "failed";
   }
 }
@@ -152,7 +156,7 @@ export async function closeDataRequestAction(_prev: ActionState, formData: FormD
   try {
     result = await closeDataRequest(getDb(), admin.id, parsed.data.requestId, parsed.data.note);
   } catch (error) {
-    console.error("[data-request] close failed", error instanceof Error ? error.name : "unknown");
+    console.error("[data-request] close failed", errorName(error));
     return { formError: GENERIC_FAILURE, values };
   }
   if (!result.ok) return { formError: CLOSE_REFUSALS[result.reason], values };

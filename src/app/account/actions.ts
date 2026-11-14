@@ -7,8 +7,10 @@ import { isAPIError } from "better-auth/api";
 import { saveAgencyContact } from "@/db/queries/agency-contacts";
 import { saveListerProfile } from "@/db/queries/lister-profiles";
 import { withTransaction } from "@/db/tx";
-import { type ActionState, fieldErrorsFrom, keepValues } from "@/lib/action-state";
+import { type ActionState, fieldErrorsFrom, GENERIC_FAILURE, keepValues } from "@/lib/action-state";
+import { invalidatePublicListings } from "@/lib/cache/public-listings";
 import { getAuth } from "@/lib/auth";
+import { errorName } from "@/lib/log";
 import {
   POLICIES,
   RateLimitUnavailableError,
@@ -22,7 +24,6 @@ import { accountNameSchema, changePasswordSchema } from "@/lib/validation/auth";
 import { agencyContactSchema } from "@/lib/validation/agency-contact";
 import { listerProfileSchema } from "@/lib/validation/profile";
 
-const GENERIC_FAILURE = "Something went wrong. Please try again.";
 const PROFILE_FIELDS = ["listerType", "displayName", "phone", "whatsappSameAsPhone", "whatsapp", "publicEmail", "bio"] as const;
 
 function apiErrorCode(error: unknown): string | undefined {
@@ -40,13 +41,15 @@ export async function saveListerProfileAction(_prev: ActionState, formData: Form
   try {
     await withTransaction((tx) => saveListerProfile(tx, user.id, parsed.data));
   } catch (error) {
-    console.error("[account] profile save failed", error instanceof Error ? error.name : "unknown");
+    console.error("[account] profile save failed", errorName(error));
     return { formError: GENERIC_FAILURE, values };
   }
 
   // The lister role may have just been granted: refresh the account layout so its menu shows
   // "My listings" without a full reload.
   revalidatePath("/account", "layout");
+  // The display name shows on the lister's public listings.
+  invalidatePublicListings();
   // A `next` (an agency invite, prompt S23) is honoured only if it is a safe same-site path.
   if (formData.get("redirectTo") === "overview") redirect(safeNextPath(formData.get("next"), "/account?welcome=lister"));
   return { ok: true, message: "Listing profile saved.", values };
@@ -77,7 +80,7 @@ export async function saveAgencyContactAction(_prev: ActionState, formData: Form
   try {
     result = await withTransaction((tx) => saveAgencyContact(tx, user.id, parsed.data));
   } catch (error) {
-    console.error("[account] agency contact save failed", error instanceof Error ? error.name : "unknown");
+    console.error("[account] agency contact save failed", errorName(error));
     return { formError: GENERIC_FAILURE, values };
   }
   if (result !== "saved") return { formError: "Only an admin of your agency can change its contact details.", values };
